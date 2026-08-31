@@ -1,0 +1,23 @@
+#!name=guazi去广告
+#!desc=详情页去广告、阅读页去广告、重复图片去重、页数修复、漫画图片无缝显示
+#!system=ios
+
+[Rule]
+DOMAIN,xhs794.xhsqd12.com,REJECT
+DOMAIN,xddxxy.dasdnajksn.com,REJECT
+DOMAIN,rk7p.avdog-t0199.vip,REJECT
+DOMAIN,oytsuig.kwvqaj.cn,REJECT
+DOMAIN,jsqp.rk00h.cn,REJECT
+DOMAIN,rc210fx9byte.9sawv.cn,REJECT
+DOMAIN,mt0simgbyte.lvautm.cn,REJECT
+
+[URL Rewrite]
+^https:\/\/www\.guazimanhua\.com\/assets\/ad\/ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-top-static-ad\.js(?:\?.*)?$ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-bottom-ad\.js(?:\?.*)?$ _ reject
+
+[Script]
+guazi-clean = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/guazi-clean.js,requires-body=true,max-size=8388608,timeout=10,engine=webview
+
+[MITM]
+hostname = %APPEND% www.guazimanhua.com
