@@ -3,7 +3,7 @@
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-01
-#!version=2.1-xiaoan-fix
+#!version=2.2-startup-fix
 #!system=ios
 
 
@@ -55,12 +55,16 @@ DOMAIN,adstore-index-1252524079.file.myqcloud.com,REJECT,extended-matching,pre-m
 # 2. 腾讯优量汇 / GDT
 # =========================================================
 
-DOMAIN,sdk.e.qq.com,REJECT,extended-matching,pre-matching
-DOMAIN,sdkreport.e.qq.com,REJECT,extended-matching,pre-matching
-DOMAIN,tangram.e.qq.com,REJECT,extended-matching,pre-matching
-DOMAIN,masdkv6.3g.qq.com,REJECT,extended-matching,pre-matching
+# SDK 启动 / 配置 / 上报放行，避免开屏阶段因连续 REJECT 触发重试风暴
+DOMAIN,sdk.e.qq.com,DIRECT
+DOMAIN,sdkreport.e.qq.com,DIRECT
+DOMAIN,tangram.e.qq.com,DIRECT
+DOMAIN,masdkv6.3g.qq.com,DIRECT
 
-DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching,pre-matching
+# 实际 GDT 广告请求不使用 pre-matching，避免部分 APP 在 DNS 阶段失败后长时间重试
+DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
+
+# 广告素材域仍可提前拒绝
 DOMAIN-SUFFIX,gdtimg.com,REJECT,extended-matching,pre-matching
 DOMAIN-SUFFIX,ugdtimg.com,REJECT,extended-matching,pre-matching
 
@@ -90,10 +94,23 @@ DOMAIN,tmeadcomm.y.qq.com,REJECT,extended-matching,pre-matching
 # 3. 字节跳动 / 穿山甲 / Pangle / GroMore
 # =========================================================
 
-DOMAIN-KEYWORD,pangolin,REJECT,extended-matching,pre-matching
+# 穿山甲 SDK 主机包含 settings / stats / get_ads 等不同用途。
+# 主机先放行，真正的 get_ads / mediation exchange 在 URL Rewrite 精确拒绝，
+# 这样可明显减少 Coolapk 等 APP 开屏阶段的连续重试。
+DOMAIN,api-access.pangolin-sdk-toutiao.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao-b.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao1.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao2.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao3.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao4.com,DIRECT
+DOMAIN,api-access.pangolin-sdk-toutiao5.com,DIRECT
+DOMAIN,gromore.pangolin-sdk-toutiao.com,DIRECT
+DOMAIN,log-api.pangolin-sdk-toutiao.com,DIRECT
+DOMAIN,log-api.pangolin-sdk-toutiao-b.com,DIRECT
+
+# 广告素材 / 可播放广告资源继续提前拦截
 DOMAIN-KEYWORD,pglstatp,REJECT,extended-matching,pre-matching
 DOMAIN-KEYWORD,panplayable-toutiao,REJECT,extended-matching,pre-matching
-
 DOMAIN-SUFFIX,pangle.io,REJECT,extended-matching,pre-matching
 DOMAIN-SUFFIX,byteadverts.com,REJECT,extended-matching,pre-matching
 
@@ -667,7 +684,17 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 ^https:\/\/ebike-client\.xiaoantech\.com\/client\/ad\/config\/getAdConfigForGuest(?:\?.*)?$ _ reject
 ^https:\/\/ebike-client-prod\.xiaoantech\.net\/client\/ad\/config\/getAdConfigV3(?:\?.*)?$ _ reject
+
+# 小安小程序广告视频
 ^https:\/\/wxsmw\.wxs\.qq\.com\/.*\/ads_svp_video_ _ reject
+
+# 小安本次抓包中的广告静态图 CDN 前缀。
+# 只拦 141/20204 这一组，不整域屏蔽 wximg.wxs.qq.com。
+^https:\/\/wximg\.wxs\.qq\.com\/141\/20204\/snscosdownload\/SZ\/reserved\/ _ reject
+
+# 穿山甲真正取广告接口：只拒绝广告获取，不拒绝 settings / stats / log
+^https:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/sdk\/get_ads\/ _ reject
+^https:\/\/gromore\.pangolin-sdk-toutiao\.com\/api\/ad\/union\/mediation\/exchange\/ _ reject
 
 # ---- 拼多多广告素材 ----
 ^https:\/\/images\.pinduoduo\.com\/mrk\/ _ reject
@@ -679,4 +706,4 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, images.pinduoduo.com, issuecdn.baidupcs.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, images.pinduoduo.com, issuecdn.baidupcs.com
