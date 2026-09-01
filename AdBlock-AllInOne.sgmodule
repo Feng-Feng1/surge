@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4 Aggressive
-#!desc=Surge 强力混合去广告：保留 V2.2 稳定静态拦截，增加带例外保护的高优先级 AWAvenue 广告规则集、微信小程序强力拦截、闲鱼第一方广告净化与常见 APP 精确 Rewrite。
+#!name=AdBlock Hybrid V4.1 Aggressive
+#!desc=Surge 强力混合去广告：基于 V4 稳定版，新增菜鸟首页信息流、大家都在逛、底部推广、飞行广告与广告关键词深度净化，同时保留酷安/微信小程序兼容策略。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.0-aggressive
+#!version=4.1-cainiao
 #!system=ios
 
 
@@ -717,6 +717,25 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 [URL Rewrite]
 
 # =========================================================
+# 菜鸟 V4.1：广告链路精确补强
+# =========================================================
+#
+# HAR 实测：
+# - 腾讯 GDT 请求已被 V4 拦截
+# - 剩余广告主要来自菜鸟第一方广告编排 + 穿山甲素材/曝光链路
+#
+# 这里只补明确广告路径，不把穿山甲 settings/stats 整域杀掉，
+# 避免再次引发酷安一类 APP 的开屏重试风暴。
+# =========================================================
+
+# 字节广告曝光上报
+^https:\/\/tr\.byteurl\.cn\/ad\/impression\/toutiao\/ _ reject
+
+# 字节广告组件/可播放素材
+^https:\/\/lf-cdn-tos\.bytescm\.com\/obj\/static\/ad\/ _ reject
+
+
+# =========================================================
 # A. 酷安 / 穿山甲：避免开屏卡死
 # =========================================================
 # 主 API 保持 DIRECT，只杀真正取广告/竞价路径。
@@ -786,6 +805,22 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 [Map Local]
 
+# =========================================================
+# 菜鸟：第一方广告 API 本地空响应
+# =========================================================
+# 重点处理首页“大家都在逛”、广告流、飞行广告、底部商品推广。
+# 比单纯封 CDN 更彻底：直接让广告容器拿不到广告数据。
+
+^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.guoguo\.nbnetflow\.ads\.(?!.*_home) data-type=text data=" " status-code=200
+^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.guoguo\.nbnetflow\.ads\.mshow\.cn data-type=text data=" " status-code=200
+^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.nbcps\.presentation\.fetch\.cn data-type=text data=" " status-code=200
+^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.app\.home\.v\d+\.bottom\.area data-type=text data=" " status-code=200
+
+^https?:\/\/[a-zA-Z0-9_.-]+\.taobao\.com\/gw\/mtop\.cainiao\.guoguo\.nbnetflow\.ads\. data-type=text data=" " status-code=200
+^https?:\/\/[a-zA-Z0-9_.-]+\.taobao\.com\/gw\/mtop\.alimama\.abyss\.unionpage\.get data-type=text data=" " status-code=200
+^https?:\/\/[a-zA-Z0-9_.-]+\.taobao\.com\/gw\/mtop\.cainiao\.adx\.flyad\.getad data-type=text data=" " status-code=200
+
+
 ^https?:\/\/acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.idle\.idleadv\.app\.launch\.report data-type=text data="{\"api\":\"mtop.idle.idleadv.app.launch.report\",\"data\":{\"attributeSuccess\":\"false\"},\"ret\":[\"SUCCESS::调用成功\"],\"v\":\"1.0\"}" status-code=200 header="Content-Type:application/json"
 
 ^https?:\/\/acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.idle\.idleadv\.scene\.restore data-type=text data="{\"api\":\"mtop.idle.idleadv.scene.restore\",\"data\":{\"trackParams\":{\"stageMatch\":\"false\"}},\"ret\":[\"SUCCESS::调用成功\"],\"v\":\"1.0\"}" status-code=200 header="Content-Type:application/json"
@@ -816,6 +851,31 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [Script]
 
+# =========================================================
+# 菜鸟：第一方响应深度净化
+# =========================================================
+#
+# 这些接口会把广告和正常首页数据混在同一响应里，
+# 所以不能整域 REJECT，只删除广告模块。
+#
+# 上游脚本会处理：
+# - homepage.merge / protocol.homepage
+# - e2e.engine.page.fetch
+# - adkeyword
+# - nbnetflow 广告数据结构
+# =========================================================
+
+菜鸟-AMDC净化 = type=http-response,pattern=^http:\/\/amdc\.m\.taobao\.com,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_amdc.js,timeout=60
+
+菜鸟-首页Merge净化 = type=http-response,pattern=^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.nbpresentation\.homepage\.merge\.get\.cn,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_cainiao_json.js,timeout=60
+
+菜鸟-首页Protocol净化 = type=http-response,pattern=^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.nbpresentation\.protocol\.homepage\.get\.cn,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_cainiao_json.js,timeout=60
+
+菜鸟-E2E页面净化 = type=http-response,pattern=^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.app\.e2e\.engine\.page\.fetch,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_cainiao_json.js,timeout=60
+
+菜鸟-广告关键词净化 = type=http-response,pattern=^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.adkeyword,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_cainiao_json.js,timeout=60
+
+
 闲鱼-首页信息流净化 = type=http-response,pattern=^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.nextfresh\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/androidcn/userscripts/main/goofish.js,timeout=30
 
 闲鱼-搜索结果净化 = type=http-response,pattern=^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/androidcn/userscripts/main/goofishSearch.js,timeout=30
@@ -827,4 +887,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com
