@@ -3,6 +3,7 @@
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-01
+#!version=2.1-xiaoan-fix
 #!system=ios
 
 
@@ -657,11 +658,25 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 [URL Rewrite]
 
+# =========================================================
+# 微信小程序 / 小安科技自营广告（抓包实测）
+# =========================================================
+# 只拦广告配置接口和明确带 ads_svp_video_ 的广告视频路径。
+# 不屏蔽 wximg.wxs.qq.com / wxa.wxs.qq.com / szshort.weixin.qq.com，
+# 避免误伤正常小程序图片、界面资源、微信网络传输与支付。
+
+^https:\/\/ebike-client\.xiaoantech\.com\/client\/ad\/config\/getAdConfigForGuest(?:\?.*)?$ _ reject
+^https:\/\/ebike-client-prod\.xiaoantech\.net\/client\/ad\/config\/getAdConfigV3(?:\?.*)?$ _ reject
+^https:\/\/wxsmw\.wxs\.qq\.com\/.*\/ads_svp_video_ _ reject
+
+# ---- 拼多多广告素材 ----
 ^https:\/\/images\.pinduoduo\.com\/mrk\/ _ reject
 ^https:\/\/images\.pinduoduo\.com\/marketing_api\/ _ reject
+
+# ---- 百度网盘广告资源 ----
 ^https:\/\/issuecdn\.baidupcs\.com\/issue\/netdisk\/guanggao\/ _ reject
 
 
 [MITM]
 
-hostname = %APPEND% images.pinduoduo.com, issuecdn.baidupcs.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, images.pinduoduo.com, issuecdn.baidupcs.com
