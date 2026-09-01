@@ -1,677 +1,667 @@
-#!name=广告拦截 All-in-One
-#!desc=Surge 综合去广告与提升APP启动速度。
+#!name=AdBlock All-in-One
+#!desc=Surge 综合广告拦截：微信小程序、APP 广告 SDK、广告联盟、手机厂商广告、网页广告。高确定性广告域名优先 pre-matching，兼顾命中率与 APP 启动速度。
+#!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-01
 #!system=ios
 
+
 [Rule]
 
-# =========================================================
-# 0. 兼容 / 快速启动
-# =========================================================
-# 这些服务在实际抓包中与 SDK 初始化、推送、配置有关。
-# 不应为了“看起来拦得多”而一刀切。
-# 必须位于后面的广告规则之前。
 
-# ---- Tanx ----
+# =========================================================
+# 0. 功能兼容 / APP 启动优化
+# =========================================================
+
 DOMAIN,et.tanx.com,DIRECT
 DOMAIN,sdk-config.tanx.com,DIRECT
 
-# ---- 腾讯设备标识 / 推送 ----
 DOMAIN,tdid.m.qq.com,DIRECT
 DOMAIN,tpns.qq.com,DIRECT
 DOMAIN,access1.tpns.tencent.com,DIRECT
 
-# ---- Mob 短信验证 ----
 DOMAIN,init.sms.mob.com,DIRECT
 DOMAIN,sdkapi.sms.mob.com,DIRECT
 DOMAIN,code.sms.mob.com,DIRECT
 
-# ---- 极光验证码 ----
 DOMAIN,smartop-sdkapi.jiguang.cn,DIRECT
 DOMAIN,sdk.verification.jiguang.cn,DIRECT
 
-# ---- 字节 TNC 配置 ----
 AND,((DOMAIN-KEYWORD,tnc),(OR,((DOMAIN-SUFFIX,capcutapi.com),(DOMAIN-SUFFIX,zijieapi.com),(DOMAIN-SUFFIX,isnssdk.com),(DOMAIN-SUFFIX,toutiaoapi.com),(DOMAIN-SUFFIX,bytedance.com),(DOMAIN-SUFFIX,snssdk.com),(DOMAIN-SUFFIX,sgsnssdk.com)))),DIRECT
 
 
 # =========================================================
-# 1. 字节跳动 / 穿山甲 / Pangle / GroMore
+# 1. 微信 / 微信小程序广告
 # =========================================================
 
-DOMAIN-KEYWORD,pangolin,REJECT
-DOMAIN-KEYWORD,pglstatp,REJECT
-DOMAIN-KEYWORD,panplayable-toutiao,REJECT
+DOMAIN,1500020991.vodplayer.wxamedia.com,REJECT,extended-matching,pre-matching
+DOMAIN,1500022744.vodplayer.wxamedia.com,REJECT,extended-matching,pre-matching
+DOMAIN,1500026601.vodplayer.wxamedia.com,REJECT,extended-matching,pre-matching
 
-DOMAIN-SUFFIX,pangle.io,REJECT
-DOMAIN-SUFFIX,byteadverts.com,REJECT
-DOMAIN-SUFFIX,ctobsnssdk.com,REJECT
+DOMAIN,wxsnsad.tc.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,wxsnsdy.tc.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,wxsnsdy.wxs.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,wxsnsdythumb.wxs.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,wxaintpcos.wxqcloud.qq.com.cn,REJECT,extended-matching,pre-matching
 
-DOMAIN,lf-ad-ies.bytecdn.cn,REJECT
-DOMAIN-SUFFIX,bds.snssdk.com,REJECT
-
-DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT
-DOMAIN-KEYWORD,-ad.byteoversea.com,REJECT
-DOMAIN-KEYWORD,asiad.byteactivity,REJECT
-
-DOMAIN,iflyad.bj.openstorage.cn,REJECT
-DOMAIN,bjimp.voiceads.cn,REJECT
+DOMAIN,adsfile.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,adslvfile.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstore-1252524079.file.myqcloud.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstore-index-1252524079.file.myqcloud.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
 # 2. 腾讯优量汇 / GDT
 # =========================================================
 
-DOMAIN,sdk.e.qq.com,REJECT
-DOMAIN,tangram.e.qq.com,REJECT
-DOMAIN,sdkreport.e.qq.com,REJECT
+DOMAIN,sdk.e.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,sdkreport.e.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,tangram.e.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,masdkv6.3g.qq.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,mi.gdt.qq.com,REJECT
-DOMAIN,v2mi.gdt.qq.com,REJECT
-DOMAIN,v3.gdt.qq.com,REJECT
-DOMAIN,c3.gdt.qq.com,REJECT
-DOMAIN,v.gdt.qq.com,REJECT
-DOMAIN,c.gdt.qq.com,REJECT
-DOMAIN,c2.gdt.qq.com,REJECT
-DOMAIN,t.gdt.qq.com,REJECT
-DOMAIN,rpt.gdt.qq.com,REJECT
-DOMAIN,win.gdt.qq.com,REJECT
+DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,gdtimg.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ugdtimg.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,pgdt.gtimg.cn,REJECT
-DOMAIN,pgdt.ugdtimg.com,REJECT
-DOMAIN,adsmind.gdtimg.com,REJECT
-DOMAIN,adsmind.ugdtimg.com,REJECT
-DOMAIN,qzs.gdtimg.com,REJECT
+DOMAIN,ad.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,adfilter.imtt.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.privacy.qq.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,ads.privacy.qq.com,REJECT
-DOMAIN,us.l.qq.com,REJECT
-DOMAIN,p.l.qq.com,REJECT
+DOMAIN,p.l.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,t.l.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,us.l.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,w.l.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,vd6.l.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,vi.l.qq.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,tmead.y.qq.com,REJECT
-DOMAIN,tmeadbak.y.qq.com,REJECT
-DOMAIN,tmeadcomm.y.qq.com,REJECT
+DOMAIN,ad.tencentmusic.com,REJECT,extended-matching,pre-matching
+DOMAIN,adcdn.tencentmusic.com,REJECT,extended-matching,pre-matching
+DOMAIN,adclick.tencentmusic.com,REJECT,extended-matching,pre-matching
+DOMAIN,adexpo.tencentmusic.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstats.tencentmusic.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,ad.hunyuan.tencent.com,REJECT
-
-DOMAIN-SUFFIX,gdt.qq.com,REJECT
-DOMAIN-SUFFIX,gdtimg.com,REJECT
-DOMAIN-SUFFIX,ugdtimg.com,REJECT
+DOMAIN,tmead.y.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,tmeadbak.y.qq.com,REJECT,extended-matching,pre-matching
+DOMAIN,tmeadcomm.y.qq.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 3. 阿里 / Tanx / UC / 优酷
-# =========================================================
-# et.tanx.com 与 sdk-config.tanx.com 已在最前方放行。
-# 其余 Tanx 默认作为广告平台拦截。
-
-DOMAIN,df.tanx.com,REJECT
-DOMAIN,opehs.tanx.com,REJECT
-DOMAIN-SUFFIX,tanx.com,REJECT
-
-DOMAIN,ems.youku.com,REJECT
-DOMAIN,adx-core.youku.com,REJECT
-DOMAIN,adx-open-service.youku.com,REJECT
-
-DOMAIN,hudong.alicdn.com,REJECT
-
-DOMAIN,hc-ssp.sm.cn,REJECT
-DOMAIN,huichuan.sm.cn,REJECT
-DOMAIN,huichuan-mc.sm.cn,REJECT
-DOMAIN,adslot.uc.cn,REJECT
-
-DOMAIN,cpc-service-square.aiclk.com,REJECT
-DOMAIN,logrcv.aiclk.com,REJECT
-
-
-# =========================================================
-# 4. 百度广告联盟
+# 3. 字节跳动 / 穿山甲 / Pangle / GroMore
 # =========================================================
 
-DOMAIN,afd.baidu.com,REJECT
-DOMAIN,als.baidu.com,REJECT
-DOMAIN,bgg.baidu.com,REJECT
+DOMAIN-KEYWORD,pangolin,REJECT,extended-matching,pre-matching
+DOMAIN-KEYWORD,pglstatp,REJECT,extended-matching,pre-matching
+DOMAIN-KEYWORD,panplayable-toutiao,REJECT,extended-matching,pre-matching
 
-DOMAIN,cpro.baidustatic.com,REJECT
-DOMAIN,feed-image.baidu.com,REJECT
-DOMAIN,click-bes.baidu.com,REJECT
-DOMAIN,eclick.baidu.com,REJECT
+DOMAIN-SUFFIX,pangle.io,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,byteadverts.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,mobads.baidu.com,REJECT
-DOMAIN,mobads-logs.baidu.com,REJECT
-DOMAIN,mobads-pre-config.cdn.bcebos.com,REJECT
+DOMAIN,lf-ad-ies.bytecdn.cn,REJECT,extended-matching,pre-matching
+DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT,extended-matching,pre-matching
+DOMAIN-KEYWORD,-ad.byteoversea.com,REJECT,extended-matching,pre-matching
 
-DOMAIN,nadvideo2.baidu.com,REJECT
-DOMAIN,wn.pos.baidu.com,REJECT
-DOMAIN,miniapp-ad.cdn.bcebos.com,REJECT
+DOMAIN,ad.toutiao.com,REJECT,extended-matching,pre-matching
+DOMAIN,ad.zijieapi.com,REJECT,extended-matching,pre-matching
 
-DOMAIN-SUFFIX,union.baidu.cn,REJECT
-DOMAIN-SUFFIX,union.baidu.com,REJECT
+DOMAIN,ads3-normal.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads3-normal-hl.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads3-normal-lf.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads3-normal-lq.zijieapi.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,ads5-normal.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads5-normal-hl.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads5-normal-lf.zijieapi.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads5-normal-lq.zijieapi.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 5. 快手广告联盟
+# 4. 阿里 / Tanx / UC / 神马
 # =========================================================
 
-DOMAIN,gdfp.gifshow.com,REJECT
-DOMAIN,open.e.kuaishou.com,REJECT
-DOMAIN,open.e.kuaishou.cn,REJECT
-DOMAIN,api.e.kuaishou.com,REJECT
-DOMAIN,api.e.kuaishou.cn,REJECT
-DOMAIN,adtrack.e.kuaishou.com,REJECT
+DOMAIN,df.tanx.com,REJECT,extended-matching,pre-matching
+DOMAIN,opehs.tanx.com,REJECT,extended-matching,pre-matching
+DOMAIN,ifs.tanx.com,REJECT,extended-matching,pre-matching
+DOMAIN,ef-dongfeng.tanx.com,REJECT,extended-matching,pre-matching
 
-DOMAIN-SUFFIX,partner.gifshow.com,REJECT
-DOMAIN-SUFFIX,adukwai.com,REJECT
-DOMAIN-SUFFIX,adkwai.com,REJECT
+DOMAIN,hc-ssp.sm.cn,REJECT,extended-matching,pre-matching
+DOMAIN,huichuan.sm.cn,REJECT,extended-matching,pre-matching
+DOMAIN,huichuan-mc.sm.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adslot.uc.cn,REJECT,extended-matching,pre-matching
 
-
-# =========================================================
-# 6. 京东广告
-# =========================================================
-# dg.k.jd.com / dgstatic.jd.com 为 KSDK 配置，
-# 根据实际酷安抓包暂不拦截。
-
-DOMAIN,dsp-x.jd.com,REJECT
-DOMAIN,im-x.jd.com,REJECT
-DOMAIN,xlog.jd.com,REJECT
-DOMAIN,janapi.jd.com,REJECT
-DOMAIN-SUFFIX,ads.union.jd.com,REJECT
+DOMAIN,cpc-service-square.aiclk.com,REJECT,extended-matching,pre-matching
+DOMAIN,logrcv.aiclk.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 7. 小米 / MIUI 广告
+# 5. 优酷广告
 # =========================================================
 
-DOMAIN,ad.mi.com,REJECT
-DOMAIN,a.union.mi.com,REJECT
-
-DOMAIN-SUFFIX,ad.xiaomi.com,REJECT
-DOMAIN-SUFFIX,ad.intl.xiaomi.com,REJECT
-
-DOMAIN,adv.sec.miui.com,REJECT
-DOMAIN,adv.sec.intl.miui.com,REJECT
-
-
-# =========================================================
-# 8. OPPO / OnePlus / realme / HeyTap 广告
-# =========================================================
-
-DOMAIN-SUFFIX,ads.oppomobile.com,REJECT
-DOMAIN,adsfs.oppomobile.com,REJECT
-DOMAIN,adx.oppomobile.com,REJECT
-
-DOMAIN-SUFFIX,ads.heytapmobile.com,REJECT
-DOMAIN-SUFFIX,ads.heytapmobi.com,REJECT
-DOMAIN,adsfs.heytapimage.com,REJECT
-
-DOMAIN,bdapi-ads.realmemobile.com,REJECT
-DOMAIN,bdapi-in-ads.realmemobile.com,REJECT
+DOMAIN,ad.api.3g.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,adx-open-service.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,m.atm.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,ems.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,yk-ssp-ad.cp31.ott.cibntv.net,REJECT,extended-matching,pre-matching
+DOMAIN,yk-ssp.ad.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,ykad-data.cp31.ott.cibntv.net,REJECT,extended-matching,pre-matching
+DOMAIN,ykad-data.youku.com,REJECT,extended-matching,pre-matching
+DOMAIN,ykad-gateway.youku.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 9. vivo 广告
+# 6. 百度广告联盟
 # =========================================================
 
-DOMAIN,adlog.vivo.com.cn,REJECT
-DOMAIN,adreq.vivo.com.cn,REJECT
-DOMAIN,adsdk.vivo.com.cn,REJECT
-DOMAIN,adsstatic.vivo.com.cn,REJECT
-DOMAIN,adxlog.vivo.com.cn,REJECT
-DOMAIN,adxlog-adnet.vivo.com.cn,REJECT
-DOMAIN,dsplog-adnet.vivo.com.cn,REJECT
-DOMAIN,tracking-adnet.vivo.com.cn,REJECT
-DOMAIN,st-ads-jssdk.vivo.com.cn,REJECT
-DOMAIN,ads-marketing-vivofs.vivo.com.cn,REJECT
-
-DOMAIN,ads-api.vivo.com,REJECT
-DOMAIN,alliance-adreq-asia.vivoglobal.com,REJECT
-DOMAIN,asia-ad-mkt-vivofs.vivoglobal.com,REJECT
-DOMAIN,asia-adlog.vivoglobal.com,REJECT
-DOMAIN,asia-adsjssdk.vivoglobal.com,REJECT
-
-
-# =========================================================
-# 10. 华为广告
-# =========================================================
-
-DOMAIN,ads-drcn.platform.hicloud.com,REJECT
-DOMAIN,advertising.hicloud.com,REJECT
-DOMAIN,adx-dre.op.hicloud.com,REJECT
+DOMAIN,afd.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,als.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,bgg.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,cpro.baidustatic.com,REJECT,extended-matching,pre-matching
+DOMAIN,cbjs.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,click-bes.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,eclick.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,feed-image.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,mobads.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,mobads-logs.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,mobads-pre-config.cdn.bcebos.com,REJECT,extended-matching,pre-matching
+DOMAIN,nadvideo2.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,pos.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,wn.pos.baidu.com,REJECT,extended-matching,pre-matching
+DOMAIN,miniapp-ad.cdn.bcebos.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,union.baidu.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,union.baidu.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 11. Apple 广告服务
+# 7. 快手广告
 # =========================================================
 
-DOMAIN,api-adservices.apple.com,REJECT
-DOMAIN,advertising.apple.com,REJECT
-
-
-# =========================================================
-# 12. 倍孜 / AdScope / Tianmu / Sigmob 等
-# =========================================================
-
-DOMAIN-SUFFIX,1rtb.net,REJECT
-DOMAIN-SUFFIX,1rtb.com,REJECT
-
-DOMAIN-SUFFIX,yfanads.com,REJECT
-DOMAIN-SUFFIX,halomobi.com,REJECT
-DOMAIN-SUFFIX,uyunad.com,REJECT
-DOMAIN-SUFFIX,puata.info,REJECT
-
-DOMAIN-SUFFIX,appsad.cn,REJECT
-
-DOMAIN-SUFFIX,beizi.biz,REJECT
-DOMAIN-SUFFIX,beizi.info,REJECT
-DOMAIN-SUFFIX,beizi.online,REJECT
-
-DOMAIN-SUFFIX,ad-scope.com.cn,REJECT
-DOMAIN-SUFFIX,adscope.com.cn,REJECT
-DOMAIN-SUFFIX,adscope.cn,REJECT
-DOMAIN-SUFFIX,adscope.xyz,REJECT
-
-DOMAIN-SUFFIX,adn-plus.com.cn,REJECT
-DOMAIN-SUFFIX,adnplus.com.cn,REJECT
-DOMAIN-SUFFIX,adhub.com.cn,REJECT
-
-DOMAIN-SUFFIX,admobile.top,REJECT
-DOMAIN-SUFFIX,admobile.mobi,REJECT
-DOMAIN-SUFFIX,admobile.net.cn,REJECT
-DOMAIN-SUFFIX,admobile.vip,REJECT
-
-DOMAIN-SUFFIX,tianmu.mobi,REJECT
-DOMAIN-SUFFIX,ubixioe.com,REJECT
-
-DOMAIN-SUFFIX,sigmob.cn,REJECT
-DOMAIN-SUFFIX,richmob.cn,REJECT
-
-DOMAIN-SUFFIX,popadshop.com,REJECT
-DOMAIN-SUFFIX,yksdks.com,REJECT
-DOMAIN-SUFFIX,dutils.com,REJECT
-
-DOMAIN-SUFFIX,mobmore.com,REJECT
-DOMAIN-SUFFIX,adfunlink.com,REJECT
+DOMAIN,gdfp.gifshow.com,REJECT,extended-matching,pre-matching
+DOMAIN,open.e.kuaishou.com,REJECT,extended-matching,pre-matching
+DOMAIN,open.e.kuaishou.cn,REJECT,extended-matching,pre-matching
+DOMAIN,api.e.kuaishou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adtrack.e.kuaishou.com,REJECT,extended-matching,pre-matching
+DOMAIN,promotion-partner.kuaishou.com,REJECT,extended-matching,pre-matching
+DOMAIN,ali-ad.a.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN,hw-ot-ad.a.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN,tx-ad.a.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN,v1-ad.video.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN,v2-ad.video.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN,v3-ad.video.yximgs.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,partner.gifshow.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adukwai.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adkwai.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 13. TopOn / AnyThink / TradPlus / 聚合广告
+# 8. 京东广告
 # =========================================================
 
-DOMAIN-SUFFIX,toponadss.com,REJECT
-DOMAIN-SUFFIX,toponad.com,REJECT
-
-DOMAIN-SUFFIX,anythinktech.com,REJECT
-DOMAIN-SUFFIX,anyrtb.com,REJECT
-
-DOMAIN-SUFFIX,bridgeoos.com,REJECT
-DOMAIN-SUFFIX,birdgesdk.com,REJECT
-
-DOMAIN-SUFFIX,tradplusad.com,REJECT
-
-DOMAIN-SUFFIX,fancyapi.com,REJECT
-DOMAIN-SUFFIX,medproad.com,REJECT
-
-DOMAIN-SUFFIX,maplehaze.cn,REJECT
-DOMAIN-SUFFIX,mobrtb.com,REJECT
-
-DOMAIN-SUFFIX,motowoo.com,REJECT
-
-DOMAIN,sdk.zhangyuyidong.cn,REJECT
-DOMAIN,sdklog.zhangyuyidong.cn,REJECT
-
-DOMAIN-SUFFIX,hookspf.com,REJECT
+DOMAIN,addata.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,ccc-x.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,dsp-x.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,im-x.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,img-x.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,janapi.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,skdisplay.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,wn.x.jd.com,REJECT,extended-matching,pre-matching
+DOMAIN,xlog.jd.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 14. 国内其他广告平台
+# 9. 小米 / MIUI 广告
 # =========================================================
 
-DOMAIN-SUFFIX,adwangmai.com,REJECT
-DOMAIN-SUFFIX,domob.cn,REJECT
-
-DOMAIN-SUFFIX,qchannel01.cn,REJECT
-DOMAIN-SUFFIX,ad.xelements.cn,REJECT
-
-DOMAIN-SUFFIX,adsrvr.cn,REJECT
-
-DOMAIN-SUFFIX,fancydsp.com,REJECT
-DOMAIN-SUFFIX,bayescom.com,REJECT
-DOMAIN-SUFFIX,etoolads.cn,REJECT
-
-DOMAIN-SUFFIX,mentamob.com,REJECT
-DOMAIN-SUFFIX,advlion.com,REJECT
-
-DOMAIN-SUFFIX,qidianad.com,REJECT
-DOMAIN-SUFFIX,kuaichuanad.com,REJECT
-
-DOMAIN-SUFFIX,cxwlad.com,REJECT
-DOMAIN-SUFFIX,yiweiads.com,REJECT
-
-DOMAIN-SUFFIX,hzjizhun.cn,REJECT
-DOMAIN-SUFFIX,hzjizhun.com,REJECT
-DOMAIN-SUFFIX,sogaha.cn,REJECT
-
-DOMAIN-SUFFIX,adintl.cn,REJECT
-DOMAIN-SUFFIX,adtaipo.com,REJECT
-DOMAIN-SUFFIX,adx.yixin.im,REJECT
-DOMAIN-SUFFIX,kuaiyiad.com,REJECT
-DOMAIN-SUFFIX,adtianmai.com,REJECT
-
-DOMAIN-SUFFIX,readgps.com,REJECT
-DOMAIN-SUFFIX,fanglinad.com,REJECT
-DOMAIN-SUFFIX,17admob.com,REJECT
-DOMAIN-SUFFIX,slyxmobi.com,REJECT
-
-DOMAIN-SUFFIX,tuia.cn,REJECT
-DOMAIN-SUFFIX,66mobi.com,REJECT
-DOMAIN-SUFFIX,xdplt.com,REJECT
-
-DOMAIN,ads.cup.com.cn,REJECT
+DOMAIN-SUFFIX,ad.xiaomi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ad.intl.xiaomi.com,REJECT,extended-matching,pre-matching
+DOMAIN,a0.app.xiaomi.com,REJECT,extended-matching,pre-matching
+DOMAIN,adv.sec.miui.com,REJECT,extended-matching,pre-matching
+DOMAIN,adv.sec.intl.miui.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 15. Mintegral / MBridge
+# 10. OPPO / OnePlus / realme / HeyTap
 # =========================================================
 
-DOMAIN-SUFFIX,mintegral.com,REJECT
-DOMAIN-SUFFIX,mtgglobals.com,REJECT
-DOMAIN-SUFFIX,rayjump.com,REJECT
-
-
-# =========================================================
-# 16. 海外 APP 广告联盟
-# =========================================================
-
-DOMAIN-SUFFIX,applovin.com,REJECT
-DOMAIN-SUFFIX,applvn.com,REJECT
-
-DOMAIN-SUFFIX,unityads.unity3d.com,REJECT
-DOMAIN-SUFFIX,iads.unity3d.com,REJECT
-DOMAIN-SUFFIX,unityads.unitychina.cn,REJECT
-
-DOMAIN-SUFFIX,vungle.com,REJECT
-DOMAIN-SUFFIX,tapjoy.com,REJECT
-
-DOMAIN-SUFFIX,inmobi.com,REJECT
-DOMAIN-SUFFIX,inmobi.cn,REJECT
-DOMAIN-SUFFIX,inmobicdn.net,REJECT
-
-DOMAIN-SUFFIX,moloco.com,REJECT
-
-DOMAIN-SUFFIX,supersonicads.com,REJECT
-DOMAIN-SUFFIX,ironsrc.com,REJECT
-
-DOMAIN-SUFFIX,adsmoloco.com,REJECT
-DOMAIN-SUFFIX,smadex.com,REJECT
-DOMAIN-SUFFIX,tapad.com,REJECT
-DOMAIN-SUFFIX,adsappier.com,REJECT
-
-DOMAIN-SUFFIX,adcolony.com,REJECT
-DOMAIN-SUFFIX,chartboost.com,REJECT
-
-DOMAIN-SUFFIX,fyber.com,REJECT
-DOMAIN-SUFFIX,inner-active.mobi,REJECT
-
-DOMAIN-SUFFIX,startappservice.com,REJECT
-DOMAIN-SUFFIX,startappexchange.com,REJECT
-
-DOMAIN-SUFFIX,mopub.com,REJECT
-
-DOMAIN-SUFFIX,liftoff-creatives.io,REJECT
-
-DOMAIN-SUFFIX,amazon-adsystem.com,REJECT
-
-DOMAIN-SUFFIX,fivecdm.com,REJECT
-DOMAIN-SUFFIX,doubleverify.com,REJECT
+DOMAIN-SUFFIX,ads.oppomobile.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfs.oppomobile.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ads.heytapmobi.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfs-sdkconfig.heytapimage.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfs.heytapimage.com,REJECT,extended-matching,pre-matching
+DOMAIN,bdapi-ads.realmemobile.com,REJECT,extended-matching,pre-matching
+DOMAIN,bdapi-in-ads.realmemobile.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 17. Google 广告
+# 11. vivo 广告
 # =========================================================
 
-DOMAIN-SUFFIX,doubleclick.net,REJECT
-DOMAIN-SUFFIX,doubleclick-cn.net,REJECT
-
-DOMAIN-SUFFIX,googlesyndication.com,REJECT
-DOMAIN-SUFFIX,googlesyndication-cn.com,REJECT
-
-DOMAIN-SUFFIX,googleadservices.com,REJECT
-
-
-# =========================================================
-# 18. 国际网页广告 / DSP / RTB
-# =========================================================
-
-DOMAIN-SUFFIX,adnxs.com,REJECT
-DOMAIN-SUFFIX,criteo.com,REJECT
-DOMAIN-SUFFIX,criteo.net,REJECT
-
-DOMAIN-SUFFIX,taboola.com,REJECT
-DOMAIN-SUFFIX,outbrain.com,REJECT
-
-DOMAIN-SUFFIX,pubmatic.com,REJECT
-DOMAIN-SUFFIX,rubiconproject.com,REJECT
-DOMAIN-SUFFIX,openx.net,REJECT
-
-DOMAIN-SUFFIX,casalemedia.com,REJECT
-DOMAIN-SUFFIX,indexww.com,REJECT
-
-DOMAIN-SUFFIX,yieldmo.com,REJECT
-DOMAIN-SUFFIX,triplelift.com,REJECT
-
-DOMAIN-SUFFIX,smartadserver.com,REJECT
-
-DOMAIN-SUFFIX,adsrvr.org,REJECT
-DOMAIN-SUFFIX,adsrvr.io,REJECT
+DOMAIN,adlog.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adreq.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adsdk.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adsstatic.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adxlog.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adxlog-adnet.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,dsplog-adnet.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,tracking-adnet.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,st-ads-jssdk.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ads-marketing-vivofs.vivo.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ads-api.vivo.com,REJECT,extended-matching,pre-matching
+DOMAIN,alliance-adreq-asia.vivoglobal.com,REJECT,extended-matching,pre-matching
+DOMAIN,asia-ad-mkt-vivofs.vivoglobal.com,REJECT,extended-matching,pre-matching
+DOMAIN,asia-adlog.vivoglobal.com,REJECT,extended-matching,pre-matching
+DOMAIN,asia-adsjssdk.vivoglobal.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 19. 爱奇艺 / 网易 / 优酷
+# 12. 华为 / 荣耀广告
 # =========================================================
 
-DOMAIN,api.cupid.dns.iqiyi.com,REJECT
-DOMAIN-SUFFIX,cupid.iqiyi.com,REJECT
-DOMAIN,ads.game.iqiyi.com,REJECT
-DOMAIN,video-ad.sm.cn,REJECT
-
-DOMAIN,nex.163.com,REJECT
-DOMAIN,iad.g.163.com,REJECT
-DOMAIN,gorgon.youdao.com,REJECT
+DOMAIN,ads-drcn.platform.hicloud.com,REJECT,extended-matching,pre-matching
+DOMAIN,advertising.hicloud.com,REJECT,extended-matching,pre-matching
+DOMAIN,adx-dre.op.hicloud.com,REJECT,extended-matching,pre-matching
+DOMAIN,adx-drcn.op.dbankcloud.cn,REJECT,extended-matching,pre-matching
+DOMAIN,recommend-drcn.hms.dbankcloud.cn,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 20. 喜马拉雅
+# 13. Apple 广告
 # =========================================================
 
-DOMAIN,ad.ximalaya.com,REJECT
-DOMAIN,adbs.ximalaya.com,REJECT
-DOMAIN,adse.ximalaya.com,REJECT
-DOMAIN,adse.wsa.ximalaya.com,REJECT
-DOMAIN,adbehavior.ximalaya.com,REJECT
-DOMAIN,adbehavior.wsa.ximalaya.com,REJECT
-DOMAIN,adsebs.ximalaya.com,REJECT
-DOMAIN,adwbs.ximalaya.com,REJECT
+DOMAIN,advertising.apple.com,REJECT,extended-matching,pre-matching
+DOMAIN,iad.apple.com,REJECT,extended-matching,pre-matching
+DOMAIN,iadsdk.apple.com,REJECT,extended-matching,pre-matching
+DOMAIN,iadworkbench.apple.com,REJECT,extended-matching,pre-matching
+DOMAIN,proxy.advp.apple.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 21. 小红书广告素材
+# 14. 国内常见广告 SDK
 # =========================================================
 
-DOMAIN,ads-img-qc.xhscdn.com,REJECT
-DOMAIN,ads-video-al.xhscdn.com,REJECT
-DOMAIN,ads-video-qc.xhscdn.com,REJECT
-DOMAIN,t-ads.xiaohongshu.com,REJECT
+DOMAIN-SUFFIX,1rtb.net,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,1rtb.com,REJECT,extended-matching,pre-matching
 
+DOMAIN-SUFFIX,beizi.biz,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,beizi.info,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,beizi.online,REJECT,extended-matching,pre-matching
 
-# =========================================================
-# 22. 常见 APP 独立广告域名
-# =========================================================
+DOMAIN-SUFFIX,ad-scope.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ad-scope.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adscope.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adscope.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adscope.xyz,REJECT,extended-matching,pre-matching
 
-# ---- 12306 ----
-DOMAIN,ad.12306.cn,REJECT
+DOMAIN-SUFFIX,adn-plus.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adnplus.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adhub.com.cn,REJECT,extended-matching,pre-matching
 
-# ---- 彩云天气 ----
-DOMAIN,ad.caiyunapp.com,REJECT
+DOMAIN-SUFFIX,admobile.top,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,admobile.mobi,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,admobile.net.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,admobile.vip,REJECT,extended-matching,pre-matching
 
-# ---- 蜻蜓 FM ----
-DOMAIN,ad.qingting.fm,REJECT
+DOMAIN-SUFFIX,tianmu.mobi,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ubixioe.com,REJECT,extended-matching,pre-matching
 
-# ---- 漫画人 / 动漫之家 ----
-DOMAIN,adsapi.manhuaren.com,REJECT
-DOMAIN,adsdk.dmzj.com,REJECT
+DOMAIN-SUFFIX,sigmob.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,sigmob.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,richmob.cn,REJECT,extended-matching,pre-matching
 
-# ---- 航旅纵横 / 飞常准 ----
-DOMAIN,app-ad.variflight.com,REJECT
-DOMAIN,adv-ads.variflight.com,REJECT
-DOMAIN,adv-adlog.variflight.com,REJECT
-
-# ---- 迅雷 ----
-DOMAIN,adsp.xunlei.com,REJECT
-
-# ---- 同花顺 ----
-DOMAIN,adm.10jqka.com.cn,REJECT
-
-# ---- 澎湃 ----
-DOMAIN,admonitor.thepaper.cn,REJECT
-DOMAIN,adpai.thepaper.cn,REJECT
-DOMAIN,imgadpai.thepaper.cn,REJECT
-
-# ---- 苏宁 ----
-DOMAIN,mads.suning.com,REJECT
-
-# ---- 58 ----
-DOMAIN,adshow.58.com,REJECT
-
-# ---- 360 ----
-DOMAIN,ad.360in.com,REJECT
-
-# ---- 万年历 ----
-DOMAIN,ad.51wnl-cq.com,REJECT
-DOMAIN,adextra.51wnl-cq.com,REJECT
-
-# ---- ZAKER ----
-DOMAIN,ggs.myzaker.com,REJECT
-
-# ---- 今日头条类信息流 ----
-DOMAIN,nativeadv.dftoutiao.com,REJECT
-DOMAIN,ads.weilitoutiao.net,REJECT
-
-# ---- 界面新闻 ----
-DOMAIN,ad.jiemian.com,REJECT
-
-# ---- WPS ----
-DOMAIN,api-ad-adapter.wps.com,REJECT
-
-# ---- Kugou ----
-DOMAIN,adsfile.bssdlbig.kugou.com,REJECT
-DOMAIN,adsfilebssdlbig.tx.kugou.com,REJECT
-
-# ---- 微博广告策略 ----
-DOMAIN,adstrategy.biz.weibo.com,REJECT
-
-# ---- 最右 ----
-DOMAIN,adapi.izuiyou.com,REJECT
-DOMAIN,mercury-gateway.ixiaochuan.cn,REJECT
+DOMAIN-SUFFIX,yfanads.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,halomobi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,appsad.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,miaozhen.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,popadshop.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,yksdks.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,dutils.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,mobmore.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adfunlink.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 23. 拼多多广告
+# 15. TopOn / AnyThink / TradPlus / 聚合广告
 # =========================================================
 
-DOMAIN,video-dsp.pddpic.com,REJECT
-DOMAIN,t-dsp.pinduoduo.com,REJECT
-
-
-# =========================================================
-# 24. 其他广告平台补充
-# =========================================================
-
-DOMAIN-SUFFIX,xinduoad.com,REJECT
-
-DOMAIN,statis.miwuad.com,REJECT
-
-DOMAIN,ad.shunchangzhixing.com,REJECT
-DOMAIN,redirect.shunchangzhixing.com,REJECT
-
-DOMAIN,api.touch-moblie.com,REJECT
-DOMAIN-SUFFIX,api.touch-moblie.com,REJECT
-
-DOMAIN-SUFFIX,bxsnews.com,REJECT
-DOMAIN-SUFFIX,ranfenghd.com,REJECT
-
-DOMAIN-SUFFIX,xcultur.com,REJECT
-
-DOMAIN,ad.aggrxinc.com,REJECT
-
-DOMAIN-SUFFIX,shanghailingye.cn,REJECT
-DOMAIN-SUFFIX,shenshiads.com,REJECT
-DOMAIN-SUFFIX,adshenshi.com,REJECT
-
-DOMAIN-SUFFIX,statisticslinks.com,REJECT
-
-DOMAIN,adx.zuoyebang.com,REJECT
-
-DOMAIN-SUFFIX,ad.gameley.com,REJECT
-DOMAIN-SUFFIX,adx.52qumao.com,REJECT
-
-DOMAIN,zxid-m.mobileservice.cn,REJECT
+DOMAIN-SUFFIX,toponadss.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,toponad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,anythinktech.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,anyrtb.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,bridgeoos.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,birdgesdk.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,tradplusad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,fancyapi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,medproad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,maplehaze.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,mobrtb.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,motowoo.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# 25. 隐私 / 归因 / 统计 —— 默认不启用
+# 16. 国内其他广告平台
 # =========================================================
-# 这些多数不是“广告素材服务器”。
-# 开启后可能影响推送、登录、深链、首次启动或统计。
-# 真想做广告+隐私双杀，再逐组打开，别一次全开。
 
-# DOMAIN-SUFFIX,umeng.com,REJECT
-# DOMAIN-SUFFIX,umengcloud.com,REJECT
-# DOMAIN-SUFFIX,umtrack.com,REJECT
-# DOMAIN-SUFFIX,umsns.com,REJECT
-
-# DOMAIN-SUFFIX,getui.com,REJECT
-# DOMAIN-SUFFIX,getui.net,REJECT
-# DOMAIN-SUFFIX,igexin.com,REJECT
-
-# DOMAIN-SUFFIX,jiguang.cn,REJECT
-# DOMAIN-SUFFIX,jpush.cn,REJECT
-# DOMAIN-SUFFIX,jpush.io,REJECT
-
-# DOMAIN-SUFFIX,adjust.com,REJECT
-# DOMAIN-SUFFIX,adjust.io,REJECT
-# DOMAIN-SUFFIX,appsflyersdk.com,REJECT
-
-# DOMAIN,ios.bugly.qq.com,REJECT
-# DOMAIN,pro.bugly.qq.com,REJECT
-
-# DOMAIN-SUFFIX,amplitude.com,REJECT
-
-# DOMAIN-SUFFIX,openinstall.com,REJECT
-# DOMAIN-SUFFIX,openinstall.io,REJECT
-# DOMAIN-SUFFIX,openinstall.top,REJECT
-# DOMAIN-SUFFIX,deepinstall.com,REJECT
+DOMAIN-SUFFIX,adwangmai.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,domob.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,qchannel01.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ad.xelements.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,fancydsp.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,bayescom.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,etoolads.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,mentamob.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,advlion.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,qidianad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,kuaichuanad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,cxwlad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,yiweiads.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,hzjizhun.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,hzjizhun.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,sogaha.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adintl.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adtaipo.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adx.yixin.im,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,kuaiyiad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adtianmai.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,readgps.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,fanglinad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,17admob.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,slyxmobi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,tuia.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,66mobi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,xdplt.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.cup.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ad.shunchangzhixing.com,REJECT,extended-matching,pre-matching
+DOMAIN,redirect.shunchangzhixing.com,REJECT,extended-matching,pre-matching
+DOMAIN,api.touch-moblie.com,REJECT,extended-matching,pre-matching
+DOMAIN,ad.aggrxinc.com,REJECT,extended-matching,pre-matching
+DOMAIN,adx.zuoyebang.com,REJECT,extended-matching,pre-matching
+DOMAIN,zxid-m.mobileservice.cn,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# URL Rewrite：同域广告路径
+# 17. Mintegral / MBridge
 # =========================================================
-# HTTPS Rewrite 必须配合 MITM。
-# 这里只处理相对明确的广告路径，不对 api.* 做泛匹配。
+
+DOMAIN-SUFFIX,mintegral.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,mtgglobals.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,rayjump.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 18. 海外 APP 广告 SDK
+# =========================================================
+
+DOMAIN-SUFFIX,applovin.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,applvn.com,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,unityads.unity3d.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,iads.unity3d.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,unityads.unitychina.cn,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,vungle.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,tapjoy.com,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,inmobi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,inmobi.cn,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,inmobicdn.net,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,moloco.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adsmoloco.com,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,supersonicads.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,ironsrc.com,REJECT,extended-matching,pre-matching
+
+DOMAIN-SUFFIX,smadex.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,tapad.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adsappier.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adcolony.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,chartboost.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,fyber.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,inner-active.mobi,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,startappservice.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,startappexchange.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,liftoff-creatives.io,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,amazon-adsystem.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,doubleverify.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 19. Google Ads
+# =========================================================
+
+DOMAIN-SUFFIX,doubleclick.net,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,doubleclick-cn.net,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,googlesyndication.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,googlesyndication-cn.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,googleadservices.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,googleadservices-cn.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.google.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adsense.google.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ads.youtube.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 20. TikTok / X / LinkedIn / Pinterest / Spotify
+# =========================================================
+
+DOMAIN,ads-api.tiktok.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads-jp.tiktok.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads-sg.tiktok.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.tiktok.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,ads-api.twitter.com,REJECT,extended-matching,pre-matching
+DOMAIN,static.ads-twitter.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,ads.linkedin.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.pinterest.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,adstudio.spotify.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstudio-assets.scdn.co,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 21. 国际网页广告 / DSP / RTB
+# =========================================================
+
+DOMAIN-SUFFIX,adnxs.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,criteo.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,criteo.net,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,taboola.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,outbrain.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,pubmatic.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,rubiconproject.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,openx.net,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,casalemedia.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,indexww.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,yieldmo.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,triplelift.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,smartadserver.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adsrvr.org,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,adsrvr.io,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,moatads.com,REJECT,extended-matching,pre-matching
+DOMAIN,bingads.microsoft.com,REJECT,extended-matching,pre-matching
+DOMAIN,outlookads.live.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 22. 爱奇艺 / 芒果 TV / 网易
+# =========================================================
+
+DOMAIN,api.cupid.dns.iqiyi.com,REJECT,extended-matching,pre-matching
+DOMAIN,t7z.cupid.ptqy.gitv.tv,REJECT,extended-matching,pre-matching
+DOMAIN,ads.game.iqiyi.com,REJECT,extended-matching,pre-matching
+DOMAIN,tpa-hcdn.iqiyi.com,REJECT,extended-matching,pre-matching
+DOMAIN-SUFFIX,cupid.iqiyi.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,mobaliyun.res.mgtv.com,REJECT,extended-matching,pre-matching
+DOMAIN,mobile.da.mgtv.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,nex.163.com,REJECT,extended-matching,pre-matching
+DOMAIN,iad.g.163.com,REJECT,extended-matching,pre-matching
+DOMAIN,gorgon.youdao.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 23. 喜马拉雅
+# =========================================================
+
+DOMAIN,ad.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adbs.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adse.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adse.wsa.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adse.test.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsebs.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adwbs.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adbehavior.ximalaya.com,REJECT,extended-matching,pre-matching
+DOMAIN,adbehavior.wsa.ximalaya.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 24. 酷狗
+# =========================================================
+
+DOMAIN,ads.service.kugou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adserviceretry.kugou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfile.bssdlbig.kugou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfilebssdlbig.ali.kugou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adsfileretry.service.kugou.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 25. 微博
+# =========================================================
+
+DOMAIN,ad.weibo.com,REJECT,extended-matching,pre-matching
+DOMAIN,adimg.uve.weibo.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstrategy.biz.weibo.com,REJECT,extended-matching,pre-matching
+DOMAIN,sdkapp.uve.weibo.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 26. 小红书
+# =========================================================
+
+DOMAIN,ads-img-al.xhscdn.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads-img-qc.xhscdn.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads-video-al.xhscdn.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads-video-qc.xhscdn.com,REJECT,extended-matching,pre-matching
+DOMAIN,t-ads.xiaohongshu.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 27. 最右
+# =========================================================
+
+DOMAIN,adapi.izuiyou.com,REJECT,extended-matching,pre-matching
+DOMAIN,adstat.izuiyou.com,REJECT,extended-matching,pre-matching
+DOMAIN,mercury-gateway.ixiaochuan.cn,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 28. 拼多多
+# =========================================================
+
+DOMAIN,video-dsp.pddpic.com,REJECT,extended-matching,pre-matching
+DOMAIN,t-dsp.pinduoduo.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 29. 常见 APP 独立广告域名
+# =========================================================
+
+DOMAIN,ad.12306.cn,REJECT,extended-matching,pre-matching
+
+DOMAIN,ad.51wnl.com,REJECT,extended-matching,pre-matching
+DOMAIN,ad.51wnl-cq.com,REJECT,extended-matching,pre-matching
+DOMAIN,adextra.51wnl-cq.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,ad-cdn.qingting.fm,REJECT,extended-matching,pre-matching
+DOMAIN,ad.qingting.fm,REJECT,extended-matching,pre-matching
+
+DOMAIN,adsp.xunlei.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,admonitor.thepaper.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adpai.thepaper.cn,REJECT,extended-matching,pre-matching
+DOMAIN,imgadpai.thepaper.cn,REJECT,extended-matching,pre-matching
+
+DOMAIN,mads.suning.com,REJECT,extended-matching,pre-matching
+DOMAIN,adshow.58.com,REJECT,extended-matching,pre-matching
+
+DOMAIN,ad.360in.com,REJECT,extended-matching,pre-matching
+DOMAIN,ad.iot.360.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ad.jia.360.cn,REJECT,extended-matching,pre-matching
+DOMAIN,ad.life.360.cn,REJECT,extended-matching,pre-matching
+
+DOMAIN,ggs.myzaker.com,REJECT,extended-matching,pre-matching
+DOMAIN,nativeadv.dftoutiao.com,REJECT,extended-matching,pre-matching
+DOMAIN,ads.weilitoutiao.net,REJECT,extended-matching,pre-matching
+
+DOMAIN,ad.jiemian.com,REJECT,extended-matching,pre-matching
+DOMAIN,api-ad-adapter.wps.com,REJECT,extended-matching,pre-matching
+DOMAIN,adm.10jqka.com.cn,REJECT,extended-matching,pre-matching
+DOMAIN,bdad.123pan.cn,REJECT,extended-matching,pre-matching
+DOMAIN,dsp.fcbox.com,REJECT,extended-matching,pre-matching
+DOMAIN,smartad.10010.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 30. 乐播 / 投屏广告
+# =========================================================
+
+DOMAIN,ad.hpplay.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adc.hpplay.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adcdn.hpplay.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adeng.hpplay.cn,REJECT,extended-matching,pre-matching
+DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
+# 31. 隐私 / 统计 / 推送增强（默认关闭）
+# =========================================================
+
+# DOMAIN-SUFFIX,umeng.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,umengcloud.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,umtrack.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,umsns.com,REJECT,extended-matching
+
+# DOMAIN-SUFFIX,getui.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,getui.net,REJECT,extended-matching
+# DOMAIN-SUFFIX,getui.cn,REJECT,extended-matching
+# DOMAIN-SUFFIX,igexin.com,REJECT,extended-matching
+
+# DOMAIN-SUFFIX,jiguang.cn,REJECT,extended-matching
+# DOMAIN-SUFFIX,jpush.cn,REJECT,extended-matching
+# DOMAIN-SUFFIX,jpush.io,REJECT,extended-matching
+
+# DOMAIN-SUFFIX,adjust.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,adjust.cn,REJECT,extended-matching
+# DOMAIN-SUFFIX,adjust.io,REJECT,extended-matching
+
+# DOMAIN-SUFFIX,appsflyersdk.com,REJECT,extended-matching
+
+# DOMAIN,api-adservices.apple.com,REJECT,extended-matching
+
+# DOMAIN,ios.bugly.qq.com,REJECT,extended-matching
+# DOMAIN,pro.bugly.qq.com,REJECT,extended-matching
+
+# DOMAIN-SUFFIX,openinstall.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,openinstall.io,REJECT,extended-matching
+# DOMAIN-SUFFIX,openinstall.top,REJECT,extended-matching
+# DOMAIN-SUFFIX,deepinstall.com,REJECT,extended-matching
+
+# DOMAIN,firebaselogging-pa.googleapis.com,REJECT,extended-matching
+# DOMAIN,app-measurement.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,google-analytics.com,REJECT,extended-matching
+
+# DOMAIN,mssdk.volces.com,REJECT,extended-matching
+# DOMAIN-SUFFIX,amplitude.com,REJECT,extended-matching
+
 
 [URL Rewrite]
 
-# 拼多多营销素材
 ^https:\/\/images\.pinduoduo\.com\/mrk\/ _ reject
 ^https:\/\/images\.pinduoduo\.com\/marketing_api\/ _ reject
-
-# 百度网盘广告资源
 ^https:\/\/issuecdn\.baidupcs\.com\/issue\/netdisk\/guanggao\/ _ reject
 
 
-# =========================================================
-# MITM
-# =========================================================
-# 仅为上面的路径级 Rewrite 开 MITM。
-# 不做 * 全域 MITM，避免证书固定、耗电、兼容性问题。
-
 [MITM]
+
 hostname = %APPEND% images.pinduoduo.com, issuecdn.baidupcs.com
