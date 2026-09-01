@@ -76,6 +76,7 @@ try {
 
     injectStyle(`
 .mobile-comic-top-ad,
+.mobile-comic-app-card,
 .desktop-comic-top-ad {
   display: none !important;
   visibility: hidden !important;
