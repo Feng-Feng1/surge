@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.2
-#!desc=Surge 强力混合去广告：基于 V4.1.1 稳定版，保留酷安开屏修复，并按 Bilibili 9.10.0 HAR 实抓新增哔哩哔哩开屏广告空响应处理。
+#!name=AdBlock Hybrid V4.1.3
+#!desc=Surge 强力混合去广告：基于 V4.1.2 稳定版，保留酷安与哔哩哔哩开屏修复，并修正铁路12306因提前 REJECT 广告接口导致的开屏空等问题。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.2-bilibili-splash-fix
+#!version=4.1.3-12306-splash-wait-fix
 #!system=ios
 
 
@@ -46,7 +46,7 @@ AND,((DOMAIN-KEYWORD,tnc),(OR,((DOMAIN-SUFFIX,capcutapi.com),(DOMAIN-SUFFIX,ziji
 # 不会再出现 V3 那种“核心规则失效后广告几乎全回来”的情况。
 # =========================================================
 
-AND,((RULE-SET,https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list,extended-matching),(NOT,((OR,((DOMAIN,api-access.pangolin-sdk-toutiao.com),(DOMAIN,api-access.pangolin-sdk-toutiao-b.com),(DOMAIN,api-access.pangolin-sdk-toutiao1.com),(DOMAIN,api-access.pangolin-sdk-toutiao2.com),(DOMAIN,api-access.pangolin-sdk-toutiao3.com),(DOMAIN,api-access.pangolin-sdk-toutiao4.com),(DOMAIN,api-access.pangolin-sdk-toutiao5.com),(DOMAIN,gromore.pangolin-sdk-toutiao.com),(DOMAIN,log-api.pangolin-sdk-toutiao.com),(DOMAIN,log-api.pangolin-sdk-toutiao-b.com),(DOMAIN,sdk.e.qq.com),(DOMAIN,sdkreport.e.qq.com),(DOMAIN,tangram.e.qq.com),(DOMAIN,masdkv6.3g.qq.com),(DOMAIN-SUFFIX,gdt.qq.com),(DOMAIN,baichuan-sdk.alicdn.com),(DOMAIN,baichuan-sdk.taobao.com),(DOMAIN,mapi.m.jd.com),(DOMAIN,hybrid.miniapp.taobao.com),(DOMAIN,conf.hpplay.cn),(DOMAIN,gslb.hpplay.cn),(DOMAIN,imdns.hpplay.cn),(DOMAIN,vipauth.hpplay.cn),(DOMAIN,vipgslb.hpplay.cn)))))),REJECT,pre-matching
+AND,((RULE-SET,https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list,extended-matching),(NOT,((OR,((DOMAIN,api-access.pangolin-sdk-toutiao.com),(DOMAIN,api-access.pangolin-sdk-toutiao-b.com),(DOMAIN,api-access.pangolin-sdk-toutiao1.com),(DOMAIN,api-access.pangolin-sdk-toutiao2.com),(DOMAIN,api-access.pangolin-sdk-toutiao3.com),(DOMAIN,api-access.pangolin-sdk-toutiao4.com),(DOMAIN,api-access.pangolin-sdk-toutiao5.com),(DOMAIN,gromore.pangolin-sdk-toutiao.com),(DOMAIN,log-api.pangolin-sdk-toutiao.com),(DOMAIN,log-api.pangolin-sdk-toutiao-b.com),(DOMAIN,sdk.e.qq.com),(DOMAIN,sdkreport.e.qq.com),(DOMAIN,tangram.e.qq.com),(DOMAIN,masdkv6.3g.qq.com),(DOMAIN-SUFFIX,gdt.qq.com),(DOMAIN,baichuan-sdk.alicdn.com),(DOMAIN,baichuan-sdk.taobao.com),(DOMAIN,mapi.m.jd.com),(DOMAIN,hybrid.miniapp.taobao.com),(DOMAIN,conf.hpplay.cn),(DOMAIN,gslb.hpplay.cn),(DOMAIN,imdns.hpplay.cn),(DOMAIN,vipauth.hpplay.cn),(DOMAIN,vipgslb.hpplay.cn),(DOMAIN,ad.12306.cn)))))),REJECT,pre-matching
 
 # ---------------------------------------------------------
 # 微信小程序强力模式
@@ -626,7 +626,10 @@ DOMAIN,t-dsp.pinduoduo.com,REJECT,extended-matching,pre-matching
 # 29. 常见 APP 独立广告域名
 # =========================================================
 
-DOMAIN,ad.12306.cn,REJECT,extended-matching,pre-matching
+# 12306 特殊处理：
+# 不提前 REJECT。直接断网虽然能让广告画面消失，但 12306 会在开屏页等待失败超时。
+# 改为 DIRECT，让下面的 http-request 脚本把广告请求改造成“无广告”的正常请求。
+DOMAIN,ad.12306.cn,DIRECT,extended-matching
 
 DOMAIN,ad.51wnl.com,REJECT,extended-matching,pre-matching
 DOMAIN,ad.51wnl-cq.com,REJECT,extended-matching,pre-matching
@@ -773,7 +776,7 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 # E. 常见 APP 第一方开屏/广告接口
 # =========================================================
-^https?:\/\/ad\.12306\.cn\/ad\/ser\/getAdList$ _ reject
+# 12306 不再使用 URL Rewrite 硬拒绝；交给请求脚本处理，避免广告消失后仍停留在开屏等待。
 
 ^https?:\/\/app-gw\.csdn\.net\/silkroad-api\/api\/v\d+\/assemble\/list\/pub\/channel\/app_open_screen_ad _ reject
 ^https?:\/\/gw\.csdn\.net\/cms-app\/v\d+\/home_page\/open_advertisement _ reject
@@ -877,6 +880,24 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 # =========================================================
 
 [Script]
+
+# =========================================================
+# 铁路12306：开屏广告无广告正常返回
+# =========================================================
+#
+# 当前问题不是“广告没拦住”，而是拦得太早：
+# ad.12306.cn 在 DNS/TCP 阶段直接失败后，客户端仍会等待失败/超时。
+#
+# 改成：
+# ad.12306.cn -> DIRECT
+# getAdList -> 请求脚本修改
+#
+# 让服务器正常完成一次“没有可展示广告”的请求，
+# 目标是同时解决“广告消失”和“开屏空等”。
+# =========================================================
+
+铁路12306-开屏广告净化 = type=http-request,pattern=^https:\/\/ad\.12306\.cn\/ad\/ser\/getAdList$,requires-body=true,max-size=-1,script-path=https://kelee.one/Resource/Script/12306/12306_remove_splashscreen_ads.js,timeout=30
+
 
 # =========================================================
 # 菜鸟：第一方响应深度净化
