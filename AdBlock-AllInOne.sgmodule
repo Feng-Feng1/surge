@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.4 Test
-#!desc=基于 V4.1.8.3 测试分支：新增腾讯视频 svv/getvinfo 请求侧广告参数归零；Raw 脚本路径保持不变。其余稳定规则不动。
+#!name=AdBlock Hybrid V4.1.8.5 Test
+#!desc=基于 V4.1.8.4 测试分支：腾讯视频 getvinfo 请求归零之外，新增 getvinfo JSON 响应 vi.ad 精确删除；其余稳定规则不动。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.4-tencentvideo-getvinfo-test
+#!version=4.1.8.5-tencentvideo-getvinfo-response-test
 #!system=ios
 
 
@@ -1109,6 +1109,7 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 # =========================================================
 
 腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js,timeout=30
+腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js,timeout=30
 腾讯视频-MVL广告组件净化 = type=http-response,pattern=^https:\/\/i\.video\.qq\.com\/,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js,timeout=30
 
 
