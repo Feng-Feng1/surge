@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.2
-#!desc=Surge 强力混合去广告：基于稳定 V4.1.8 分支；保留小安广告配置 No-Ad，并按新 HAR 进一步清空骑行卡更新弹窗与骑行卡促销配置。
+#!name=AdBlock Hybrid V4.1.8.3 Test
+#!desc=Surge 强力混合去广告：基于 V4.1.8.2；新增腾讯视频 MVL Protobuf 二进制广告组件实验净化。该分支用于验证详情页顶部长广告与信息流广告，确认稳定后再并入正式基线。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.2-xiaoan-popup-fix
+#!version=4.1.8.3-tencentvideo-mvl-test
 #!system=ios
 
 
@@ -1088,9 +1088,33 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 
 # =========================================================
+# 腾讯视频：MVL 详情页 Protobuf 广告组件实验净化
+# =========================================================
+#
+# 2026-09-02 HAR 实抓：
+# i.video.qq.com 的 getMVLPage 二进制响应中包含：
+# - ad_block_4
+# - feeds_ad_style
+# - AdFeedInfo
+# - AdFocusPoster
+# - AdResponseInfo
+# - AdOpenWxProgramAction
+#
+# 这些不是单独的 GDT 素材请求，而是腾讯视频第一方 MVL 页面响应
+# 直接下发的广告组件。脚本使用 binary-body-mode=true，在原始字节中
+# 做“等长度标识符替换”，不增删 Protobuf 字节，尽量避免破坏页面结构。
+#
+# 注意：这是实验分支。
+# 若详情页空白、闪退、正常视频/选集异常，立即退回 V4.1.8.2。
+# =========================================================
+
+腾讯视频-MVL广告组件净化 = type=http-response,pattern=^https:\/\/i\.video\.qq\.com\/,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js,timeout=30
+
+
+# =========================================================
 # MITM
 # =========================================================
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com
