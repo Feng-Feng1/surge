@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.2 Aggressive
-#!desc=Surge 强力混合去广告：基于 V4.1，按菜鸟 HAR 实抓修复广告素材漏网、AMDC IP 回退与 HTTPS Rewrite 未进入 MITM 的问题；保留酷安/微信小程序/闲鱼兼容策略。
+#!name=AdBlock Hybrid V4.3 Aggressive
+#!desc=Surge 强力混合去广告：基于 V4.2，新 HAR 实抓修复菜鸟 DouyinPic 广告素材通过多个 User-Agent 旁路的问题；保留酷安/微信小程序/闲鱼兼容策略。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.2-cainiao-har
+#!version=4.3-cainiao-ua-fix
 #!system=ios
 
 
@@ -53,7 +53,27 @@ DOMAIN,admonitor-feedback.cn-hangzhou.log.aliyuncs.com,REJECT,extended-matching,
 
 # 菜鸟内嵌字节广告图片。
 # 只在 User-Agent 明确属于菜鸟时拦 douyinpic，避免影响抖音本身正常图片。
+# HAR 2026-09-02 10:48 实测同一条广告素材会被菜鸟用 3 种 UA 重复拉取：
+# 1) TBIOS/Native com.cainiao.cnwireless ...   （V4.2 已命中）
+# 2) Cainiao4iPhone/8.11.825 ...               （V4.2 漏网）
+# 3) Cainiao4iPhone/57649751 CFNetwork/...     （V4.2 漏网）
+#
+# 两条规则合起来覆盖菜鸟当前实际使用的三种 UA。
+# 仍然只在“菜鸟请求 + douyinpic.com”时替换图片，不影响抖音及其他 APP。
 AND,((USER-AGENT,*com.cainiao.cnwireless*),(DOMAIN-SUFFIX,douyinpic.com)),REJECT-TINYGIF
+AND,((USER-AGENT,*Cainiao4iPhone*),(DOMAIN-SUFFIX,douyinpic.com)),REJECT-TINYGIF
+
+# ---------------------------------------------------------
+# V4.3 HAR 验证结果（2026-09-02 10:48）
+# ---------------------------------------------------------
+# 已确认正常命中：
+# - api-access.pangolin-sdk-toutiao*/api/ad/union/sdk/get_ads/ -> URL Rewrite REJECT
+# - mi.gdt.qq.com / v2mi.gdt.qq.com -> DOMAIN-SUFFIX gdt.qq.com REJECT
+# - lf-cdn-tos.bytescm.com/obj/static/ad/ -> URL Rewrite REJECT
+#
+# 本次真正漏网的是 DouyinPic 广告素材的另外两种 Cainiao4iPhone UA。
+# 不再扩大封锁范围，避免为了一个菜鸟广告破坏其他 APP。
+# ---------------------------------------------------------
 
 # =========================================================
 # 0.5 高优先级广告底座（关键修复）
