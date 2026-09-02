@@ -1,28 +1,42 @@
 /*
- * Tencent Video Ad Filter Test V4
- * Same GitHub path: TenVideo-MVL-AdFilter-Test.js
+ * Tencent Video Ad Filter Test V5
+ * Keep the SAME GitHub path:
+ *   TenVideo-MVL-AdFilter-Test.js
  *
- * HAR verified: 2026-09-02 23:36
+ * HAR verified: 2026-09-02 23:44
  *
- * Key finding:
- * V3 substitutions ARE taking effect (xx_block_*, XdFeedInfo,
- * XdFocusPoster, feeds_xx_style are visible in the captured response),
- * but Tencent Video still renders the ad because the outer protobuf Any
- * remains a valid generic pb.Block.
+ * V5 key change:
+ * Previous V1-V4 scripts DID modify the protobuf payload, but Tencent Video
+ * still rendered the ads. The new HAR proves the actual ad is a complete
+ * repeated protobuf item, not just a string/type marker.
  *
- * V4 therefore neutralizes the OUTER ad Block type itself:
+ * Example from the captured getMVLPage response:
+ *   repeated field #1 item 0 : normal focus card, ~4.6 KB
+ *   repeated field #1 item 1 : AD ITEM, ~26.7 KB
+ *   repeated field #1 item 2+: normal focus cards
  *
- *   ...protocol.pb.Block
- *                -> ...protocol.pb.Xlock
+ * The ad item contains:
+ *   ad_block_*
+ *   _ad_insert_mix_block
+ *   AdFeedInfo / AdFocusPoster
+ *   advertiser=...
+ *   gdt_stats.fcg
  *
- * ONLY when that Block sits immediately after the confirmed ad container
- * marker (_ad_insert_mix_block / _xx_insert_mix_block).
+ * Another ~5.3 KB repeated item contains the detail/feed ad:
+ *   feeds_ad_style
+ *   AdResponseInfo
+ *   advertiser=...
+ *   business=ad
  *
- * Safety:
- * - binary-body-mode=true
- * - same-length substitutions only
- * - no protobuf length changes
- * - normal i.video.qq.com RPCs pass through unchanged
+ * Strategy:
+ * - Find the smallest enclosing protobuf field #1 (wire type 2) larger than
+ *   1 KB that contains a confirmed ad marker.
+ * - Change ONLY that outer field tag from 0x0A (field #1) to 0x7A
+ *   (field #15, same one-byte tag length).
+ * - The original length and payload bytes stay intact, so protobuf framing
+ *   is not shifted. A normal generated parser should skip the unknown field.
+ *
+ * This is much stronger than merely renaming AdFeedInfo/XdFeedInfo.
  */
 
 (function () {
@@ -39,37 +53,128 @@
     return out;
   }
 
-  function findBytes(buf, needle, start, end) {
-    const n = asciiBytes(needle);
-    const s = Math.max(0, start || 0);
-    const e = Math.min(buf.length, end == null ? buf.length : end);
+  function readVarint(buf, pos) {
+    let value = 0;
+    let shift = 0;
 
-    outer:
-    for (let i = s; i <= e - n.length; i++) {
-      for (let j = 0; j < n.length; j++) {
-        if (buf[i + j] !== n[j]) continue outer;
+    for (let i = 0; i < 10 && pos < buf.length; i++, pos++) {
+      const b = buf[pos];
+      value += (b & 0x7f) * Math.pow(2, shift);
+
+      if ((b & 0x80) === 0) {
+        return { value: value, next: pos + 1 };
       }
-      return i;
+
+      shift += 7;
     }
-    return -1;
+
+    return null;
   }
 
-  function replaceAt(buf, pos, fromText, toText) {
-    if (fromText.length !== toText.length) {
-      throw new Error("length mismatch: " + fromText + " -> " + toText);
-    }
-    const from = asciiBytes(fromText);
-    const to = asciiBytes(toText);
+  function findAll(buf, text) {
+    const needle = asciiBytes(text);
+    const out = [];
 
-    if (pos < 0 || pos + from.length > buf.length) return 0;
+    if (needle.length === 0 || needle.length > buf.length) return out;
 
-    for (let j = 0; j < from.length; j++) {
-      if (buf[pos + j] !== from[j]) return 0;
+    outer:
+    for (let i = 0; i <= buf.length - needle.length; i++) {
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) continue outer;
+      }
+      out.push(i);
+      i += needle.length - 1;
     }
-    for (let j = 0; j < to.length; j++) {
-      buf[pos + j] = to[j];
+
+    return out;
+  }
+
+  function containsText(buf, start, end, text) {
+    const needle = asciiBytes(text);
+    if (needle.length === 0 || start < 0 || end > buf.length) return false;
+
+    outer:
+    for (let i = start; i <= end - needle.length; i++) {
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) continue outer;
+      }
+      return true;
     }
-    return 1;
+
+    return false;
+  }
+
+  /*
+   * Find the smallest enclosing protobuf field:
+   *
+   *   0x0A <varint length> <payload>
+   *
+   * whose payload contains markerPos and is between 1 KB and 64 KB.
+   *
+   * In the supplied HAR this selects:
+   *   - ~26730-byte top/focus ad item
+   *   - ~5363-byte feed/detail ad item
+   *
+   * It does NOT select tiny inner string/message fields or huge page parents.
+   */
+  function findAdItemWrapper(buf, markerPos) {
+    const scanStart = Math.max(0, markerPos - 65536);
+    let best = null;
+
+    for (let p = scanStart; p <= markerPos; p++) {
+      // field #1, wire type 2
+      if (buf[p] !== 0x0a) continue;
+
+      const lenInfo = readVarint(buf, p + 1);
+      if (!lenInfo) continue;
+
+      const payloadStart = lenInfo.next;
+      const len = lenInfo.value;
+      const payloadEnd = payloadStart + len;
+
+      if (len < 1024 || len > 65536) continue;
+      if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+      if (payloadEnd > buf.length) continue;
+
+      if (!best || len < best.len) {
+        best = {
+          tagPos: p,
+          payloadStart: payloadStart,
+          payloadEnd: payloadEnd,
+          len: len
+        };
+      }
+    }
+
+    return best;
+  }
+
+  function isConfirmedAdItem(buf, wrapper) {
+    const s = wrapper.payloadStart;
+    const e = wrapper.payloadEnd;
+
+    // Require multiple independent ad signals to avoid suppressing a normal
+    // protobuf item just because it contains one generic "ad" substring.
+    const evidence = [
+      "gdt_stats.fcg",
+      "advertiser=",
+      "ad_request_id",
+      "ad_report_params",
+      "AdFeedInfo",
+      "AdFocusPoster",
+      "AdResponseInfo",
+      "ad_block_",
+      "_ad_insert_mix_block",
+      "feeds_ad_style",
+      "business"
+    ];
+
+    let score = 0;
+    for (const x of evidence) {
+      if (containsText(buf, s, e, x)) score++;
+    }
+
+    return score >= 2;
   }
 
   function replaceAllSameLength(buf, fromText, toText) {
@@ -86,144 +191,104 @@
       for (let j = 0; j < from.length; j++) {
         if (buf[i + j] !== from[j]) continue outer;
       }
+
       for (let j = 0; j < to.length; j++) {
         buf[i + j] = to[j];
       }
+
       count++;
       i += from.length - 1;
     }
+
     return count;
   }
 
   try {
-    let changed = 0;
-
-    // -----------------------------------------------------
-    // 1. Strong fix: neutralize the OUTER protobuf Block
-    //    only when tied to the confirmed ad container.
-    // -----------------------------------------------------
-    const adContainerMarkers = [
+    const strongMarkers = [
       "_ad_insert_mix_block",
-      "_xx_insert_mix_block"
+      "_xx_insert_mix_block",
+      "feeds_ad_style",
+      "feeds_xx_style",
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdFeedInfo",
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdFeedInfo",
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdResponseInfo",
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdResponseInfo"
     ];
 
-    const blockType =
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.Block";
-    const deadBlockType =
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.Xlock";
+    const wrapperPositions = {};
 
-    for (const marker of adContainerMarkers) {
-      let searchFrom = 0;
+    // First pass: identify whole ad items while the original markers exist.
+    for (const marker of strongMarkers) {
+      const positions = findAll(body, marker);
 
-      while (searchFrom < body.length) {
-        const markerPos = findBytes(body, marker, searchFrom, body.length);
-        if (markerPos < 0) break;
+      for (const markerPos of positions) {
+        const wrapper = findAdItemWrapper(body, markerPos);
 
-        // In the supplied HAR the Any type follows the ad marker by only
-        // a few dozen bytes.  Keep the search window tight so a normal
-        // Block elsewhere in the response is not touched.
-        const blockPos = findBytes(
-          body,
-          blockType,
-          markerPos,
-          Math.min(body.length, markerPos + 320)
-        );
-
-        if (blockPos >= 0) {
-          changed += replaceAt(body, blockPos, blockType, deadBlockType);
+        if (
+          wrapper &&
+          isConfirmedAdItem(body, wrapper)
+        ) {
+          wrapperPositions[String(wrapper.tagPos)] = wrapper;
         }
-
-        searchFrom = markerPos + marker.length;
       }
     }
 
-    // -----------------------------------------------------
-    // 2. Existing MVL ad identifiers
-    // -----------------------------------------------------
+    let suppressed = 0;
+
+    // Strong fix:
+    // 0x0A = protobuf field #1, wire type 2
+    // 0x7A = protobuf field #15, wire type 2
+    //
+    // Same one-byte tag size, therefore no offsets/lengths change.
+    for (const k in wrapperPositions) {
+      const wrapper = wrapperPositions[k];
+
+      if (body[wrapper.tagPos] === 0x0a) {
+        body[wrapper.tagPos] = 0x7a;
+        suppressed++;
+        console.log(
+          "TencentVideo V5 suppressed protobuf ad item: pos=" +
+          wrapper.tagPos +
+          ", len=" +
+          wrapper.len
+        );
+      }
+    }
+
+    // Secondary fallback markers. These remain same-length and are harmless
+    // if the whole item was already moved to an unknown field.
+    let renamed = 0;
+
     for (let i = 0; i <= 9; i++) {
-      changed += replaceAllSameLength(
+      renamed += replaceAllSameLength(
         body,
         "ad_block_" + i,
         "xx_block_" + i
       );
     }
 
-    changed += replaceAllSameLength(body, "ad_focus", "xx_focus");
-    changed += replaceAllSameLength(
+    renamed += replaceAllSameLength(body, "ad_focus", "xx_focus");
+    renamed += replaceAllSameLength(
       body,
       "_ad_insert_mix_block",
       "_xx_insert_mix_block"
     );
-    changed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
-    changed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
+    renamed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
+    renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
-    // -----------------------------------------------------
-    // 3. Detail/trailer ad identifiers from previous HARs
-    // -----------------------------------------------------
-    changed += replaceAllSameLength(body, "mod_trailer_ad", "mod_trailer_xx");
-    changed += replaceAllSameLength(body, "outerPaster", "outerXaster");
-    changed += replaceAllSameLength(body, "mod_banner_ad", "mod_banner_xx");
-    changed += replaceAllSameLength(
-      body,
-      "ad_detail_feeds_spa",
-      "xx_detail_feeds_spa"
-    );
-    changed += replaceAllSameLength(
-      body,
-      "ad_mod=ep_list_ad",
-      "xx_mod=ep_list_xx"
-    );
-
-    // -----------------------------------------------------
-    // 4. Protobuf Any ad payload/action type names
-    // -----------------------------------------------------
-    const typePairs = [
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdFeedInfo",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdFeedInfo"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdFocusPoster",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdFocusPoster"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdResponseInfo",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdResponseInfo"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdOpenWxProgramAction",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdOpenWxProgramAction"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdOpenAppAction",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdOpenAppAction"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdFeedImagePoster",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdFeedImagePoster"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdJumpAction",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdJumpAction"
-      ],
-      [
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdDownloadAction",
-        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdDownloadAction"
-      ]
-    ];
-
-    for (const pair of typePairs) {
-      changed += replaceAllSameLength(body, pair[0], pair[1]);
-    }
-
-    if (changed > 0) {
-      console.log("TencentVideo AdFilter V4 neutralized markers: " + changed);
+    if (suppressed > 0 || renamed > 0) {
+      console.log(
+        "TencentVideo AdFilter V5: suppressed=" +
+        suppressed +
+        ", renamed=" +
+        renamed
+      );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo AdFilter V4 error: " + e);
+    console.log("TencentVideo AdFilter V5 error: " + e);
     $done({});
   }
 })();
