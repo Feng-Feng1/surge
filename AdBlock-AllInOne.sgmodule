@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1 Aggressive
+#!name=AdBlock Hybrid V4.1.1
 #!desc=Surge 强力混合去广告：基于 V4 稳定版，新增菜鸟首页信息流、大家都在逛、底部推广、飞行广告与广告关键词深度净化，同时保留酷安/微信小程序兼容策略。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1-cainiao
+#!version=4.1.1-coolapk-splash-fix
 #!system=ios
 
 
@@ -740,6 +740,11 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 # 主 API 保持 DIRECT，只杀真正取广告/竞价路径。
 ^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/sdk\/get_ads\/ _ reject
+
+# 酷安 2026-09-02 HAR 实抓：
+# get_ads 已被 V4.1 正常拒绝，但广告仍从 api-access 主机的 mediation/exchange 返回。
+# 只补这个明确广告交换接口；不封整个穿山甲主机，避免恢复开屏重试/卡顿。
+^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/mediation\/exchange\/ _ reject
 ^https?:\/\/gromore\.pangolin-sdk-toutiao\.com\/api\/ad\/union\/mediation\/exchange\/ _ reject
 
 # =========================================================
