@@ -1,37 +1,43 @@
 /*
- * Tencent Video Ad Filter Test V6
- * Keep the SAME GitHub path:
+ * Tencent Video Ad Filter Test V7
+ * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * HAR verified: 2026-09-02 23:58
+ * HAR verified: 2026-09-03 00:21
  *
- * V6 adds a REQUEST-side fix for Tencent Video's playback/getvinfo path.
+ * Key finding:
+ * V6 DID hit at least one getvinfo request:
+ *   sppreviewtype=0
+ *   spsrt=0
  *
- * Latest HAR shows:
- *   POST https://svv.video.qq.com/getvinfo
- *     sppreviewtype=1
- *     spsrt=3
- *     spadseg=3
- *     adversion=220262
- *     adpass=...
+ * But Tencent's server STILL returned a complete ad object:
+ *   vl.vi[0].ad.adsid
+ *   vl.vi[0].ad.adpinfo
+ *   vl.vi[0].ad.adsize
  *
- * Immediately afterwards the app downloads separate 1000127/f10215 MP4
- * creatives from ugchsy.gtimg.com while the normal episode stream returned
- * by getvinfo uses the 1000102 family.
+ * The adpinfo explicitly contains:
+ *   ad_vid
+ *   ad_dura
+ *   slot_index
+ *   ad_time_begin / ad_time_end
  *
- * Historical Tencent Video ad-block rules also target getvinfo by forcing:
- *   sppreviewtype -> 0
- *   spsrt         -> 0
+ * A parallel getvinfo response in the SAME HAR naturally had NO "ad"
+ * property at all and otherwise kept the normal video payload.
  *
- * V6 keeps the existing MVL binary response filter, and adds that request
- * normalization for current svv.video.qq.com.
+ * Therefore V7 no longer relies on old request parameters alone.
+ * It makes ad-bearing getvinfo responses look like the naturally
+ * occurring no-ad response by deleting ONLY vi.ad.
+ *
+ * No CDN blocking.
+ * No normal video URL rewriting.
+ * No VIP spoofing.
  */
 
 (function () {
   const url = ($request && $request.url) || "";
 
   // =====================================================
-  // A. Request mode: Tencent Video playback/getvinfo
+  // A. Request mode: keep V6 request-side fallback
   // =====================================================
   if (typeof $response === "undefined") {
     try {
@@ -45,12 +51,11 @@
 
         const before = body;
 
-        // Established Tencent Video request-side ad suppression parameters.
         body = body.replace(/(^|&)sppreviewtype=[^&]*/i, "$1sppreviewtype=0");
         body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
 
         if (body !== before) {
-          console.log("TencentVideo V6 getvinfo request normalized");
+          console.log("TencentVideo V7 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -60,14 +65,62 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V6 request error: " + e);
+      console.log("TencentVideo V7 request error: " + e);
       $done({});
     }
     return;
   }
 
   // =====================================================
-  // B. Response mode: i.video.qq.com MVL protobuf filter
+  // B. Response mode: getvinfo JSON ad-object removal
+  // =====================================================
+  if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
+    try {
+      let text = $response.body;
+
+      if (typeof text !== "string" || text.length === 0) {
+        $done({});
+        return;
+      }
+
+      const obj = JSON.parse(text);
+      const list =
+        obj &&
+        obj.vl &&
+        Array.isArray(obj.vl.vi)
+          ? obj.vl.vi
+          : [];
+
+      let removed = 0;
+
+      for (const vi of list) {
+        if (
+          vi &&
+          typeof vi === "object" &&
+          Object.prototype.hasOwnProperty.call(vi, "ad")
+        ) {
+          delete vi.ad;
+          removed++;
+        }
+      }
+
+      if (removed > 0) {
+        console.log("TencentVideo V7 removed getvinfo ad objects: " + removed);
+        $done({
+          body: JSON.stringify(obj)
+        });
+      } else {
+        $done({});
+      }
+    } catch (e) {
+      console.log("TencentVideo V7 getvinfo response error: " + e);
+      $done({});
+    }
+    return;
+  }
+
+  // =====================================================
+  // C. Response mode: keep MVL protobuf fallback
   // =====================================================
   const body = $response.body;
 
@@ -243,7 +296,6 @@
 
     let suppressed = 0;
 
-    // Keep V5 whole-item experiment.
     for (const k in wrapperPositions) {
       const wrapper = wrapperPositions[k];
 
@@ -274,7 +326,7 @@
 
     if (suppressed > 0 || renamed > 0) {
       console.log(
-        "TencentVideo AdFilter V6 MVL: suppressed=" +
+        "TencentVideo AdFilter V7 MVL: suppressed=" +
         suppressed +
         ", renamed=" +
         renamed
@@ -284,7 +336,7 @@
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V6 response error: " + e);
+    console.log("TencentVideo V7 MVL response error: " + e);
     $done({});
   }
 })();
