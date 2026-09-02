@@ -1,56 +1,48 @@
 /*
- * Tencent Video Ad Filter Test V8
+ * Tencent Video Ad Filter Test V9
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * HAR verified: 2026-09-03 00:31
+ * HAR verified: 2026-09-03 00:44
  *
- * V8 key finding:
+ * V9 target:
+ *   The actual ad video is no longer rendered, but the empty/black ad cards
+ *   still remain on the Tencent Video detail page.
  *
- * V7 already worked on getvinfo:
- *   - requests are normalized to sppreviewtype=0 / spsrt=0
- *   - captured getvinfo responses no longer contain vl.vi[*].ad
+ * New HAR confirms those remaining cards are still present inside
+ * getMVLPage as complete protobuf repeated items.
  *
- * But the app STILL fetched a real ad MP4 from:
- *   ugchsy.gtimg.com/gzc_1000127_...f10215.mp4
+ * Exact card items observed in this capture:
+ *   - 26862 bytes : top/focus ad card
+ *   - 26615 bytes : top/focus ad card
+ *   - 27827 bytes : top/focus ad card
+ *   -  7358 bytes : detail/feed ad card
  *
- * The same HAR exposes the real remaining source:
- *
- *   POST https://i.video.qq.com/
- *   RPC:
- *     com.tencent.qqlive.protocol.pb.adService/getAdDetail
- *
- * Its binary response contains an entire ad payload:
- *   mod_trailer_ad
- *   mod_trailer_item
- *   AdFeedImagePoster
+ * They contain strong combinations such as:
+ *   _xx_insert_mix_block
+ *   feeds_xx_style
  *   gdt_stats.fcg
- *   advertiser / ad_vid / ad_request_id
+ *   advertiser
+ *   ad_request_id
+ *   AdFeedInfo / AdFocusPoster / AdResponseInfo
  *
- * In every captured getAdDetail response, that ad payload is wrapped by one
- * large top-level protobuf length-delimited field:
+ * V9 suppresses the WHOLE confirmed card item by changing ONLY its
+ * outer protobuf tag:
  *
- *   field #1 (tag 0x0A), about 11 KB ~ 20 KB
- *
- * V8 changes ONLY that outer ad payload field tag:
- *
- *   0x0A (field #1, wire type 2)
+ *   0x0A  (field #1, wire type 2)
  *     ->
- *   0x7A (field #15, wire type 2)
+ *   0x7A  (field #15, wire type 2)
  *
- * Same one-byte tag length. No protobuf byte count changes.
- * The response header remains intact, but a normal generated parser should
- * ignore the unknown field and therefore receive "successful response with
- * no recognized ad payload".
- *
- * This is more precise than blocking shared Tencent CDN domains.
+ * Same one-byte tag length.
+ * No payload length changes.
+ * No shared Tencent CDN blocking.
  */
 
 (function () {
   const url = ($request && $request.url) || "";
 
   // =====================================================
-  // A. Request mode: keep getvinfo parameter normalization
+  // A. Request mode: keep getvinfo normalization
   // =====================================================
   if (typeof $response === "undefined") {
     try {
@@ -68,7 +60,7 @@
         body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
 
         if (body !== before) {
-          console.log("TencentVideo V8 getvinfo request normalized");
+          console.log("TencentVideo V9 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -78,7 +70,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V8 request error: " + e);
+      console.log("TencentVideo V9 request error: " + e);
       $done({});
     }
     return;
@@ -118,20 +110,20 @@
       }
 
       if (removed > 0) {
-        console.log("TencentVideo V8 removed getvinfo ad objects: " + removed);
+        console.log("TencentVideo V9 removed getvinfo ad objects: " + removed);
         $done({ body: JSON.stringify(obj) });
       } else {
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V8 getvinfo response error: " + e);
+      console.log("TencentVideo V9 getvinfo response error: " + e);
       $done({});
     }
     return;
   }
 
   // =====================================================
-  // C. Binary helpers for i.video.qq.com
+  // C. Binary helpers
   // =====================================================
   const body = $response.body;
 
@@ -144,6 +136,24 @@
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
     return out;
+  }
+
+  function readVarint(buf, pos) {
+    let value = 0;
+    let shift = 0;
+
+    for (let i = 0; i < 10 && pos < buf.length; i++, pos++) {
+      const b = buf[pos];
+      value += (b & 0x7f) * Math.pow(2, shift);
+
+      if ((b & 0x80) === 0) {
+        return { value: value, next: pos + 1 };
+      }
+
+      shift += 7;
+    }
+
+    return null;
   }
 
   function containsText(buf, start, end, text) {
@@ -167,24 +177,6 @@
     }
 
     return false;
-  }
-
-  function readVarint(buf, pos) {
-    let value = 0;
-    let shift = 0;
-
-    for (let i = 0; i < 10 && pos < buf.length; i++, pos++) {
-      const b = buf[pos];
-      value += (b & 0x7f) * Math.pow(2, shift);
-
-      if ((b & 0x80) === 0) {
-        return { value: value, next: pos + 1 };
-      }
-
-      shift += 7;
-    }
-
-    return null;
   }
 
   function replaceAllSameLength(buf, fromText, toText) {
@@ -214,26 +206,121 @@
   }
 
   // =====================================================
-  // D. Strong V8 fix:
-  //    suppress the whole getAdDetail protobuf payload
+  // D. V9: suppress complete MVL ad-card items
   // =====================================================
   try {
-    /*
-     * Detection is based on RESPONSE evidence, so it does not depend on
-     * whether Surge exposes the binary request body inside an http-response
-     * script.
-     *
-     * Captured getAdDetail responses consistently contain all of:
-     *   mod_trailer_ad
-     *   gdt_stats.fcg
-     *   ad_vid
-     *
-     * We scan one-byte protobuf length-delimited fields and select the
-     * LARGEST field >= 4 KB containing at least 3 independent ad signals.
-     * In the supplied HAR this selects exactly the outer ad payload:
-     *
-     *   11706 bytes / 11701 bytes / 20232 bytes
-     */
+    if (url === "https://i.video.qq.com/") {
+      const candidates = [];
+
+      /*
+       * Scan only field #1 / wire type 2 (0x0A), because the supplied
+       * getMVLPage capture shows every remaining ad card as that repeated
+       * item type.
+       *
+       * Bound to 4 KB ~ 40 KB:
+       * - avoids tiny inner protobuf strings/messages
+       * - avoids giant page-level parent objects
+       */
+      for (let p = 0; p < body.length - 2; p++) {
+        if (body[p] !== 0x0a) continue;
+
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
+
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (len < 4096 || len > 40000) continue;
+        if (payloadEnd > body.length) continue;
+
+        const topCard =
+          containsText(body, payloadStart, payloadEnd, "_ad_insert_mix_block") ||
+          containsText(body, payloadStart, payloadEnd, "_xx_insert_mix_block");
+
+        const feedCard =
+          containsText(body, payloadStart, payloadEnd, "feeds_ad_style") ||
+          containsText(body, payloadStart, payloadEnd, "feeds_xx_style");
+
+        let score = 0;
+
+        const evidence = [
+          "gdt_stats.fcg",
+          "advertiser",
+          "ad_request_id",
+          "AdFeedInfo",
+          "XdFeedInfo",
+          "AdFocusPoster",
+          "XdFocusPoster",
+          "AdResponseInfo",
+          "XdResponseInfo"
+        ];
+
+        for (const marker of evidence) {
+          if (containsText(body, payloadStart, payloadEnd, marker)) {
+            score++;
+          }
+        }
+
+        /*
+         * Require:
+         * - a specific Tencent Video ad-card layout marker
+         * - plus at least 2 independent advertising signals
+         *
+         * Current HAR matches exactly four items:
+         * 26862 / 26615 / 27827 / 7358 bytes.
+         */
+        if ((topCard || feedCard) && score >= 2) {
+          candidates.push({
+            tagPos: p,
+            len: len,
+            score: score,
+            type: topCard ? "top" : "feed"
+          });
+        }
+      }
+
+      /*
+       * A genuine card may expose only one qualifying outer field in the
+       * observed schema. Deduplicate by tag position before mutation.
+       */
+      const seen = {};
+      let removedCards = 0;
+
+      for (const c of candidates) {
+        if (seen[c.tagPos]) continue;
+        seen[c.tagPos] = true;
+
+        if (body[c.tagPos] === 0x0a) {
+          // field #1 -> unknown field #15, same one-byte tag length
+          body[c.tagPos] = 0x7a;
+          removedCards++;
+
+          console.log(
+            "TencentVideo V9 removed MVL ad card: type=" +
+            c.type +
+            ", len=" +
+            c.len +
+            ", score=" +
+            c.score
+          );
+        }
+      }
+
+      if (removedCards > 0) {
+        console.log("TencentVideo V9 removed MVL cards: " + removedCards);
+        $done({ body });
+        return;
+      }
+    }
+  } catch (e) {
+    console.log("TencentVideo V9 MVL-card error: " + e);
+  }
+
+  // =====================================================
+  // E. Keep V8 getAdDetail whole-payload suppression
+  // =====================================================
+  try {
     if (
       url === "https://i.video.qq.com/" &&
       containsText(body, 0, body.length, "mod_trailer_ad") &&
@@ -245,7 +332,6 @@
       for (let p = 0; p < body.length - 2; p++) {
         const tag = body[p];
 
-        // Only one-byte protobuf tags with wire type 2.
         if (tag === 0 || tag >= 0x80 || (tag & 0x07) !== 2) continue;
 
         const lenInfo = readVarint(body, p + 1);
@@ -265,10 +351,7 @@
         if (containsText(body, payloadStart, payloadEnd, "AdFeedImagePoster")) score++;
         if (containsText(body, payloadStart, payloadEnd, "advertiser")) score++;
 
-        if (
-          score >= 3 &&
-          (!best || len > best.len)
-        ) {
+        if (score >= 3 && (!best || len > best.len)) {
           best = {
             tagPos: p,
             tag: tag,
@@ -278,35 +361,26 @@
         }
       }
 
-      if (best) {
-        /*
-         * Captured getAdDetail outer payload is field #1 / tag 0x0A.
-         * Only replace that confirmed tag.  If Tencent changes the schema,
-         * fail open instead of corrupting an unrelated field.
-         */
-        if (best.tag === 0x0a) {
-          body[best.tagPos] = 0x7a;
+      if (best && best.tag === 0x0a) {
+        body[best.tagPos] = 0x7a;
 
-          console.log(
-            "TencentVideo V8 suppressed getAdDetail payload: pos=" +
-            best.tagPos +
-            ", len=" +
-            best.len +
-            ", score=" +
-            best.score
-          );
+        console.log(
+          "TencentVideo V9 suppressed getAdDetail payload: len=" +
+          best.len +
+          ", score=" +
+          best.score
+        );
 
-          $done({ body });
-          return;
-        }
+        $done({ body });
+        return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V8 getAdDetail suppression error: " + e);
+    console.log("TencentVideo V9 getAdDetail error: " + e);
   }
 
   // =====================================================
-  // E. Existing MVL fallback
+  // F. Marker fallback
   // =====================================================
   try {
     let renamed = 0;
@@ -329,13 +403,13 @@
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     if (renamed > 0) {
-      console.log("TencentVideo V8 MVL renamed markers: " + renamed);
+      console.log("TencentVideo V9 renamed fallback markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V8 MVL error: " + e);
+    console.log("TencentVideo V9 fallback error: " + e);
     $done({});
   }
 })();
