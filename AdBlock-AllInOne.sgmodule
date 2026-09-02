@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.1
-#!desc=Surge 强力混合去广告：基于 V4 稳定版，新增菜鸟首页信息流、大家都在逛、底部推广、飞行广告与广告关键词深度净化，同时保留酷安/微信小程序兼容策略。
+#!name=AdBlock Hybrid V4.1.2
+#!desc=Surge 强力混合去广告：基于 V4.1.1 稳定版，保留酷安开屏修复，并按 Bilibili 9.10.0 HAR 实抓新增哔哩哔哩开屏广告空响应处理。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.1-coolapk-splash-fix
+#!version=4.1.2-bilibili-splash-fix
 #!system=ios
 
 
@@ -811,6 +811,28 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 [Map Local]
 
 # =========================================================
+# 哔哩哔哩：开屏广告（Bilibili 9.10.0 HAR 实抓）
+# =========================================================
+#
+# HAR 明确出现：
+# - /x/v2/splash/list
+#   返回约 860 KB 广告池，包含 is_ad=true、SPLASH.mp4、广告落地页等。
+# - /x/v2/splash/show
+#   返回当前实际要展示的开屏广告。
+#
+# 不直接 REJECT 请求，避免 APP 把网络失败当作异常并等待/重试。
+# 直接本地返回“成功但无广告”的合法 JSON：
+# - list/show 为空
+# - keep_ids 为空，促使客户端淘汰旧广告缓存
+# - 保留 B 站自己的 brand/list，不动正常启动图。
+# =========================================================
+
+^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/list(?:\?.*)?$ data-type=text data="{\"code\":0,\"message\":\"OK\",\"ttl\":1,\"data\":{\"max_time\":0,\"min_interval\":3600,\"pull_interval\":900,\"keep_ids\":[],\"list\":[],\"show\":[],\"splash_request_id\":\"\"}}" status-code=200 header="Content-Type:application/json"
+
+^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/show(?:\?.*)?$ data-type=text data="{\"code\":0,\"message\":\"OK\",\"ttl\":1,\"data\":{\"show\":[],\"splash_request_id\":\"\"}}" status-code=200 header="Content-Type:application/json"
+
+
+# =========================================================
 # 菜鸟：第一方广告 API 本地空响应
 # =========================================================
 # 重点处理首页“大家都在逛”、广告流、飞行广告、底部商品推广。
@@ -892,4 +914,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com
