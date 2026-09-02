@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.6 Test
-#!desc=基于 V4.1.8.5：新增腾讯视频 getMVLPage 请求侧 AdRequestContextInfo 二进制净化，让服务端直接生成无广告布局；保留 V8/V9 广告载荷处理。
+#!name=AdBlock Hybrid V4.1.8.7 Test
+#!desc=基于 V4.1.8.6；保留腾讯视频 MVL/getvinfo 净化，并按最新 HAR 精确对 QADVideo 1000127/f10215 与 GDT vgdt MP4 返回本地 204，阻止独立广告媒体继续播放。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.6-tencentvideo-mvl-request-context-test
+#!version=4.1.8.7-tencentvideo-qad-media-failfast-test
 #!system=ios
 
 
@@ -821,6 +821,51 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 
 [Map Local]
+
+# =========================================================
+# 腾讯视频：QAD / GDT 独立广告媒体 Fail-Fast
+# =========================================================
+#
+# 2026-09-03 07:50 HAR 已确认：
+#
+# 1) V12 网络净化本身已经命中：
+#    - getvinfo: sppreviewtype=0 / spsrt=0 / spadseg=0
+#    - vl.vi[*].ad 已不存在
+#    - m3u8 已没有 segmenttype=2 广告段
+#    - getMVLPage 请求已经是 XdRequestContextInfo
+#
+# 2) 但腾讯视频仍然直接请求独立广告 MP4：
+#
+#    ugchsy.gtimg.com/gzc_1000127_....f10215.mp4
+#
+#    同一批下载日志明确上报：
+#    sceneId=QADVideo
+#    totalDuration=63 / 101
+#
+#    所以 1000127 + f10215 这一组合不是正片 1000102，
+#    而是当前版本腾讯视频的 QAD 广告媒体。
+#
+# 3) 同时还有：
+#
+#    vgdt.gtimg.cn/<数字目录>/<随机>.mp4
+#
+#    这是 GDT 广告创意视频。
+#
+# 新策略：
+# 不封 ugchsy.gtimg.com 整域，只精确处理已确认的广告媒体签名。
+# 返回 HTTP 204，而不是网络 REJECT，尽量让播放器立即得到
+# “无内容”结果，减少重试/等待。
+#
+# 注意：
+# 如果腾讯以后改为 HTTPS 或更换媒体编号，再按新 HAR 补，不扩大整域。
+# =========================================================
+
+# 腾讯视频 QADVideo：HAR 实抓广告媒体族
+^http:\/\/ugchsy\.gtimg\.com\/gzc_1000127_[^?\/]+\.f10215\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+
+# 腾讯 GDT 创意视频：vgdt 为广告素材域，本次 HAR 实抓为 HTTP MP4
+^http:\/\/vgdt\.gtimg\.cn\/[0-9]+\/[^?\/]+\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+
 
 
 # =========================================================
