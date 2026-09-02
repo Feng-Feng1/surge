@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.4
-#!desc=Surge 强力混合去广告：基于 V4.1.3，仅修复铁路12306开屏脚本源 404；保留酷安、哔哩哔哩及现有稳定规则。
+#!name=AdBlock Hybrid V4.1.5
+#!desc=Surge 强力混合去广告：基于 V4.1.4，保留酷安/B站/12306修复，并按酷安 HAR 将高频广告请求由硬 REJECT 改为本地无广告响应，减少开屏读秒与重试风暴。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.4-12306-script-source-fix
+#!version=4.1.5-coolapk-failfast
 #!system=ios
 
 
@@ -102,7 +102,14 @@ DOMAIN,sdkreport.e.qq.com,DIRECT
 DOMAIN,tangram.e.qq.com,DIRECT
 DOMAIN,masdkv6.3g.qq.com,DIRECT
 
-# 实际 GDT 广告请求不使用 pre-matching，避免部分 APP 在 DNS 阶段失败后长时间重试
+# 酷安 2026-09-02 HAR：v2mi.gdt.qq.com/gdt_mview.fcg 在开屏阶段连续触发，
+# Surge 因高频 REJECT 自动升级成 REJECT-DROP，容易让广告 SDK 继续等待/重试。
+#
+# 这两个主机先 DIRECT，让精确的 gdt_mview 请求进入 [Map Local]，
+# 返回“无填充”成功响应；其他 gdt.qq.com 广告主机仍按原规则拒绝。
+DOMAIN,v2mi.gdt.qq.com,DIRECT
+DOMAIN,mi.gdt.qq.com,DIRECT
+
 DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
 
 # 广告素材域仍可提前拒绝
@@ -742,7 +749,9 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # A. 酷安 / 穿山甲：避免开屏卡死
 # =========================================================
 # 主 API 保持 DIRECT，只杀真正取广告/竞价路径。
-^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/sdk\/get_ads\/ _ reject
+# 酷安 get_ads 不再硬 REJECT。
+# HAR 中同一开屏阶段可连续出现二十余次 get_ads；网络错误会驱动 SDK 重试。
+# 现在改由 [Map Local] 直接返回穿山甲“无填充”JSON，让 SDK 立即结束本次广告请求。
 
 # 酷安 2026-09-02 HAR 实抓：
 # get_ads 已被 V4.1 正常拒绝，但广告仍从 api-access 主机的 mediation/exchange 返回。
@@ -812,6 +821,30 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 
 [Map Local]
+
+# =========================================================
+# 酷安：广告 SDK Fail-Fast（减少开屏读秒）
+# =========================================================
+#
+# 当前 HAR 明确看到：
+# - api-access.pangolin-sdk-toutiao*.com /get_ads/ 被硬 reject 后高频重试
+# - v2mi.gdt.qq.com/gdt_mview.fcg 被连续 reject，
+#   Surge 已自动升级为 REJECT-DROP
+#
+# 这里不再制造“网络错误”，而是直接在本机返回广告 SDK 能理解的
+# “请求成功但无广告填充”结果，让 SDK 尽快结束等待。
+#
+# 穿山甲 no-fill：
+# status_code=20001 为广告无填充/填充受控类错误码。
+# 结构取自公开维护的广告联盟净化脚本。
+# =========================================================
+
+^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/sdk\/get_ads\/(?:\?.*)?$ data-type=text data="{\"request_id\":\"00000000-0000-0000-0000-000000000000\",\"status_code\":20001,\"reason\":112,\"desc\":\"no ad fill\"}" status-code=200 header="Content-Type:application/json"
+
+# 腾讯优量汇：
+# ret=102006 表示没有合适广告/无填充，避免把网络失败当成可重试错误。
+^https?:\/\/v2mi\.gdt\.qq\.com\/gdt_mview\.fcg(?:\?.*)?$ data-type=text data="{\"ret\":102006}" status-code=200 header="Content-Type:application/json"
+
 
 # =========================================================
 # 哔哩哔哩：开屏广告（Bilibili 9.10.0 HAR 实抓）
@@ -942,4 +975,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com
