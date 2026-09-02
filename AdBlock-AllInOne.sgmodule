@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.1
-#!desc=Surge 强力混合去广告：基于稳定 V4.1.8，按小安科技微信小程序 HAR 实抓，将广告配置硬 REJECT 改为“正常成功但无广告”，尝试同时消除广告素材、插屏弹窗与空白读秒。
+#!name=AdBlock Hybrid V4.1.8.2
+#!desc=Surge 强力混合去广告：基于稳定 V4.1.8 分支；保留小安广告配置 No-Ad，并按新 HAR 进一步清空骑行卡更新弹窗与骑行卡促销配置。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.1-xiaoan-no-wait
+#!version=4.1.8.2-xiaoan-popup-fix
 #!system=ios
 
 
@@ -878,6 +878,34 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # HAR 实抓返回 shieldSmartAd=true，并下发两个微信 adunit。
 # 这里返回同结构，但显式关闭广告并清空 adunit。
 ^https:\/\/ebike-client\.xiaoantech\.com\/client\/ad\/config\/getShieldSmartAdConfig(?:\?.*)?$ data-type=text data="{\"success\":true,\"code\":\"0\",\"msg\":\"成功\",\"data\":{\"shieldSmartAd\":false,\"shieldSmartAdUnitId\":\"\",\"shieldInterstitialAdUnitId\":\"\",\"shieldSmartAdUnitName\":\"\",\"shieldInterstitialAdUnitName\":\"\"}}" status-code=200 header="Content-Type:application/json"
+
+
+# =========================================================
+# 小安科技微信小程序：剩余运营弹窗 / 骑行卡促销
+# =========================================================
+#
+# 2026-09-02 新 HAR 验证：
+# - getAdConfigForGuest / getAdConfigV3 已经稳定命中 Map Local，
+#   均在约 2 ms 内返回 data=[]，不再出现之前的高频重试。
+# - getShieldSmartAdConfig 也已返回 shieldSmartAd=false。
+#
+# 但同一轮启动中仍有第一方运营弹窗：
+# /client/helpConfig/getSpecialTipsByServiceIdV3
+#
+# 实际返回：
+#   title = 骑行卡更新通知
+#   descriptionTag / body = 购卡、优惠、限时活动
+#   izOn = true
+#   frequency = 1
+#
+# 这类内容不是微信广告 SDK，而是小安自己的运营弹窗。
+# 直接返回“接口成功 + 无弹窗数据”，避免只遮素材却保留弹窗容器。
+^https:\/\/(?:ebike-client\.xiaoantech\.com|ebike-client-prod\.xiaoantech\.net|ebike-client-j\.xiaoantech\.net)\/client\/helpConfig\/getSpecialTipsByServiceIdV3(?:\?.*)?$ data-type=text data="{\"success\":true,\"code\":\"0\",\"msg\":\"成功\",\"data\":[]}" status-code=200 header="Content-Type:application/json"
+
+# 骑行卡促销配置同样属于运营推广。
+# 保留原接口数据结构，只清空 ridingCards，降低前端类型不匹配风险。
+^https:\/\/(?:ebike-client\.xiaoantech\.com|ebike-client-prod\.xiaoantech\.net|ebike-client-j\.xiaoantech\.net)\/client\/helpConfig\/getCardPromoteConfigByServiceId(?:\?.*)?$ data-type=text data="{\"success\":true,\"code\":\"0\",\"msg\":\"成功\",\"data\":{\"ridingCards\":[],\"izCusConfigCard\":false,\"izDefaultCardPromoteConfig\":false}}" status-code=200 header="Content-Type:application/json"
+
 
 
 # =========================================================
