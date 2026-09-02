@@ -1,65 +1,81 @@
 /*
- * Tencent Video Ad Filter Test V10
+ * Tencent Video Ad Filter Test V11
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * V10 adds request-side MVL ad-layout suppression:
- *   AdRequestContextInfo -> XdRequestContextInfo
+ * HAR verified: 2026-09-03 06:51
  *
- * V8/V9 already removed the real ad payload/video, but the latest HAR shows
- * the empty card shell survives. V10 acts BEFORE getMVLPage is generated so
- * Tencent is asked for a naturally no-ad layout.
+ * What V11 changes
+ * ---------------------------------------------------------
+ * 1) The "70-second ad" is still requested through Tencent's dedicated RPC:
  *
- * HAR verified: 2026-09-03 00:44
+ *      com.tencent.qqlive.protocol.pb.adService/getAdDetail
  *
- * V10 target:
- *   The actual ad video is no longer rendered, but the empty/black ad cards
- *   still remain on the Tencent Video detail page.
+ *    The latest HAR proves V8/V10 DID modify its outer protobuf tag to 0x7A,
+ *    but the app still consumed the payload. So "move field #1 to field #15"
+ *    was not strong enough.
  *
- * New HAR confirms those remaining cards are still present inside
- * getMVLPage as complete protobuf repeated items.
+ *    V11 now does TWO things:
+ *      A. request side:
+ *         mod_trailer_ad -> mod_trailer_xx
+ *      B. response side:
+ *         keep the normal outer response field, but replace the complete
+ *         ad sub-message payload with a valid protobuf message containing
+ *         only one high-number UNKNOWN field.
  *
- * Exact card items observed in this capture:
- *   - 26862 bytes : top/focus ad card
- *   - 26615 bytes : top/focus ad card
- *   - 27827 bytes : top/focus ad card
- *   -  7358 bytes : detail/feed ad card
+ *    This preserves every outer protobuf length while making the recognized
+ *    ad message effectively empty.
  *
- * They contain strong combinations such as:
- *   _xx_insert_mix_block
- *   feeds_xx_style
- *   gdt_stats.fcg
- *   advertiser
- *   ad_request_id
- *   AdFeedInfo / AdFocusPoster / AdResponseInfo
+ * 2) Other detail pages use:
  *
- * V9 suppresses the WHOLE confirmed card item by changing ONLY its
- * outer protobuf tag:
+ *      VideoDetailService/getPage
  *
- *   0x0A  (field #1, wire type 2)
- *     ->
- *   0x7A  (field #15, wire type 2)
+ *    and still contain separate ad-card protobuf objects:
+ *      mod_banner_ad
+ *      AdFeedInfo
+ *      AdResponseInfo
+ *      mod_trailer_ad
+ *      ep_list_ad
  *
- * Same one-byte tag length.
- * No payload length changes.
+ *    V11 blanks ONLY high-confidence sub-messages that contain those ad
+ *    signatures. Normal episode/video/detail data is left untouched.
+ *
+ * 3) Existing V10 getMVLPage request-side no-ad layout remains.
+ *
  * No shared Tencent CDN blocking.
+ * No VIP spoofing.
+ * No normal video URL blocking.
  */
 
 (function () {
   const url = ($request && $request.url) || "";
 
-  function asciiBytesGlobal(s) {
+  // =====================================================
+  // Common helpers
+  // =====================================================
+  function asciiBytes(s) {
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
     return out;
   }
 
-  function containsBytesGlobal(buf, text) {
-    const needle = asciiBytesGlobal(text);
-    if (!(buf instanceof Uint8Array) || needle.length === 0) return false;
+  function asBytes(v) {
+    if (v instanceof Uint8Array) return v;
+    if (typeof v === "string") return asciiBytes(v);
+    return null;
+  }
+
+  function containsBytes(buf, text, start, end) {
+    if (!(buf instanceof Uint8Array)) return false;
+
+    const needle = asciiBytes(text);
+    const s = Math.max(0, start == null ? 0 : start);
+    const e = Math.min(buf.length, end == null ? buf.length : end);
+
+    if (needle.length === 0 || e - s < needle.length) return false;
 
     outer:
-    for (let i = 0; i <= buf.length - needle.length; i++) {
+    for (let i = s; i <= e - needle.length; i++) {
       for (let j = 0; j < needle.length; j++) {
         if (buf[i + j] !== needle[j]) continue outer;
       }
@@ -68,13 +84,33 @@
     return false;
   }
 
-  function replaceAllSameLengthGlobal(buf, fromText, toText) {
+  function findAllBytes(buf, text) {
+    const needle = asciiBytes(text);
+    const out = [];
+
+    if (!(buf instanceof Uint8Array) || needle.length === 0) return out;
+
+    outer:
+    for (let i = 0; i <= buf.length - needle.length; i++) {
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) continue outer;
+      }
+      out.push(i);
+      i += needle.length - 1;
+    }
+
+    return out;
+  }
+
+  function replaceAllSameLength(buf, fromText, toText) {
+    if (!(buf instanceof Uint8Array)) return 0;
+
     if (fromText.length !== toText.length) {
       throw new Error("length mismatch: " + fromText + " -> " + toText);
     }
 
-    const from = asciiBytesGlobal(fromText);
-    const to = asciiBytesGlobal(toText);
+    const from = asciiBytes(fromText);
+    const to = asciiBytes(toText);
     let count = 0;
 
     outer:
@@ -82,9 +118,11 @@
       for (let j = 0; j < from.length; j++) {
         if (buf[i + j] !== from[j]) continue outer;
       }
+
       for (let j = 0; j < to.length; j++) {
         buf[i + j] = to[j];
       }
+
       count++;
       i += from.length - 1;
     }
@@ -92,63 +130,139 @@
     return count;
   }
 
+  function readVarint(buf, pos) {
+    let value = 0;
+    let mul = 1;
+
+    for (let i = 0; i < 10 && pos < buf.length; i++, pos++) {
+      const b = buf[pos];
+      value += (b & 0x7f) * mul;
+
+      if ((b & 0x80) === 0) {
+        return { value: value, next: pos + 1 };
+      }
+
+      mul *= 128;
+    }
+
+    return null;
+  }
+
+  function encodeVarint(value) {
+    const a = [];
+
+    do {
+      let b = value % 128;
+      value = Math.floor(value / 128);
+
+      if (value > 0) b |= 0x80;
+      a.push(b);
+    } while (value > 0);
+
+    return a;
+  }
+
+  /*
+   * Replace a protobuf sub-message PAYLOAD with a valid message of EXACTLY
+   * the same size.
+   *
+   * The replacement is:
+   *   unknown field #999, wire type 2
+   *   + opaque zero payload
+   *
+   * Generated Tencent parsers should ignore field #999, so all recognized
+   * fields in the original ad object become absent/default.
+   */
+  function blankSubMessagePayload(buf, start, end) {
+    const total = end - start;
+
+    if (total < 8) return false;
+
+    // field #999, wire type 2
+    const tag = encodeVarint((999 * 8) + 2);
+
+    let innerLen = total - tag.length - 1;
+    let lenBytes = encodeVarint(innerLen);
+
+    // Recalculate until total length is exact.
+    for (let i = 0; i < 5; i++) {
+      innerLen = total - tag.length - lenBytes.length;
+      const next = encodeVarint(innerLen);
+
+      if (next.length === lenBytes.length) {
+        lenBytes = next;
+        break;
+      }
+
+      lenBytes = next;
+    }
+
+    if (innerLen < 0) return false;
+    if (tag.length + lenBytes.length + innerLen !== total) return false;
+
+    let p = start;
+
+    for (const b of tag) buf[p++] = b;
+    for (const b of lenBytes) buf[p++] = b;
+
+    while (p < end) buf[p++] = 0;
+
+    return true;
+  }
+
+  function requestHas(text) {
+    const b = asBytes($request && $request.body);
+    return b ? containsBytes(b, text) : false;
+  }
+
   // =====================================================
-  // A. Request mode
+  // A. HTTP REQUEST mode
   // =====================================================
   if (typeof $response === "undefined") {
     try {
       // -------------------------------------------------
-      // A1. i.video.qq.com / getMVLPage
-      //
-      // Latest HAR after V9 proves the response-side ad item itself is
-      // already moved to an unknown field, but Tencent Video still reserves
-      // the visual ad slot. The same getMVLPage REQUEST contains:
-      //
-      // type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo
-      //
-      // This is the server-side ad-layout request context.  V10 neutralizes
-      // ONLY that Any type URL before the request reaches Tencent:
-      //
-      // AdRequestContextInfo -> XdRequestContextInfo
-      //
-      // Same length; protobuf framing is unchanged.
-      // The goal is to make the server generate a naturally no-ad layout,
-      // instead of sending an ad layout and deleting its payload afterwards.
+      // A1. i.video.qq.com binary RPC requests
       // -------------------------------------------------
       if (/^https:\/\/i\.video\.qq\.com\/$/i.test(url)) {
-        const body = $request.body;
+        const body = asBytes($request.body);
 
-        if (!(body instanceof Uint8Array) || body.length === 0) {
+        if (!body || body.length === 0) {
           $done({});
           return;
         }
 
-        // Only touch getMVLPage calls. Other i.video.qq.com RPCs pass through.
-        if (!containsBytesGlobal(body, "getMVLPage")) {
-          $done({});
-          return;
+        let changed = 0;
+
+        // V10: ask MVL service for a naturally no-ad layout.
+        if (containsBytes(body, "getMVLPage")) {
+          changed += replaceAllSameLength(
+            body,
+            "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo",
+            "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdRequestContextInfo"
+          );
         }
 
-        const fromType =
-          "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo";
-        const toType =
-          "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdRequestContextInfo";
-
-        const changed = replaceAllSameLengthGlobal(body, fromType, toType);
+        // V11: dedicated trailer-ad request itself exposes this module name.
+        if (containsBytes(body, "adService/getAdDetail")) {
+          changed += replaceAllSameLength(
+            body,
+            "mod_trailer_ad",
+            "mod_trailer_xx"
+          );
+        }
 
         if (changed > 0) {
-          console.log(
-            "TencentVideo V10 neutralized MVL AdRequestContextInfo: " + changed
-          );
+          console.log("TencentVideo V11 request neutralized markers: " + changed);
           $done({ body });
         } else {
           $done({});
         }
+
         return;
       }
 
       // -------------------------------------------------
-      // A2. svv/vv getvinfo fallback from V6+
+      // A2. getvinfo fallback
       // -------------------------------------------------
       if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
         let body = $request.body || "";
@@ -164,24 +278,26 @@
         body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
 
         if (body !== before) {
-          console.log("TencentVideo V10 getvinfo request normalized");
+          console.log("TencentVideo V11 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
         }
+
         return;
       }
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V10 request error: " + e);
+      console.log("TencentVideo V11 request error: " + e);
       $done({});
     }
+
     return;
   }
 
   // =====================================================
-  // B. Response mode: getvinfo JSON ad-object removal
+  // B. getvinfo RESPONSE: remove vi.ad
   // =====================================================
   if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
     try {
@@ -214,20 +330,21 @@
       }
 
       if (removed > 0) {
-        console.log("TencentVideo V10 removed getvinfo ad objects: " + removed);
+        console.log("TencentVideo V11 removed getvinfo ad objects: " + removed);
         $done({ body: JSON.stringify(obj) });
       } else {
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V10 getvinfo response error: " + e);
+      console.log("TencentVideo V11 getvinfo response error: " + e);
       $done({});
     }
+
     return;
   }
 
   // =====================================================
-  // C. Binary helpers
+  // C. i.video.qq.com binary RESPONSE
   // =====================================================
   const body = $response.body;
 
@@ -236,174 +353,290 @@
     return;
   }
 
-  function asciiBytes(s) {
-    const out = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-    return out;
-  }
-
-  function readVarint(buf, pos) {
-    let value = 0;
-    let shift = 0;
-
-    for (let i = 0; i < 10 && pos < buf.length; i++, pos++) {
-      const b = buf[pos];
-      value += (b & 0x7f) * Math.pow(2, shift);
-
-      if ((b & 0x80) === 0) {
-        return { value: value, next: pos + 1 };
-      }
-
-      shift += 7;
-    }
-
-    return null;
-  }
-
-  function containsText(buf, start, end, text) {
-    const needle = asciiBytes(text);
-
-    if (
-      needle.length === 0 ||
-      start < 0 ||
-      end > buf.length ||
-      start >= end
-    ) {
-      return false;
-    }
-
-    outer:
-    for (let i = start; i <= end - needle.length; i++) {
-      for (let j = 0; j < needle.length; j++) {
-        if (buf[i + j] !== needle[j]) continue outer;
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  function replaceAllSameLength(buf, fromText, toText) {
-    if (fromText.length !== toText.length) {
-      throw new Error("length mismatch: " + fromText + " -> " + toText);
-    }
-
-    const from = asciiBytes(fromText);
-    const to = asciiBytes(toText);
-    let count = 0;
-
-    outer:
-    for (let i = 0; i <= buf.length - from.length; i++) {
-      for (let j = 0; j < from.length; j++) {
-        if (buf[i + j] !== from[j]) continue outer;
-      }
-
-      for (let j = 0; j < to.length; j++) {
-        buf[i + j] = to[j];
-      }
-
-      count++;
-      i += from.length - 1;
-    }
-
-    return count;
-  }
-
-  // =====================================================
-  // D. V9: suppress complete MVL ad-card items
-  // =====================================================
   try {
-    if (url === "https://i.video.qq.com/") {
-      const candidates = [];
+    let changed = 0;
 
-      /*
-       * Scan only field #1 / wire type 2 (0x0A), because the supplied
-       * getMVLPage capture shows every remaining ad card as that repeated
-       * item type.
-       *
-       * Bound to 4 KB ~ 40 KB:
-       * - avoids tiny inner protobuf strings/messages
-       * - avoids giant page-level parent objects
-       */
-      for (let p = 0; p < body.length - 2; p++) {
-        if (body[p] !== 0x0a) continue;
+    // -------------------------------------------------
+    // C1. STRONG FIX: adService/getAdDetail
+    //
+    // Latest HAR still has four calls. Their responses contain a complete
+    // 11~13 KB trailer-ad payload. Previous versions changed its OUTER tag
+    // from field #1 to field #15; HAR proves Tencent still consumed it.
+    //
+    // Now keep the expected field but blank its INNER message.
+    // -------------------------------------------------
+    const looksLikeAdDetail =
+      requestHas("adService/getAdDetail") ||
+      (
+        containsBytes(body, "mod_trailer_ad") &&
+        containsBytes(body, "gdt_stats.fcg") &&
+        containsBytes(body, "ad_vid") &&
+        containsBytes(body, "AdFeedImagePoster")
+      );
 
-        const lenInfo = readVarint(body, p + 1);
-        if (!lenInfo) continue;
+    if (looksLikeAdDetail) {
+      const markerPositions = findAllBytes(body, "mod_trailer_ad");
+      let best = null;
 
-        const len = lenInfo.value;
-        const payloadStart = lenInfo.next;
-        const payloadEnd = payloadStart + len;
+      for (const markerPos of markerPositions) {
+        const scanStart = Math.max(0, markerPos - 1024);
 
-        if (len < 4096 || len > 40000) continue;
-        if (payloadEnd > body.length) continue;
+        for (let p = scanStart; p <= markerPos; p++) {
+          // Server schema observed in every getAdDetail capture:
+          // outer ad object = field #1, wire type 2.
+          if (body[p] !== 0x0a) continue;
 
-        const topCard =
-          containsText(body, payloadStart, payloadEnd, "_ad_insert_mix_block") ||
-          containsText(body, payloadStart, payloadEnd, "_xx_insert_mix_block");
+          const lenInfo = readVarint(body, p + 1);
+          if (!lenInfo) continue;
 
-        const feedCard =
-          containsText(body, payloadStart, payloadEnd, "feeds_ad_style") ||
-          containsText(body, payloadStart, payloadEnd, "feeds_xx_style");
+          const payloadStart = lenInfo.next;
+          const len = lenInfo.value;
+          const payloadEnd = payloadStart + len;
 
-        let score = 0;
+          if (len < 8000 || len > 30000) continue;
+          if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+          if (payloadEnd > body.length) continue;
 
-        const evidence = [
-          "gdt_stats.fcg",
-          "advertiser",
-          "ad_request_id",
-          "AdFeedInfo",
-          "XdFeedInfo",
-          "AdFocusPoster",
-          "XdFocusPoster",
-          "AdResponseInfo",
-          "XdResponseInfo"
-        ];
+          let score = 0;
 
-        for (const marker of evidence) {
-          if (containsText(body, payloadStart, payloadEnd, marker)) {
-            score++;
+          if (containsBytes(body, "mod_trailer_ad", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "gdt_stats.fcg", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "ad_vid", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "AdFeedImagePoster", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "ad_request_id", payloadStart, payloadEnd)) score++;
+
+          if (score >= 4 && (!best || len < best.len)) {
+            best = {
+              payloadStart: payloadStart,
+              payloadEnd: payloadEnd,
+              len: len,
+              score: score
+            };
+          }
+        }
+      }
+
+      if (best && blankSubMessagePayload(body, best.payloadStart, best.payloadEnd)) {
+        changed++;
+
+        console.log(
+          "TencentVideo V11 blanked getAdDetail object: len=" +
+          best.len +
+          ", score=" +
+          best.score
+        );
+      }
+    }
+
+    // -------------------------------------------------
+    // C2. VideoDetailService/getPage:
+    // remove remaining ad cards on pages that do NOT use the newer MVL route.
+    // -------------------------------------------------
+    const looksLikeOldDetailPage =
+      requestHas("VideoDetailService/getPage") ||
+      (
+        containsBytes(body, "mod_banner_ad") &&
+        containsBytes(body, "AdFeedInfo")
+      );
+
+    if (looksLikeOldDetailPage) {
+      const candidates = {};
+
+      function addCandidate(tagPos, payloadStart, payloadEnd, kind, score) {
+        const len = payloadEnd - payloadStart;
+
+        if (!candidates[String(tagPos)]) {
+          candidates[String(tagPos)] = {
+            tagPos: tagPos,
+            payloadStart: payloadStart,
+            payloadEnd: payloadEnd,
+            len: len,
+            kind: kind,
+            score: score
+          };
+        }
+      }
+
+      // -----------------------------------------------
+      // Banner/feed card objects:
+      // Captures show 17.6 KB and 23~24 KB field #1 items.
+      // -----------------------------------------------
+      for (const marker of ["AdFeedInfo"]) {
+        for (const markerPos of findAllBytes(body, marker)) {
+          const scanStart = Math.max(0, markerPos - 40000);
+
+          for (let p = scanStart; p <= markerPos; p++) {
+            if (body[p] !== 0x0a) continue;
+
+            const lenInfo = readVarint(body, p + 1);
+            if (!lenInfo) continue;
+
+            const payloadStart = lenInfo.next;
+            const len = lenInfo.value;
+            const payloadEnd = payloadStart + len;
+
+            if (len < 10000 || len > 35000) continue;
+            if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+            if (payloadEnd > body.length) continue;
+
+            let score = 0;
+
+            if (containsBytes(body, "AdFeedInfo", payloadStart, payloadEnd)) score++;
+            if (containsBytes(body, "gdt_stats.fcg", payloadStart, payloadEnd)) score++;
+            if (containsBytes(body, "ad_request_id", payloadStart, payloadEnd)) score++;
+            if (containsBytes(body, "mod_banner_ad", payloadStart, payloadEnd)) score++;
+            if (containsBytes(body, "ad_detail_feeds_spa", payloadStart, payloadEnd)) score++;
+
+            if (score >= 3) {
+              addCandidate(
+                p,
+                payloadStart,
+                payloadEnd,
+                "detail-feed",
+                score
+              );
+            }
+          }
+        }
+      }
+
+      // -----------------------------------------------
+      // AdResponseInfo card: ~1.8~2.1 KB field #1.
+      // -----------------------------------------------
+      for (const markerPos of findAllBytes(body, "AdResponseInfo")) {
+        const scanStart = Math.max(0, markerPos - 6000);
+
+        for (let p = scanStart; p <= markerPos; p++) {
+          if (body[p] !== 0x0a) continue;
+
+          const lenInfo = readVarint(body, p + 1);
+          if (!lenInfo) continue;
+
+          const payloadStart = lenInfo.next;
+          const len = lenInfo.value;
+          const payloadEnd = payloadStart + len;
+
+          if (len < 1000 || len > 5000) continue;
+          if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+          if (payloadEnd > body.length) continue;
+
+          let score = 0;
+
+          if (containsBytes(body, "AdResponseInfo", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "ad_request_id", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "advertiser", payloadStart, payloadEnd)) score++;
+          if (containsBytes(body, "mod_banner_ad", payloadStart, payloadEnd)) score++;
+
+          if (score >= 3) {
+            addCandidate(
+              p,
+              payloadStart,
+              payloadEnd,
+              "response-card",
+              score
+            );
+          }
+        }
+      }
+
+      // -----------------------------------------------
+      // Trailer card module:
+      // captures show a dedicated field #7, ~818 bytes.
+      // -----------------------------------------------
+      for (const markerPos of findAllBytes(body, "mod_trailer_ad")) {
+        const scanStart = Math.max(0, markerPos - 2500);
+
+        for (let p = scanStart; p <= markerPos; p++) {
+          if (body[p] !== 0x3a) continue; // field #7, wire type 2
+
+          const lenInfo = readVarint(body, p + 1);
+          if (!lenInfo) continue;
+
+          const payloadStart = lenInfo.next;
+          const len = lenInfo.value;
+          const payloadEnd = payloadStart + len;
+
+          if (len < 500 || len > 1500) continue;
+          if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+          if (payloadEnd > body.length) continue;
+
+          if (containsBytes(body, "mod_trailer_ad", payloadStart, payloadEnd)) {
+            addCandidate(
+              p,
+              payloadStart,
+              payloadEnd,
+              "trailer-card",
+              1
+            );
+          }
+        }
+      }
+
+      // -----------------------------------------------
+      // Episode-list ad marker:
+      // only blank its tiny dedicated sub-message, not the whole episode list.
+      // -----------------------------------------------
+      for (const markerPos of findAllBytes(body, "ep_list_ad")) {
+        const scanStart = Math.max(0, markerPos - 256);
+        let best = null;
+
+        for (let p = scanStart; p <= markerPos; p++) {
+          const tag = body[p];
+
+          if (tag === 0 || tag >= 0x80 || (tag & 0x07) !== 2) continue;
+
+          const lenInfo = readVarint(body, p + 1);
+          if (!lenInfo) continue;
+
+          const payloadStart = lenInfo.next;
+          const len = lenInfo.value;
+          const payloadEnd = payloadStart + len;
+
+          if (len < 40 || len > 160) continue;
+          if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
+          if (payloadEnd > body.length) continue;
+
+          if (
+            containsBytes(body, "ep_list_ad", payloadStart, payloadEnd) &&
+            (!best || len < best.len)
+          ) {
+            best = {
+              tagPos: p,
+              payloadStart: payloadStart,
+              payloadEnd: payloadEnd,
+              len: len
+            };
           }
         }
 
-        /*
-         * Require:
-         * - a specific Tencent Video ad-card layout marker
-         * - plus at least 2 independent advertising signals
-         *
-         * Current HAR matches exactly four items:
-         * 26862 / 26615 / 27827 / 7358 bytes.
-         */
-        if ((topCard || feedCard) && score >= 2) {
-          candidates.push({
-            tagPos: p,
-            len: len,
-            score: score,
-            type: topCard ? "top" : "feed"
-          });
+        if (best) {
+          addCandidate(
+            best.tagPos,
+            best.payloadStart,
+            best.payloadEnd,
+            "episode-ad-marker",
+            1
+          );
         }
       }
 
-      /*
-       * A genuine card may expose only one qualifying outer field in the
-       * observed schema. Deduplicate by tag position before mutation.
-       */
-      const seen = {};
-      let removedCards = 0;
+      // Blank larger objects first. Candidate ranges are independent in the
+      // supplied captures; dedupe by outer tag position.
+      const list = Object.keys(candidates)
+        .map(k => candidates[k])
+        .sort((a, b) => b.len - a.len);
 
-      for (const c of candidates) {
-        if (seen[c.tagPos]) continue;
-        seen[c.tagPos] = true;
+      let cards = 0;
 
-        if (body[c.tagPos] === 0x0a) {
-          // field #1 -> unknown field #15, same one-byte tag length
-          body[c.tagPos] = 0x7a;
-          removedCards++;
+      for (const c of list) {
+        if (blankSubMessagePayload(body, c.payloadStart, c.payloadEnd)) {
+          cards++;
+          changed++;
 
           console.log(
-            "TencentVideo V10 removed MVL ad card: type=" +
-            c.type +
-            ", len=" +
+            "TencentVideo V11 blanked " +
+            c.kind +
+            ": len=" +
             c.len +
             ", score=" +
             c.score
@@ -411,82 +644,14 @@
         }
       }
 
-      if (removedCards > 0) {
-        console.log("TencentVideo V10 removed MVL cards: " + removedCards);
-        $done({ body });
-        return;
+      if (cards > 0) {
+        console.log("TencentVideo V11 detail-page cards blanked: " + cards);
       }
     }
-  } catch (e) {
-    console.log("TencentVideo V10 MVL-card error: " + e);
-  }
 
-  // =====================================================
-  // E. Keep V8 getAdDetail whole-payload suppression
-  // =====================================================
-  try {
-    if (
-      url === "https://i.video.qq.com/" &&
-      containsText(body, 0, body.length, "mod_trailer_ad") &&
-      containsText(body, 0, body.length, "gdt_stats.fcg") &&
-      containsText(body, 0, body.length, "ad_vid")
-    ) {
-      let best = null;
-
-      for (let p = 0; p < body.length - 2; p++) {
-        const tag = body[p];
-
-        if (tag === 0 || tag >= 0x80 || (tag & 0x07) !== 2) continue;
-
-        const lenInfo = readVarint(body, p + 1);
-        if (!lenInfo) continue;
-
-        const len = lenInfo.value;
-        const payloadStart = lenInfo.next;
-        const payloadEnd = payloadStart + len;
-
-        if (len < 4096 || payloadEnd > body.length) continue;
-
-        let score = 0;
-
-        if (containsText(body, payloadStart, payloadEnd, "mod_trailer_ad")) score++;
-        if (containsText(body, payloadStart, payloadEnd, "gdt_stats.fcg")) score++;
-        if (containsText(body, payloadStart, payloadEnd, "ad_vid")) score++;
-        if (containsText(body, payloadStart, payloadEnd, "AdFeedImagePoster")) score++;
-        if (containsText(body, payloadStart, payloadEnd, "advertiser")) score++;
-
-        if (score >= 3 && (!best || len > best.len)) {
-          best = {
-            tagPos: p,
-            tag: tag,
-            len: len,
-            score: score
-          };
-        }
-      }
-
-      if (best && best.tag === 0x0a) {
-        body[best.tagPos] = 0x7a;
-
-        console.log(
-          "TencentVideo V10 suppressed getAdDetail payload: len=" +
-          best.len +
-          ", score=" +
-          best.score
-        );
-
-        $done({ body });
-        return;
-      }
-    }
-  } catch (e) {
-    console.log("TencentVideo V10 getAdDetail error: " + e);
-  }
-
-  // =====================================================
-  // F. Marker fallback
-  // =====================================================
-  try {
+    // -------------------------------------------------
+    // C3. Existing lightweight fallback marker neutralization.
+    // -------------------------------------------------
     let renamed = 0;
 
     for (let i = 0; i <= 9; i++) {
@@ -506,14 +671,18 @@
     renamed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
-    if (renamed > 0) {
-      console.log("TencentVideo V10 renamed fallback markers: " + renamed);
+    if (renamed > 0) changed++;
+
+    if (changed > 0) {
+      console.log(
+        "TencentVideo V11 response changed; fallback markers=" + renamed
+      );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V10 fallback error: " + e);
+    console.log("TencentVideo V11 binary response error: " + e);
     $done({});
   }
 })();
