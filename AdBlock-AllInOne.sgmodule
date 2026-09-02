@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8
-#!desc=Surge 强力混合去广告：基于 V4.1.7，修复酷安评论区 Sponsor 卡片 JQ 表达式类型错误；保留酷安开屏 Fail-Fast、GDT 无填充、B站与12306修复。
+#!name=AdBlock Hybrid V4.1.9
+#!desc=Surge 强力混合去广告：基于 V4.1.8 稳定版，新增中国移动 APP 开屏广告 Fail-Fast；保留酷安、B站、12306及现有稳定修复。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8-coolapk-reply-jq-fix
+#!version=4.1.9-chinamobile-splash-fix
 #!system=ios
 
 
@@ -822,6 +822,46 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 [Map Local]
 
+
+# =========================================================
+# 中国移动 APP：开屏广告 Fail-Fast
+# =========================================================
+#
+# 2026-09-02 ChinaMobile 12.5.2 HAR 实抓确认：
+#
+# 1) 启动阶段请求：
+#    client.app.coc.10086.cn/biz-orange/DN/init/startInit
+#
+# 2) 同一启动阶段实际下载了 1080×1920 开屏广告：
+#    res.app.coc.10086.cn/qwhdcdn_cmcc-cs_cn/prd-mgcenter/
+#    351b27dc1b654afaa304574ef9f39f6a.jpg?fmt=webp
+#    图片本身明确带“广告”标识。
+#
+# 3) 中国移动第一方接口响应经过加密，不能安全用 JQ 只删某个字段。
+#    因此采用成熟规则长期使用的思路：
+#    startInit / getAdverList 直接本地返回 HTTP 200 空结果，
+#    而不是 REJECT 制造网络错误。
+#
+# 目的：
+# - 不让客户端拿到新的开屏广告配置；
+# - 请求立即成功结束，尽量避免“广告没了但还读秒/等待”；
+# - 对已下发的 prd-mgcenter 开屏素材返回 1px 图片作为第二层兜底。
+#
+# 注意：不封整个 client.app.coc.10086.cn / res.app.coc.10086.cn，
+# 只处理已确认的启动广告接口与营销素材目录。
+# =========================================================
+
+# 中国移动启动广告配置：本地 200 空响应
+^https:\/\/client\.app\.coc\.10086\.cn\/biz-orange\/DN\/init\/startInit(?:\?.*)?$ data-type=text data="" status-code=200 header="Content-Type:application/json"
+
+# 旧版/备用广告列表接口
+^https:\/\/client\.app\.coc\.10086\.cn\/biz-orange\/DN\/explorePage\/getAdverList(?:\?.*)?$ data-type=text data="" status-code=200 header="Content-Type:application/json"
+
+# HAR 已确认的中国移动营销中心开屏素材目录。
+# 用 tiny-gif 而不是 REJECT，避免图片请求失败后再次等待/重试。
+^https:\/\/res\.app\.coc\.10086\.cn\/qwhdcdn_cmcc-cs_cn\/prd-mgcenter\/[^?]+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$ data-type=tiny-gif status-code=200
+
+
 # =========================================================
 # 酷安：广告 SDK Fail-Fast（减少开屏读秒）
 # =========================================================
@@ -1007,4 +1047,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, client.app.coc.10086.cn, res.app.coc.10086.cn
