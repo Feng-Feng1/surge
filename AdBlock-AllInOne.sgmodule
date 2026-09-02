@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.6
-#!desc=Surge 强力混合去广告：基于 V4.1.5 稳定版，保留酷安开屏 Fail-Fast、B站与12306修复，并按酷安 HAR 实抓删除评论区第一方 Sponsor 广告卡片。
+#!name=AdBlock Hybrid V4.1.7
+#!desc=Surge 强力混合去广告：基于 V4.1.6，保留酷安开屏 Fail-Fast/B站/12306修复；按最新酷安评论区 HAR 补齐 mi.gdt.qq.com 优量汇广告无填充响应。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.6-coolapk-reply-sponsor-fix
+#!version=4.1.7-coolapk-reply-gdt-fix
 #!system=ios
 
 
@@ -843,7 +843,16 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 # 腾讯优量汇：
 # ret=102006 表示没有合适广告/无填充，避免把网络失败当成可重试错误。
-^https?:\/\/v2mi\.gdt\.qq\.com\/gdt_mview\.fcg(?:\?.*)?$ data-type=text data="{\"ret\":102006}" status-code=200 header="Content-Type:application/json"
+#
+# V4.1.6 最新 HAR 已确认：
+# - replyList 中的 Coolapk 第一方 Sponsor 卡已经被成功删除；
+# - 但 mi.gdt.qq.com/gdt_mview.fcg 仍返回真实广告：
+#   ret=0，并带 8KB 左右的加密 list 广告载荷；
+# - 评论区看到的“爱聊”等卡片就是这层 GDT 原生广告继续插入。
+#
+# 因此同时处理 mi.gdt.qq.com 和 v2mi.gdt.qq.com，
+# 都返回“无填充”，而不是硬 REJECT，避免再次引发酷安读秒。
+^https?:\/\/(?:v2)?mi\.gdt\.qq\.com\/gdt_mview\.fcg(?:\?.*)?$ data-type=text data="{\"ret\":102006,\"msg\":\"\"}" status-code=200 header="Content-Type:application/json"
 
 
 # =========================================================
