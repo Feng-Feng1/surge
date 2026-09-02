@@ -1,11 +1,18 @@
 /*
- * Tencent Video Ad Filter Test V9
+ * Tencent Video Ad Filter Test V10
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
+ * V10 adds request-side MVL ad-layout suppression:
+ *   AdRequestContextInfo -> XdRequestContextInfo
+ *
+ * V8/V9 already removed the real ad payload/video, but the latest HAR shows
+ * the empty card shell survives. V10 acts BEFORE getMVLPage is generated so
+ * Tencent is asked for a naturally no-ad layout.
+ *
  * HAR verified: 2026-09-03 00:44
  *
- * V9 target:
+ * V10 target:
  *   The actual ad video is no longer rendered, but the empty/black ad cards
  *   still remain on the Tencent Video detail page.
  *
@@ -41,11 +48,108 @@
 (function () {
   const url = ($request && $request.url) || "";
 
+  function asciiBytesGlobal(s) {
+    const out = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+    return out;
+  }
+
+  function containsBytesGlobal(buf, text) {
+    const needle = asciiBytesGlobal(text);
+    if (!(buf instanceof Uint8Array) || needle.length === 0) return false;
+
+    outer:
+    for (let i = 0; i <= buf.length - needle.length; i++) {
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) continue outer;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function replaceAllSameLengthGlobal(buf, fromText, toText) {
+    if (fromText.length !== toText.length) {
+      throw new Error("length mismatch: " + fromText + " -> " + toText);
+    }
+
+    const from = asciiBytesGlobal(fromText);
+    const to = asciiBytesGlobal(toText);
+    let count = 0;
+
+    outer:
+    for (let i = 0; i <= buf.length - from.length; i++) {
+      for (let j = 0; j < from.length; j++) {
+        if (buf[i + j] !== from[j]) continue outer;
+      }
+      for (let j = 0; j < to.length; j++) {
+        buf[i + j] = to[j];
+      }
+      count++;
+      i += from.length - 1;
+    }
+
+    return count;
+  }
+
   // =====================================================
-  // A. Request mode: keep getvinfo normalization
+  // A. Request mode
   // =====================================================
   if (typeof $response === "undefined") {
     try {
+      // -------------------------------------------------
+      // A1. i.video.qq.com / getMVLPage
+      //
+      // Latest HAR after V9 proves the response-side ad item itself is
+      // already moved to an unknown field, but Tencent Video still reserves
+      // the visual ad slot. The same getMVLPage REQUEST contains:
+      //
+      // type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo
+      //
+      // This is the server-side ad-layout request context.  V10 neutralizes
+      // ONLY that Any type URL before the request reaches Tencent:
+      //
+      // AdRequestContextInfo -> XdRequestContextInfo
+      //
+      // Same length; protobuf framing is unchanged.
+      // The goal is to make the server generate a naturally no-ad layout,
+      // instead of sending an ad layout and deleting its payload afterwards.
+      // -------------------------------------------------
+      if (/^https:\/\/i\.video\.qq\.com\/$/i.test(url)) {
+        const body = $request.body;
+
+        if (!(body instanceof Uint8Array) || body.length === 0) {
+          $done({});
+          return;
+        }
+
+        // Only touch getMVLPage calls. Other i.video.qq.com RPCs pass through.
+        if (!containsBytesGlobal(body, "getMVLPage")) {
+          $done({});
+          return;
+        }
+
+        const fromType =
+          "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo";
+        const toType =
+          "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdRequestContextInfo";
+
+        const changed = replaceAllSameLengthGlobal(body, fromType, toType);
+
+        if (changed > 0) {
+          console.log(
+            "TencentVideo V10 neutralized MVL AdRequestContextInfo: " + changed
+          );
+          $done({ body });
+        } else {
+          $done({});
+        }
+        return;
+      }
+
+      // -------------------------------------------------
+      // A2. svv/vv getvinfo fallback from V6+
+      // -------------------------------------------------
       if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
         let body = $request.body || "";
 
@@ -60,7 +164,7 @@
         body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
 
         if (body !== before) {
-          console.log("TencentVideo V9 getvinfo request normalized");
+          console.log("TencentVideo V10 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -70,7 +174,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V9 request error: " + e);
+      console.log("TencentVideo V10 request error: " + e);
       $done({});
     }
     return;
@@ -110,13 +214,13 @@
       }
 
       if (removed > 0) {
-        console.log("TencentVideo V9 removed getvinfo ad objects: " + removed);
+        console.log("TencentVideo V10 removed getvinfo ad objects: " + removed);
         $done({ body: JSON.stringify(obj) });
       } else {
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V9 getvinfo response error: " + e);
+      console.log("TencentVideo V10 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -297,7 +401,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V9 removed MVL ad card: type=" +
+            "TencentVideo V10 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -308,13 +412,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V9 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V10 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V9 MVL-card error: " + e);
+    console.log("TencentVideo V10 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -365,7 +469,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V9 suppressed getAdDetail payload: len=" +
+          "TencentVideo V10 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -376,7 +480,7 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V9 getAdDetail error: " + e);
+    console.log("TencentVideo V10 getAdDetail error: " + e);
   }
 
   // =====================================================
@@ -403,13 +507,13 @@
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     if (renamed > 0) {
-      console.log("TencentVideo V9 renamed fallback markers: " + renamed);
+      console.log("TencentVideo V10 renamed fallback markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V9 fallback error: " + e);
+    console.log("TencentVideo V10 fallback error: " + e);
     $done({});
   }
 })();
