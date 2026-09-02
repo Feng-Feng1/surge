@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.7
-#!desc=Surge 强力混合去广告：基于 V4.1.6，保留酷安开屏 Fail-Fast/B站/12306修复；按最新酷安评论区 HAR 补齐 mi.gdt.qq.com 优量汇广告无填充响应。
+#!name=AdBlock Hybrid V4.1.8
+#!desc=Surge 强力混合去广告：基于 V4.1.7，修复酷安评论区 Sponsor 卡片 JQ 表达式类型错误；保留酷安开屏 Fail-Fast、GDT 无填充、B站与12306修复。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.7-coolapk-reply-gdt-fix
+#!version=4.1.8-coolapk-reply-jq-fix
 #!system=ios
 
 
@@ -921,7 +921,10 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # 只删除这类 Sponsor 卡，正常评论内容保持不变。
 # =========================================================
 
-http-response-jq ^https:\/\/api\.coolapk\.com\/v6\/feed\/replyList(?:\?.*)?$ 'if (.data? | type) == "array" then .data |= map(select((((.entityTemplate // "") != "feedDetailReplySponsorCard") and ((.title // "") != "FEED_DETAIL_REPLY_SPONSOR_CARD") and (((.entityId // "") | startswith("sponsor-feedList-feedDetail")) | not)))) else . end'
+# V4.1.8：只按酷安专用模板精确删除。
+# HAR 已确认广告卡模板就是 feedDetailReplySponsorCard。
+# 不再对 entityId 做 startswith()，避免普通数字评论 ID 触发 JQ 类型错误。
+http-response-jq ^https:\/\/api\.coolapk\.com\/v6\/feed\/replyList 'if (.data? | type) == "array" then .data |= map(select((.entityTemplate // "") != "feedDetailReplySponsorCard")) else . end'
 
 
 # 开屏：清空 adMap
