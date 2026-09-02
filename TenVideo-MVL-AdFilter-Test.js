@@ -1,43 +1,56 @@
 /*
- * Tencent Video Ad Filter Test V7
+ * Tencent Video Ad Filter Test V8
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * HAR verified: 2026-09-03 00:21
+ * HAR verified: 2026-09-03 00:31
  *
- * Key finding:
- * V6 DID hit at least one getvinfo request:
- *   sppreviewtype=0
- *   spsrt=0
+ * V8 key finding:
  *
- * But Tencent's server STILL returned a complete ad object:
- *   vl.vi[0].ad.adsid
- *   vl.vi[0].ad.adpinfo
- *   vl.vi[0].ad.adsize
+ * V7 already worked on getvinfo:
+ *   - requests are normalized to sppreviewtype=0 / spsrt=0
+ *   - captured getvinfo responses no longer contain vl.vi[*].ad
  *
- * The adpinfo explicitly contains:
- *   ad_vid
- *   ad_dura
- *   slot_index
- *   ad_time_begin / ad_time_end
+ * But the app STILL fetched a real ad MP4 from:
+ *   ugchsy.gtimg.com/gzc_1000127_...f10215.mp4
  *
- * A parallel getvinfo response in the SAME HAR naturally had NO "ad"
- * property at all and otherwise kept the normal video payload.
+ * The same HAR exposes the real remaining source:
  *
- * Therefore V7 no longer relies on old request parameters alone.
- * It makes ad-bearing getvinfo responses look like the naturally
- * occurring no-ad response by deleting ONLY vi.ad.
+ *   POST https://i.video.qq.com/
+ *   RPC:
+ *     com.tencent.qqlive.protocol.pb.adService/getAdDetail
  *
- * No CDN blocking.
- * No normal video URL rewriting.
- * No VIP spoofing.
+ * Its binary response contains an entire ad payload:
+ *   mod_trailer_ad
+ *   mod_trailer_item
+ *   AdFeedImagePoster
+ *   gdt_stats.fcg
+ *   advertiser / ad_vid / ad_request_id
+ *
+ * In every captured getAdDetail response, that ad payload is wrapped by one
+ * large top-level protobuf length-delimited field:
+ *
+ *   field #1 (tag 0x0A), about 11 KB ~ 20 KB
+ *
+ * V8 changes ONLY that outer ad payload field tag:
+ *
+ *   0x0A (field #1, wire type 2)
+ *     ->
+ *   0x7A (field #15, wire type 2)
+ *
+ * Same one-byte tag length. No protobuf byte count changes.
+ * The response header remains intact, but a normal generated parser should
+ * ignore the unknown field and therefore receive "successful response with
+ * no recognized ad payload".
+ *
+ * This is more precise than blocking shared Tencent CDN domains.
  */
 
 (function () {
   const url = ($request && $request.url) || "";
 
   // =====================================================
-  // A. Request mode: keep V6 request-side fallback
+  // A. Request mode: keep getvinfo parameter normalization
   // =====================================================
   if (typeof $response === "undefined") {
     try {
@@ -55,7 +68,7 @@
         body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
 
         if (body !== before) {
-          console.log("TencentVideo V7 getvinfo request normalized");
+          console.log("TencentVideo V8 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -65,7 +78,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V7 request error: " + e);
+      console.log("TencentVideo V8 request error: " + e);
       $done({});
     }
     return;
@@ -76,7 +89,7 @@
   // =====================================================
   if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
     try {
-      let text = $response.body;
+      const text = $response.body;
 
       if (typeof text !== "string" || text.length === 0) {
         $done({});
@@ -105,22 +118,20 @@
       }
 
       if (removed > 0) {
-        console.log("TencentVideo V7 removed getvinfo ad objects: " + removed);
-        $done({
-          body: JSON.stringify(obj)
-        });
+        console.log("TencentVideo V8 removed getvinfo ad objects: " + removed);
+        $done({ body: JSON.stringify(obj) });
       } else {
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V7 getvinfo response error: " + e);
+      console.log("TencentVideo V8 getvinfo response error: " + e);
       $done({});
     }
     return;
   }
 
   // =====================================================
-  // C. Response mode: keep MVL protobuf fallback
+  // C. Binary helpers for i.video.qq.com
   // =====================================================
   const body = $response.body;
 
@@ -133,6 +144,29 @@
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
     return out;
+  }
+
+  function containsText(buf, start, end, text) {
+    const needle = asciiBytes(text);
+
+    if (
+      needle.length === 0 ||
+      start < 0 ||
+      end > buf.length ||
+      start >= end
+    ) {
+      return false;
+    }
+
+    outer:
+    for (let i = start; i <= end - needle.length; i++) {
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) continue outer;
+      }
+      return true;
+    }
+
+    return false;
   }
 
   function readVarint(buf, pos) {
@@ -151,95 +185,6 @@
     }
 
     return null;
-  }
-
-  function findAll(buf, text) {
-    const needle = asciiBytes(text);
-    const out = [];
-
-    if (needle.length === 0 || needle.length > buf.length) return out;
-
-    outer:
-    for (let i = 0; i <= buf.length - needle.length; i++) {
-      for (let j = 0; j < needle.length; j++) {
-        if (buf[i + j] !== needle[j]) continue outer;
-      }
-      out.push(i);
-      i += needle.length - 1;
-    }
-
-    return out;
-  }
-
-  function containsText(buf, start, end, text) {
-    const needle = asciiBytes(text);
-    if (needle.length === 0 || start < 0 || end > buf.length) return false;
-
-    outer:
-    for (let i = start; i <= end - needle.length; i++) {
-      for (let j = 0; j < needle.length; j++) {
-        if (buf[i + j] !== needle[j]) continue outer;
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  function findAdItemWrapper(buf, markerPos) {
-    const scanStart = Math.max(0, markerPos - 65536);
-    let best = null;
-
-    for (let p = scanStart; p <= markerPos; p++) {
-      if (buf[p] !== 0x0a) continue;
-
-      const lenInfo = readVarint(buf, p + 1);
-      if (!lenInfo) continue;
-
-      const payloadStart = lenInfo.next;
-      const len = lenInfo.value;
-      const payloadEnd = payloadStart + len;
-
-      if (len < 1024 || len > 65536) continue;
-      if (payloadStart > markerPos || payloadEnd <= markerPos) continue;
-      if (payloadEnd > buf.length) continue;
-
-      if (!best || len < best.len) {
-        best = {
-          tagPos: p,
-          payloadStart: payloadStart,
-          payloadEnd: payloadEnd,
-          len: len
-        };
-      }
-    }
-
-    return best;
-  }
-
-  function isConfirmedAdItem(buf, wrapper) {
-    const s = wrapper.payloadStart;
-    const e = wrapper.payloadEnd;
-
-    const evidence = [
-      "gdt_stats.fcg",
-      "advertiser=",
-      "ad_request_id",
-      "ad_report_params",
-      "AdFeedInfo",
-      "AdFocusPoster",
-      "AdResponseInfo",
-      "ad_block_",
-      "_ad_insert_mix_block",
-      "feeds_ad_style"
-    ];
-
-    let score = 0;
-    for (const x of evidence) {
-      if (containsText(buf, s, e, x)) score++;
-    }
-
-    return score >= 2;
   }
 
   function replaceAllSameLength(buf, fromText, toText) {
@@ -268,43 +213,102 @@
     return count;
   }
 
+  // =====================================================
+  // D. Strong V8 fix:
+  //    suppress the whole getAdDetail protobuf payload
+  // =====================================================
   try {
-    const strongMarkers = [
-      "_ad_insert_mix_block",
-      "_xx_insert_mix_block",
-      "feeds_ad_style",
-      "feeds_xx_style",
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdFeedInfo",
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdFeedInfo",
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdResponseInfo",
-      "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdResponseInfo"
-    ];
+    /*
+     * Detection is based on RESPONSE evidence, so it does not depend on
+     * whether Surge exposes the binary request body inside an http-response
+     * script.
+     *
+     * Captured getAdDetail responses consistently contain all of:
+     *   mod_trailer_ad
+     *   gdt_stats.fcg
+     *   ad_vid
+     *
+     * We scan one-byte protobuf length-delimited fields and select the
+     * LARGEST field >= 4 KB containing at least 3 independent ad signals.
+     * In the supplied HAR this selects exactly the outer ad payload:
+     *
+     *   11706 bytes / 11701 bytes / 20232 bytes
+     */
+    if (
+      url === "https://i.video.qq.com/" &&
+      containsText(body, 0, body.length, "mod_trailer_ad") &&
+      containsText(body, 0, body.length, "gdt_stats.fcg") &&
+      containsText(body, 0, body.length, "ad_vid")
+    ) {
+      let best = null;
 
-    const wrapperPositions = {};
+      for (let p = 0; p < body.length - 2; p++) {
+        const tag = body[p];
 
-    for (const marker of strongMarkers) {
-      const positions = findAll(body, marker);
+        // Only one-byte protobuf tags with wire type 2.
+        if (tag === 0 || tag >= 0x80 || (tag & 0x07) !== 2) continue;
 
-      for (const markerPos of positions) {
-        const wrapper = findAdItemWrapper(body, markerPos);
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
 
-        if (wrapper && isConfirmedAdItem(body, wrapper)) {
-          wrapperPositions[String(wrapper.tagPos)] = wrapper;
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (len < 4096 || payloadEnd > body.length) continue;
+
+        let score = 0;
+
+        if (containsText(body, payloadStart, payloadEnd, "mod_trailer_ad")) score++;
+        if (containsText(body, payloadStart, payloadEnd, "gdt_stats.fcg")) score++;
+        if (containsText(body, payloadStart, payloadEnd, "ad_vid")) score++;
+        if (containsText(body, payloadStart, payloadEnd, "AdFeedImagePoster")) score++;
+        if (containsText(body, payloadStart, payloadEnd, "advertiser")) score++;
+
+        if (
+          score >= 3 &&
+          (!best || len > best.len)
+        ) {
+          best = {
+            tagPos: p,
+            tag: tag,
+            len: len,
+            score: score
+          };
+        }
+      }
+
+      if (best) {
+        /*
+         * Captured getAdDetail outer payload is field #1 / tag 0x0A.
+         * Only replace that confirmed tag.  If Tencent changes the schema,
+         * fail open instead of corrupting an unrelated field.
+         */
+        if (best.tag === 0x0a) {
+          body[best.tagPos] = 0x7a;
+
+          console.log(
+            "TencentVideo V8 suppressed getAdDetail payload: pos=" +
+            best.tagPos +
+            ", len=" +
+            best.len +
+            ", score=" +
+            best.score
+          );
+
+          $done({ body });
+          return;
         }
       }
     }
+  } catch (e) {
+    console.log("TencentVideo V8 getAdDetail suppression error: " + e);
+  }
 
-    let suppressed = 0;
-
-    for (const k in wrapperPositions) {
-      const wrapper = wrapperPositions[k];
-
-      if (body[wrapper.tagPos] === 0x0a) {
-        body[wrapper.tagPos] = 0x7a;
-        suppressed++;
-      }
-    }
-
+  // =====================================================
+  // E. Existing MVL fallback
+  // =====================================================
+  try {
     let renamed = 0;
 
     for (let i = 0; i <= 9; i++) {
@@ -324,19 +328,14 @@
     renamed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
-    if (suppressed > 0 || renamed > 0) {
-      console.log(
-        "TencentVideo AdFilter V7 MVL: suppressed=" +
-        suppressed +
-        ", renamed=" +
-        renamed
-      );
+    if (renamed > 0) {
+      console.log("TencentVideo V8 MVL renamed markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V7 MVL response error: " + e);
+    console.log("TencentVideo V8 MVL error: " + e);
     $done({});
   }
 })();
