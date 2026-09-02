@@ -1,45 +1,74 @@
 /*
- * Tencent Video Ad Filter Test V5
+ * Tencent Video Ad Filter Test V6
  * Keep the SAME GitHub path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * HAR verified: 2026-09-02 23:44
+ * HAR verified: 2026-09-02 23:58
  *
- * V5 key change:
- * Previous V1-V4 scripts DID modify the protobuf payload, but Tencent Video
- * still rendered the ads. The new HAR proves the actual ad is a complete
- * repeated protobuf item, not just a string/type marker.
+ * V6 adds a REQUEST-side fix for Tencent Video's playback/getvinfo path.
  *
- * Example from the captured getMVLPage response:
- *   repeated field #1 item 0 : normal focus card, ~4.6 KB
- *   repeated field #1 item 1 : AD ITEM, ~26.7 KB
- *   repeated field #1 item 2+: normal focus cards
+ * Latest HAR shows:
+ *   POST https://svv.video.qq.com/getvinfo
+ *     sppreviewtype=1
+ *     spsrt=3
+ *     spadseg=3
+ *     adversion=220262
+ *     adpass=...
  *
- * The ad item contains:
- *   ad_block_*
- *   _ad_insert_mix_block
- *   AdFeedInfo / AdFocusPoster
- *   advertiser=...
- *   gdt_stats.fcg
+ * Immediately afterwards the app downloads separate 1000127/f10215 MP4
+ * creatives from ugchsy.gtimg.com while the normal episode stream returned
+ * by getvinfo uses the 1000102 family.
  *
- * Another ~5.3 KB repeated item contains the detail/feed ad:
- *   feeds_ad_style
- *   AdResponseInfo
- *   advertiser=...
- *   business=ad
+ * Historical Tencent Video ad-block rules also target getvinfo by forcing:
+ *   sppreviewtype -> 0
+ *   spsrt         -> 0
  *
- * Strategy:
- * - Find the smallest enclosing protobuf field #1 (wire type 2) larger than
- *   1 KB that contains a confirmed ad marker.
- * - Change ONLY that outer field tag from 0x0A (field #1) to 0x7A
- *   (field #15, same one-byte tag length).
- * - The original length and payload bytes stay intact, so protobuf framing
- *   is not shifted. A normal generated parser should skip the unknown field.
- *
- * This is much stronger than merely renaming AdFeedInfo/XdFeedInfo.
+ * V6 keeps the existing MVL binary response filter, and adds that request
+ * normalization for current svv.video.qq.com.
  */
 
 (function () {
+  const url = ($request && $request.url) || "";
+
+  // =====================================================
+  // A. Request mode: Tencent Video playback/getvinfo
+  // =====================================================
+  if (typeof $response === "undefined") {
+    try {
+      if (/^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$)/i.test(url)) {
+        let body = $request.body || "";
+
+        if (typeof body !== "string" || body.length === 0) {
+          $done({});
+          return;
+        }
+
+        const before = body;
+
+        // Established Tencent Video request-side ad suppression parameters.
+        body = body.replace(/(^|&)sppreviewtype=[^&]*/i, "$1sppreviewtype=0");
+        body = body.replace(/(^|&)spsrt=[^&]*/i, "$1spsrt=0");
+
+        if (body !== before) {
+          console.log("TencentVideo V6 getvinfo request normalized");
+          $done({ body });
+        } else {
+          $done({});
+        }
+        return;
+      }
+
+      $done({});
+    } catch (e) {
+      console.log("TencentVideo V6 request error: " + e);
+      $done({});
+    }
+    return;
+  }
+
+  // =====================================================
+  // B. Response mode: i.video.qq.com MVL protobuf filter
+  // =====================================================
   const body = $response.body;
 
   if (!(body instanceof Uint8Array) || body.length === 0) {
@@ -104,25 +133,11 @@
     return false;
   }
 
-  /*
-   * Find the smallest enclosing protobuf field:
-   *
-   *   0x0A <varint length> <payload>
-   *
-   * whose payload contains markerPos and is between 1 KB and 64 KB.
-   *
-   * In the supplied HAR this selects:
-   *   - ~26730-byte top/focus ad item
-   *   - ~5363-byte feed/detail ad item
-   *
-   * It does NOT select tiny inner string/message fields or huge page parents.
-   */
   function findAdItemWrapper(buf, markerPos) {
     const scanStart = Math.max(0, markerPos - 65536);
     let best = null;
 
     for (let p = scanStart; p <= markerPos; p++) {
-      // field #1, wire type 2
       if (buf[p] !== 0x0a) continue;
 
       const lenInfo = readVarint(buf, p + 1);
@@ -153,8 +168,6 @@
     const s = wrapper.payloadStart;
     const e = wrapper.payloadEnd;
 
-    // Require multiple independent ad signals to avoid suppressing a normal
-    // protobuf item just because it contains one generic "ad" substring.
     const evidence = [
       "gdt_stats.fcg",
       "advertiser=",
@@ -165,8 +178,7 @@
       "AdResponseInfo",
       "ad_block_",
       "_ad_insert_mix_block",
-      "feeds_ad_style",
-      "business"
+      "feeds_ad_style"
     ];
 
     let score = 0;
@@ -217,17 +229,13 @@
 
     const wrapperPositions = {};
 
-    // First pass: identify whole ad items while the original markers exist.
     for (const marker of strongMarkers) {
       const positions = findAll(body, marker);
 
       for (const markerPos of positions) {
         const wrapper = findAdItemWrapper(body, markerPos);
 
-        if (
-          wrapper &&
-          isConfirmedAdItem(body, wrapper)
-        ) {
+        if (wrapper && isConfirmedAdItem(body, wrapper)) {
           wrapperPositions[String(wrapper.tagPos)] = wrapper;
         }
       }
@@ -235,28 +243,16 @@
 
     let suppressed = 0;
 
-    // Strong fix:
-    // 0x0A = protobuf field #1, wire type 2
-    // 0x7A = protobuf field #15, wire type 2
-    //
-    // Same one-byte tag size, therefore no offsets/lengths change.
+    // Keep V5 whole-item experiment.
     for (const k in wrapperPositions) {
       const wrapper = wrapperPositions[k];
 
       if (body[wrapper.tagPos] === 0x0a) {
         body[wrapper.tagPos] = 0x7a;
         suppressed++;
-        console.log(
-          "TencentVideo V5 suppressed protobuf ad item: pos=" +
-          wrapper.tagPos +
-          ", len=" +
-          wrapper.len
-        );
       }
     }
 
-    // Secondary fallback markers. These remain same-length and are harmless
-    // if the whole item was already moved to an unknown field.
     let renamed = 0;
 
     for (let i = 0; i <= 9; i++) {
@@ -278,7 +274,7 @@
 
     if (suppressed > 0 || renamed > 0) {
       console.log(
-        "TencentVideo AdFilter V5: suppressed=" +
+        "TencentVideo AdFilter V6 MVL: suppressed=" +
         suppressed +
         ", renamed=" +
         renamed
@@ -288,7 +284,7 @@
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo AdFilter V5 error: " + e);
+    console.log("TencentVideo V6 response error: " + e);
     $done({});
   }
 })();
