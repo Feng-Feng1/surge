@@ -1,17 +1,28 @@
 /*
- * Tencent Video Ad Filter Test V3
- * Target: Tencent Video iOS
- * HAR verified: 2026-09-02
+ * Tencent Video Ad Filter Test V4
+ * Same GitHub path: TenVideo-MVL-AdFilter-Test.js
  *
- * IMPORTANT:
- * - Keep the SAME GitHub raw path.
- * - Overwrite the old TenVideo-MVL-AdFilter-Test.js with this file.
- * - Surge module does not need to change.
+ * HAR verified: 2026-09-02 23:36
  *
- * Strategy:
- * Tencent Video detail-page ads are delivered inside protobuf/TRPC binary
- * responses from i.video.qq.com.  V3 keeps protobuf framing intact by doing
- * SAME-LENGTH byte substitutions only.  No bytes are inserted or removed.
+ * Key finding:
+ * V3 substitutions ARE taking effect (xx_block_*, XdFeedInfo,
+ * XdFocusPoster, feeds_xx_style are visible in the captured response),
+ * but Tencent Video still renders the ad because the outer protobuf Any
+ * remains a valid generic pb.Block.
+ *
+ * V4 therefore neutralizes the OUTER ad Block type itself:
+ *
+ *   ...protocol.pb.Block
+ *                -> ...protocol.pb.Xlock
+ *
+ * ONLY when that Block sits immediately after the confirmed ad container
+ * marker (_ad_insert_mix_block / _xx_insert_mix_block).
+ *
+ * Safety:
+ * - binary-body-mode=true
+ * - same-length substitutions only
+ * - no protobuf length changes
+ * - normal i.video.qq.com RPCs pass through unchanged
  */
 
 (function () {
@@ -26,6 +37,39 @@
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
     return out;
+  }
+
+  function findBytes(buf, needle, start, end) {
+    const n = asciiBytes(needle);
+    const s = Math.max(0, start || 0);
+    const e = Math.min(buf.length, end == null ? buf.length : end);
+
+    outer:
+    for (let i = s; i <= e - n.length; i++) {
+      for (let j = 0; j < n.length; j++) {
+        if (buf[i + j] !== n[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
+  }
+
+  function replaceAt(buf, pos, fromText, toText) {
+    if (fromText.length !== toText.length) {
+      throw new Error("length mismatch: " + fromText + " -> " + toText);
+    }
+    const from = asciiBytes(fromText);
+    const to = asciiBytes(toText);
+
+    if (pos < 0 || pos + from.length > buf.length) return 0;
+
+    for (let j = 0; j < from.length; j++) {
+      if (buf[pos + j] !== from[j]) return 0;
+    }
+    for (let j = 0; j < to.length; j++) {
+      buf[pos + j] = to[j];
+    }
+    return 1;
   }
 
   function replaceAllSameLength(buf, fromText, toText) {
@@ -48,7 +92,6 @@
       count++;
       i += from.length - 1;
     }
-
     return count;
   }
 
@@ -56,9 +99,47 @@
     let changed = 0;
 
     // -----------------------------------------------------
-    // 1. MVL dynamic ad block identifiers
+    // 1. Strong fix: neutralize the OUTER protobuf Block
+    //    only when tied to the confirmed ad container.
     // -----------------------------------------------------
-    // HAR has shown ad_block_2 / ad_block_4 and other dynamic indices.
+    const adContainerMarkers = [
+      "_ad_insert_mix_block",
+      "_xx_insert_mix_block"
+    ];
+
+    const blockType =
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.Block";
+    const deadBlockType =
+      "type.googleapis.com/com.tencent.qqlive.protocol.pb.Xlock";
+
+    for (const marker of adContainerMarkers) {
+      let searchFrom = 0;
+
+      while (searchFrom < body.length) {
+        const markerPos = findBytes(body, marker, searchFrom, body.length);
+        if (markerPos < 0) break;
+
+        // In the supplied HAR the Any type follows the ad marker by only
+        // a few dozen bytes.  Keep the search window tight so a normal
+        // Block elsewhere in the response is not touched.
+        const blockPos = findBytes(
+          body,
+          blockType,
+          markerPos,
+          Math.min(body.length, markerPos + 320)
+        );
+
+        if (blockPos >= 0) {
+          changed += replaceAt(body, blockPos, blockType, deadBlockType);
+        }
+
+        searchFrom = markerPos + marker.length;
+      }
+    }
+
+    // -----------------------------------------------------
+    // 2. Existing MVL ad identifiers
+    // -----------------------------------------------------
     for (let i = 0; i <= 9; i++) {
       changed += replaceAllSameLength(
         body,
@@ -77,19 +158,8 @@
     changed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     // -----------------------------------------------------
-    // 2. Tencent Video detail-page / trailer ad containers
+    // 3. Detail/trailer ad identifiers from previous HARs
     // -----------------------------------------------------
-    // New HAR confirmed these remain AFTER V2 and are tied directly to
-    // visible detail-page ads:
-    //
-    // mod_trailer_ad      -> top video/trailer advertisement container
-    // outerPaster         -> outer/pre-roll ad type
-    // mod_banner_ad       -> detail-page banner/feed ad module
-    // ad_detail_feeds_spa -> detail-feed ad slot
-    // ad_mod=ep_list_ad   -> episode-list ad slot
-    //
-    // Rename only the ad-specific identifiers.  Do NOT touch normal
-    // trailer-item or video-module names.
     changed += replaceAllSameLength(body, "mod_trailer_ad", "mod_trailer_xx");
     changed += replaceAllSameLength(body, "outerPaster", "outerXaster");
     changed += replaceAllSameLength(body, "mod_banner_ad", "mod_banner_xx");
@@ -105,7 +175,7 @@
     );
 
     // -----------------------------------------------------
-    // 3. Protobuf Any ad payload/action types
+    // 4. Protobuf Any ad payload/action type names
     // -----------------------------------------------------
     const typePairs = [
       [
@@ -147,14 +217,13 @@
     }
 
     if (changed > 0) {
-      console.log("TencentVideo AdFilter V3 neutralized markers: " + changed);
+      console.log("TencentVideo AdFilter V4 neutralized markers: " + changed);
       $done({ body });
     } else {
-      // Non-ad i.video.qq.com RPCs are passed through unchanged.
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo AdFilter V3 error: " + e);
+    console.log("TencentVideo AdFilter V4 error: " + e);
     $done({});
   }
 })();
