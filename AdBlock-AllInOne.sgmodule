@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8
-#!desc=Surge 强力混合去广告：基于 V4.1.7，修复酷安评论区 Sponsor 卡片 JQ 表达式类型错误；保留酷安开屏 Fail-Fast、GDT 无填充、B站与12306修复。
+#!name=AdBlock Hybrid V4.1.8.1
+#!desc=Surge 强力混合去广告：基于稳定 V4.1.8，按小安科技微信小程序 HAR 实抓，将广告配置硬 REJECT 改为“正常成功但无广告”，尝试同时消除广告素材、插屏弹窗与空白读秒。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8-coolapk-reply-jq-fix
+#!version=4.1.8.1-xiaoan-no-wait
 #!system=ios
 
 
@@ -762,8 +762,8 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 # B. 微信小程序 / 小安科技实测
 # =========================================================
-^https:\/\/ebike-client\.xiaoantech\.com\/client\/ad\/config\/getAdConfigForGuest(?:\?.*)?$ _ reject
-^https:\/\/ebike-client-prod\.xiaoantech\.net\/client\/ad\/config\/getAdConfigV3(?:\?.*)?$ _ reject
+# 小安广告配置不再硬 REJECT；由 [Map Local] 返回“成功但无广告”，避免失败重试/读秒。
+# 小安广告配置不再硬 REJECT；由 [Map Local] 返回“成功但无广告”，避免失败重试/读秒。
 ^https:\/\/wxsmw\.wxs\.qq\.com\/.*\/ads_svp_video_ _ reject
 ^https:\/\/wximg\.wxs\.qq\.com\/141\/20204\/snscosdownload\/SZ\/reserved\/ _ reject
 
@@ -821,6 +821,64 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 
 [Map Local]
+
+
+# =========================================================
+# 小安科技微信小程序：广告配置 Fail-Fast / No-Ad
+# =========================================================
+#
+# 2026-09-02 HAR 实抓结论：
+#
+# A. 旧规则的问题
+# ---------------------------------------------------------
+# ebike-client.xiaoantech.com
+# /client/ad/config/getAdConfigForGuest
+#
+# 在不到 1 秒里被 URL Rewrite 硬 reject 约 79 次。
+# 这说明“把广告接口断网”并没有让小程序认为没有广告，
+# 反而触发了高频重试，容易形成空白广告页/读秒等待。
+#
+# B. 真正漏网的广告配置
+# ---------------------------------------------------------
+# ebike-client-j.xiaoantech.net
+# /client/ad/config/getAdConfigV3
+#
+# HAR 中它正常返回约 10 KB JSON，里面有 16 个广告位，包括：
+# - cover：封面
+# - unLockSuc：车辆开锁成功后插屏
+# - toPrecycling：开锁骑行前插屏
+# - paid：骑行支付后插屏
+# - homeBottom / recharge / userInfoBottom 等原生广告
+# - 聚聚好玩的骑行结束页弹窗 / 订单页 Banner
+#
+# 所以仅屏蔽 wximg/wxsmw 广告素材，只能让“画面消失”；
+# 小程序仍然拿到了“这里应该显示广告”的配置，自然还会创建
+# 广告容器、弹窗和本地倒计时。
+#
+# C. 新策略
+# ---------------------------------------------------------
+# 对三个已实测环境主机统一返回服务端正常成功结构：
+#
+#   {"success":true,"code":"0","msg":"成功","data":[]}
+#
+# 也就是：
+# “接口成功，但当前一个广告位都没有。”
+#
+# 这样比 REJECT 更接近真正的“无广告用户”状态：
+# - 不生成 cover
+# - 不生成微信插屏 adunit
+# - 不生成原生广告位
+# - 不触发第三方聚聚好玩弹窗
+# - 客户端无需等待网络失败/重试
+# =========================================================
+
+^https:\/\/(?:ebike-client\.xiaoantech\.com|ebike-client-prod\.xiaoantech\.net|ebike-client-j\.xiaoantech\.net)\/client\/ad\/config\/(?:getAdConfigForGuest|getAdConfigV3)(?:\?.*)?$ data-type=text data="{\"success\":true,\"code\":\"0\",\"msg\":\"成功\",\"data\":[]}" status-code=200 header="Content-Type:application/json"
+
+# 用车说明页还有一套独立的智能/插屏广告开关。
+# HAR 实抓返回 shieldSmartAd=true，并下发两个微信 adunit。
+# 这里返回同结构，但显式关闭广告并清空 adunit。
+^https:\/\/ebike-client\.xiaoantech\.com\/client\/ad\/config\/getShieldSmartAdConfig(?:\?.*)?$ data-type=text data="{\"success\":true,\"code\":\"0\",\"msg\":\"成功\",\"data\":{\"shieldSmartAd\":false,\"shieldSmartAdUnitId\":\"\",\"shieldInterstitialAdUnitId\":\"\",\"shieldSmartAdUnitName\":\"\",\"shieldInterstitialAdUnitName\":\"\"}}" status-code=200 header="Content-Type:application/json"
+
 
 # =========================================================
 # 酷安：广告 SDK Fail-Fast（减少开屏读秒）
@@ -1007,4 +1065,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net
