@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1 Aggressive
-#!desc=Surge 强力混合去广告：基于 V4 稳定版，新增菜鸟首页信息流、大家都在逛、底部推广、飞行广告与广告关键词深度净化，同时保留酷安/微信小程序兼容策略。
+#!name=AdBlock Hybrid V4.2 Aggressive
+#!desc=Surge 强力混合去广告：基于 V4.1，按菜鸟 HAR 实抓修复广告素材漏网、AMDC IP 回退与 HTTPS Rewrite 未进入 MITM 的问题；保留酷安/微信小程序/闲鱼兼容策略。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1-cainiao
+#!version=4.2-cainiao-har
 #!system=ios
 
 
@@ -30,6 +30,30 @@ DOMAIN,sdk.verification.jiguang.cn,DIRECT
 
 AND,((DOMAIN-KEYWORD,tnc),(OR,((DOMAIN-SUFFIX,capcutapi.com),(DOMAIN-SUFFIX,zijieapi.com),(DOMAIN-SUFFIX,isnssdk.com),(DOMAIN-SUFFIX,toutiaoapi.com),(DOMAIN-SUFFIX,bytedance.com),(DOMAIN-SUFFIX,snssdk.com),(DOMAIN-SUFFIX,sgsnssdk.com)))),DIRECT
 
+
+# =========================================================
+# 0.4 菜鸟 HAR 实抓补丁
+# =========================================================
+#
+# 2026-09-02 HAR 确认：
+# 1) 菜鸟仍在请求 tr.byteurl.cn/ad/impression/toutiao/
+# 2) 实际广告图片从 p11-sign.douyinpic.com/tos-cn-o-2287/... 下载
+#    请求 UA = TBIOS/Native com.cainiao.cnwireless ...
+# 3) AMDC 不只访问 amdc.m.taobao.com，还会直接回退到 IP：
+#    59.82.113.10 / 59.82.113.219
+#
+# 因此不能只补菜鸟第一方接口；必须同时截住“广告素材链路”和 AMDC IP 回退。
+# =========================================================
+
+# 字节广告曝光链路：HAR 中 21 次，全部为 /ad/impression/toutiao/
+DOMAIN,tr.byteurl.cn,REJECT,extended-matching,pre-matching
+
+# 阿里广告监测反馈：HAR 中大量出现，仅做广告监测，不承载菜鸟核心功能
+DOMAIN,admonitor-feedback.cn-hangzhou.log.aliyuncs.com,REJECT,extended-matching,pre-matching
+
+# 菜鸟内嵌字节广告图片。
+# 只在 User-Agent 明确属于菜鸟时拦 douyinpic，避免影响抖音本身正常图片。
+AND,((USER-AGENT,*com.cainiao.cnwireless*),(DOMAIN-SUFFIX,douyinpic.com)),REJECT-TINYGIF
 
 # =========================================================
 # 0.5 高优先级广告底座（关键修复）
@@ -865,7 +889,7 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 # - nbnetflow 广告数据结构
 # =========================================================
 
-菜鸟-AMDC净化 = type=http-response,pattern=^http:\/\/amdc\.m\.taobao\.com,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_amdc.js,timeout=60
+菜鸟-AMDC净化 = type=http-response,pattern=^http:\/\/(?:amdc\.m\.taobao\.com|[0-9]{1,3}(?:\.[0-9]{1,3}){3})\/amdc\/mobileDispatch,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_amdc.js,timeout=60
 
 菜鸟-首页Merge净化 = type=http-response,pattern=^https?:\/\/[a-zA-Z0-9_.-]+\.cainiao\.com\/gw\/mtop\.cainiao\.nbpresentation\.homepage\.merge\.get\.cn,requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/ifflagged/Romeo/main/Modules/JavaScript/ddgksf2013/CainiaoAds/ddgksf2013_cainiao_json.js,timeout=60
 
@@ -887,4 +911,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, tr.byteurl.cn, lf-cdn-tos.bytescm.com, p*-sign.douyinpic.com
