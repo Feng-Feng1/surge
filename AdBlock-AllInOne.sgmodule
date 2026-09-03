@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.8 Test
-#!desc=基于 V4.1.8.7：保留腾讯视频 QAD 长视频广告 Fail-Fast；新增 xs.gdt.qq.com 本地 204 No-Fill，针对详情页普遍残留的 GDT 图片广告卡壳/缓存广告池。
+#!name=AdBlock Hybrid V4.1.8.9 Test
+#!desc=基于已验证的 V4.1.8.7 QAD 长视频广告修复；不继承 V4.1.8.8 的 xs.gdt 204。配合 V14 精确删除腾讯视频 VideoDetail/PageService 返回中的 AdFeedInfo 图片广告卡片。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.8-tencentvideo-gdt-nofill-test
+#!version=4.1.8.9-tencentvideo-card-object-test
 #!system=ios
 
 
@@ -109,12 +109,6 @@ DOMAIN,masdkv6.3g.qq.com,DIRECT
 # 返回“无填充”成功响应；其他 gdt.qq.com 广告主机仍按原规则拒绝。
 DOMAIN,v2mi.gdt.qq.com,DIRECT
 DOMAIN,mi.gdt.qq.com,DIRECT
-
-# 腾讯视频详情页 GDT：
-# 最新 HAR 仍持续触发 xs.gdt.qq.com/car/p/m_list、模板接口与上报。
-# 不再让 xs.gdt 走硬 REJECT，交给 [Map Local] 本地秒回 204，
-# 目标是让 SDK 得到“本次无广告/无内容”，避免继续依赖失败后的本地广告缓存。
-DOMAIN,xs.gdt.qq.com,DIRECT
 
 DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
 
@@ -829,34 +823,6 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 [Map Local]
 
 # =========================================================
-# 腾讯视频：GDT 原生图片广告 No-Fill / 卡壳抑制
-# =========================================================
-#
-# 2026-09-03 12:19 HAR：
-# 在图片广告卡片仍显示时，腾讯视频持续请求：
-#
-#   xs.gdt.qq.com/car/p/m_list
-#   xs.gdt.qq.com/style_factory/template_list
-#   xs.gdt.qq.com/style_factory/module_list
-#   xs.gdt.qq.com/picasso/preload/template_list
-#   xs.gdt.qq.com/car/m/report_m
-#
-# 旧逻辑是 DOMAIN-SUFFIX,gdt.qq.com -> REJECT。
-# 这会让 GDT SDK 得到“网络失败”，而不是“无广告”。
-# 结合当前现象（素材被拦、卡片壳仍在、文字可来自缓存），
-# 很像 SDK 在网络失败后继续使用本地广告缓存/旧广告池。
-#
-# 这里把 xs.gdt.qq.com 单独放进 HTTP 层，并对该广告服务主机
-# 统一返回 HTTP 204 No Content。
-#
-# 不放行真实广告请求，不返回广告素材，也避免 TCP/TLS 硬失败。
-# 第一次测试前请清一次腾讯视频 APP 内缓存，让旧广告池失效。
-# =========================================================
-
-^https:\/\/xs\.gdt\.qq\.com\/.* data-type=text data="" status-code=204
-
-
-# =========================================================
 # 腾讯视频：QAD / GDT 独立广告媒体 Fail-Fast
 # =========================================================
 #
@@ -1199,4 +1165,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com, xs.gdt.qq.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com
