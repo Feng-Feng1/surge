@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.9 Test
-#!desc=基于已验证的 V4.1.8.7 QAD 长视频广告修复；不继承 V4.1.8.8 的 xs.gdt 204。配合 V14 精确删除腾讯视频 VideoDetail/PageService 返回中的 AdFeedInfo 图片广告卡片。
+#!name=AdBlock Hybrid V4.1.8.10 Test
+#!desc=基于 V4.1.8.9：保留 V14 图片广告卡片删除；按最新 HAR 扩展腾讯视频 QADVideo 媒体 Fail-Fast，新增 1000173/f124105/f206310 系列，修复 60~90 秒视频广告重新出现。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.9-tencentvideo-card-object-test
+#!version=4.1.8.10-tencentvideo-qadvideo-1000173-fix
 #!system=ios
 
 
@@ -861,7 +861,21 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 
 # 腾讯视频 QADVideo：HAR 实抓广告媒体族
+#
+# 旧广告族（此前已验证，命中后 70~80 秒广告可直接消失）：
 ^http:\/\/ugchsy\.gtimg\.com\/gzc_1000127_[^?\/]+\.f10215\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+
+# 2026-09-03 16:06 新 HAR：
+# 腾讯已切到新的 QADVideo 媒体编号 1000173。
+# h.trace.qq.com/bosskv 明确上报：
+#   sceneId=QADVideo
+#   taskType=22
+#   totalDuration=60 / 87
+#   keyID=gzc_1000173_....f206310*.mp4
+#
+# 同一广告时段还出现 f124105 变体。
+# 只拦 1000173 + 已确认广告格式号，不封 ugchsy.gtimg.com 整域。
+^http:\/\/ugchsy\.gtimg\.com\/gzc_1000173_[^?\/]+\.f(?:124105|206310[0-9]*)\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
 
 # 腾讯 GDT 创意视频：vgdt 为广告素材域，本次 HAR 实抓为 HTTP MP4
 ^http:\/\/vgdt\.gtimg\.cn\/[0-9]+\/[^?\/]+\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
