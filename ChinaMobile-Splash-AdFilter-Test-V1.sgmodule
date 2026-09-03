@@ -1,0 +1,41 @@
+#!name=China Mobile Splash AdFilter Test V1
+#!desc=中国移动 iOS 开屏广告测试分支：仅 Fail-Fast 当前 startInit 开屏编排入口，目标同时取消广告画面和倒计时；不封中国移动公共素材域。
+#!category=广告拦截
+#!author=Night & ChatGPT
+#!date=2026-09-03
+#!version=1.0.0-test
+#!system=ios
+
+
+[Rule]
+
+# 让开屏接口正常进入 HTTPS 解密与 URL Rewrite，避免被通用广告域名规则提前阻断。
+DOMAIN,client.app.coc.10086.cn,DIRECT
+DOMAIN,clientaccess.10086.cn,DIRECT
+
+
+[URL Rewrite]
+
+# 2026-09-03 23:44 HAR：
+# - 当前主机为 client.app.coc.10086.cn
+# - startInit 响应结束约 0.1 秒后，请求 1242×2208 的“热 AI 全开”开屏广告图
+# - 响应使用 x-pen: 14 加密，不安全伪造明文 JSON
+#
+# 因此先对唯一的开屏编排入口本地 Fail-Fast。
+# App 拿不到广告描述时，不应创建广告页与广告倒计时。
+# 同时兼容旧版使用过的 clientaccess.10086.cn 主机。
+^https:\/\/(?:client\.app\.coc|clientaccess)\.10086\.cn\/biz-orange\/DN\/init\/startInit(?:\?.*)?$ _ reject
+
+
+[MITM]
+
+hostname = %APPEND% client.app.coc.10086.cn, clientaccess.10086.cn
+
+
+# 测试方法：
+# 1. 启用本模块后，彻底结束中国移动 App。
+# 2. 先在 App/系统中清一次中国移动缓存，避免已下载开屏素材继续展示。
+# 3. 连续冷启动 3 次；确认无广告、无倒计时，且登录、查话费、查流量、充值均正常。
+# 4. 若仍出现广告或倒计时，请只保留本模块并重新抓一份冷启动 HAR。
+#
+# 验证通过前不要并入稳定总模块：startInit 属于启动阶段接口，需先排除新版 App 的功能副作用。
