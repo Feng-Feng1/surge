@@ -1,0 +1,27 @@
+#!name=高德地图开屏去广告 Test V1
+#!desc=基于 2026-09-04 00:14 HAR 实抓：本地空响应阻止 splash_screen_rt 下发开屏卡片和 3 秒倒计时，并精确阻断高德广告素材域。仅用于独立验证，验证前不要并入总模块。
+#!category=广告拦截测试
+#!author=Night & ChatGPT
+#!date=2026-09-04
+#!version=1.0.0-test
+#!system=ios
+
+
+[Rule]
+
+# HAR 实抓的两类高德广告素材主机。只拦广告专用主机，不拦地图瓦片、导航或普通图片。
+DOMAIN,optimus-ads.amap.com,REJECT,extended-matching,pre-matching
+DOMAIN,optimus-ads-ykx.amap.com,REJECT,extended-matching,pre-matching
+
+
+[Map Local]
+
+# HAR 直接证据：该接口返回 custom_list、is_ad=1、display_time=3，
+# 同一个 multipart 响应内还直接夹带开屏图片。返回空对象后客户端不应创建广告页和倒计时。
+^https:\/\/amap-aos-info-nogw\.amap\.com\/ws\/aos\/alimama\/splash_screen_rt(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+
+[MITM]
+
+hostname = %APPEND% amap-aos-info-nogw.amap.com
+
