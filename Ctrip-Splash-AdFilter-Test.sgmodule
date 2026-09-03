@@ -1,0 +1,32 @@
+#!name=携程旅行开屏去广告 Test V1
+#!desc=基于 2026-09-04 00:14 HAR 实抓：拦截 tripAds 开屏配置，并对携程当前 21 位资源编号的开屏图片做 tiny-gif 兜底。测试规则可能影响少量同格式图片，验证通过前不得并入总模块。
+#!category=广告拦截测试
+#!author=Night & ChatGPT
+#!date=2026-09-04
+#!version=1.0.0-test
+#!system=ios
+
+
+[Rule]
+
+# 携程广告上报专用主机。
+DOMAIN,ma-adx.ctrip.com,REJECT,extended-matching,pre-matching
+
+
+[Map Local]
+
+# 携程历代开屏配置接口。用 HTTP 200 空对象表示没有可展示的开屏数据，
+# 避免硬 REJECT 被客户端当作网络错误后继续等待或读取旧素材。
+^https:\/\/m\.ctrip\.com\/restapi\/soa2\/[0-9]+\/(?:scjson|json)\/tripAds(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+# 本次 HAR 的实际开屏图：
+# dimg04.c-ctrip.com/images/0zg6x12000tnvfokd48AD.jpg_.avif
+# 其中资源编号固定为 21 位；兼容 jpg/png/jpeg 以及 CDN 自动转换后缀。
+# 这是测试性兜底，若首页正常图片缺失，应立即停用本模块并反馈新 HAR。
+^https:\/\/dimg04\.c-ctrip\.com\/images\/[A-Za-z0-9]{21}\.(?:jpg|jpeg|png)(?:_[^?\/]*)?(?:\?.*)?$ data-type=tiny-gif status-code=200
+
+
+[MITM]
+
+hostname = %APPEND% m.ctrip.com, dimg04.c-ctrip.com
+
