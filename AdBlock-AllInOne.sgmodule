@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.2.0.2 Stable
-#!desc=V4.2.0.2 Stable：腾讯视频脚本升级至 V16，精确移除 iwan 游戏推广卡与 InnerAd 下拉推广；保留原始 GitHub 文件路径并用查询版本号刷新脚本缓存，其余已验证规则不变。
+#!name=AdBlock Hybrid V4.2.0.3 Stable
+#!desc=V4.2.0.3 Stable：中国移动开屏实机修复，精确 Fail-Fast startInit；已验证连续 3 次冷启动无广告、无倒计时并直接进入首页，保留腾讯视频 V16 及全部既有规则。
 #!category=广告拦截
 #!author=Night & ChatGPT
-#!date=2026-09-03
-#!version=4.2.0.2-stable-tencent-video-v16
+#!date=2026-09-04
+#!version=4.2.0.3-stable-china-mobile-splash
 #!system=ios
 
 
@@ -27,6 +27,10 @@ DOMAIN,code.sms.mob.com,DIRECT
 
 DOMAIN,smartop-sdkapi.jiguang.cn,DIRECT
 DOMAIN,sdk.verification.jiguang.cn,DIRECT
+
+# 中国移动开屏接口必须先进入 URL Rewrite，不能被通用广告底座提前拦截。
+DOMAIN,client.app.coc.10086.cn,DIRECT
+DOMAIN,clientaccess.10086.cn,DIRECT
 
 AND,((DOMAIN-KEYWORD,tnc),(OR,((DOMAIN-SUFFIX,capcutapi.com),(DOMAIN-SUFFIX,zijieapi.com),(DOMAIN-SUFFIX,isnssdk.com),(DOMAIN-SUFFIX,toutiaoapi.com),(DOMAIN-SUFFIX,bytedance.com),(DOMAIN-SUFFIX,snssdk.com),(DOMAIN-SUFFIX,sgsnssdk.com)))),DIRECT
 
@@ -817,6 +821,27 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
+# F. 中国移动：开屏广告与倒计时
+# =========================================================
+#
+# 2026-09-03 23:44 HAR 实抓：
+# - 当前开屏编排入口为：
+#   client.app.coc.10086.cn/biz-orange/DN/init/startInit
+# - 正常响应结束约 0.1 秒后，App 请求 1242×2208 的开屏广告图。
+# - 响应使用 x-pen: 14 加密，不伪造无法校验的明文 JSON。
+#
+# 2026-09-04 实机复测：
+# - 连续 3 次冷启动均在本地约 0.4～0.8 ms 命中并 Fail-Fast；
+# - 无服务器请求、无连续重试；
+# - 无广告画面、无空白倒计时，直接进入首页；
+# - 登录、用户信息、余额、套餐余量、积分和首页导航均正常。
+#
+# 仅拦启动广告编排入口，同时兼容旧版 clientaccess 主机。
+# 不封 res.app.coc.10086.cn 公共素材域，避免误伤正常首页图片。
+^https:\/\/(?:client\.app\.coc|clientaccess)\.10086\.cn\/biz-orange\/DN\/init\/startInit(?:\?.*)?$ _ reject
+
+
+# =========================================================
 # Map Local：闲鱼广告控制接口本地应答
 # =========================================================
 
@@ -1193,4 +1218,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com, client.app.coc.10086.cn, clientaccess.10086.cn
