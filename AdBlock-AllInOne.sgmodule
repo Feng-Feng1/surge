@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.2.0.1 Stable
-#!desc=V4.2.0 Stable 热修复：仅恢复腾讯视频脚本原始 GitHub Raw 路径 TenVideo-MVL-AdFilter-Test.js，修复因稳定版重命名误改路径导致的 404；所有已验证去广告规则保持不变。
+#!name=AdBlock Hybrid V4.1.8.12 Test
+#!desc=回退到 V4.1.8.10 稳定分支，不继承 V4.1.8.11 GDT Renderer 改动；保留 V14 图片广告卡删除，并将腾讯视频 QADVideo 1000127/1000173 媒体拦截改为“与主机无关”的精确签名，覆盖备用 CDN 与直连 IP。
 #!category=广告拦截
 #!author=Night & ChatGPT
-#!date=2026-09-03
-#!version=4.2.0.1-stable-script-path-hotfix
+#!date=2026-09-02
+#!version=4.1.8.12-tencentvideo-qadvideo-anyhost-fix
 #!system=ios
 
 
