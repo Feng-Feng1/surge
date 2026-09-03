@@ -1,11 +1,5 @@
 /*
- * Tencent Video Ad Filter Stable V14
- * Stable status:
- * - Verified together with AdBlock Hybrid V4.2.0 Stable.
- * - Tencent Video long QAD video ads are handled in the module.
- * - This script handles the first-party page/ad-card protobuf path.
- * - Keep the existing GitHub raw path unchanged if desired.
- *
+ * Tencent Video Ad Filter Test V14
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
