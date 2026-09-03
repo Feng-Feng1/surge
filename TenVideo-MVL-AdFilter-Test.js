@@ -1,7 +1,28 @@
 /*
- * Tencent Video Ad Filter Test V15
+ * Tencent Video Ad Filter Test V16
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
+ *
+ * V16 keeps all V15 behavior. HAR 2026-09-03-223455(1) proves the
+ * remaining homepage card is a first-party iwan promotion embedded in
+ * MVLPageService/getMVLPage, not an ordinary GDT response:
+ *
+ *   title: 仙逆正版授权游戏 玩游戏抽视频VIP
+ *   business: iwan
+ *   game_id: 62760
+ *   ptag: ad.pull
+ *
+ * The same response also retains these protobuf extension types:
+ *   InnerAdPromotionEventList
+ *   InnerAdPullRefreshEventList
+ *   InnerAdPullRefreshExtraDisplayInfo
+ *
+ * V16 suppresses only the outermost confirmed field #1 envelope for the
+ * iwan card and the outermost field #1 InnerAd extension envelope:
+ *
+ *   0x0A (field #1, wire type 2) -> 0x7A (field #15, wire type 2)
+ *
+ * Payload bytes and encoded lengths remain unchanged.
  *
  * V12 is intentionally based on the V10 branch, NOT V11.
  *
@@ -231,7 +252,7 @@
 
         if (changed > 0) {
           console.log(
-            "TencentVideo V15 page ad request neutralized: " + changed
+            "TencentVideo V16 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -258,7 +279,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V15 getvinfo request normalized");
+          console.log("TencentVideo V16 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -268,7 +289,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V15 request error: " + e);
+      console.log("TencentVideo V16 request error: " + e);
       $done({});
     }
     return;
@@ -370,7 +391,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V15 getvinfo: adObjects=" +
+          "TencentVideo V16 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -381,7 +402,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V15 getvinfo response error: " + e);
+      console.log("TencentVideo V16 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -470,8 +491,142 @@
     return count;
   }
 
+  function isNestedCandidate(candidate, candidates) {
+    for (const outer of candidates) {
+      if (outer === candidate) continue;
+
+      if (
+        outer.tagPos < candidate.tagPos &&
+        outer.payloadStart <= candidate.tagPos &&
+        outer.payloadEnd >= candidate.payloadEnd &&
+        outer.len > candidate.len
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  let v16PromoCards = 0;
+  let v16InnerAdEnvelopes = 0;
+
   // =====================================================
-  // D0. V15: remove the WHOLE VideoDetail AdFeedInfo card item
+  // D0. V16: first-party iwan card + InnerAd extension
+  // =====================================================
+  try {
+    if (url === "https://i.video.qq.com/") {
+      const promoCandidates = [];
+      const innerAdCandidates = [];
+
+      const innerAdTypes = [
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPromotionEventList",
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPullRefreshEventList",
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPullRefreshExtraDisplayInfo"
+      ];
+
+      for (let p = 0; p < body.length - 2; p++) {
+        /*
+         * Include already-neutralized field #15 envelopes as sentinels.
+         * They are never changed again, but they keep nested field #1
+         * messages from becoming new "outermost" candidates if the script
+         * is applied more than once to the same payload.
+         */
+        if (body[p] !== 0x0a && body[p] !== 0x7a) continue;
+
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
+
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (payloadEnd > body.length || payloadStart >= payloadEnd) continue;
+
+        let hasInnerAdType = false;
+
+        if (len >= 64 && len <= 12000) {
+          for (const typeName of innerAdTypes) {
+            if (containsText(body, payloadStart, payloadEnd, typeName)) {
+              hasInnerAdType = true;
+              break;
+            }
+          }
+
+          if (hasInnerAdType) {
+            innerAdCandidates.push({
+              tagPos: p,
+              tag: body[p],
+              len: len,
+              payloadStart: payloadStart,
+              payloadEnd: payloadEnd
+            });
+          }
+        }
+
+        /*
+         * The verified card envelope is 3459 bytes. Keep a narrow wider
+         * bound for server-side size variation, and explicitly exclude the
+         * separate InnerAd extension envelope.
+         */
+        if (len < 512 || len > 12000 || hasInnerAdType) continue;
+
+        const isIwanPromotion =
+          containsText(
+            body,
+            payloadStart,
+            payloadEnd,
+            "s.iwan.qq.com/opengame"
+          ) &&
+          containsText(body, payloadStart, payloadEnd, "game_id") &&
+          containsText(body, payloadStart, payloadEnd, "business") &&
+          containsText(body, payloadStart, payloadEnd, "iwan");
+
+        if (isIwanPromotion) {
+          promoCandidates.push({
+            tagPos: p,
+            tag: body[p],
+            len: len,
+            payloadStart: payloadStart,
+            payloadEnd: payloadEnd
+          });
+        }
+      }
+
+      /*
+       * Inner messages can repeat the same strings. Mutate only the
+       * outermost confirmed field #1 envelope in each candidate group.
+       */
+      for (const c of promoCandidates) {
+        if (isNestedCandidate(c, promoCandidates)) continue;
+        if (body[c.tagPos] !== 0x0a) continue;
+
+        body[c.tagPos] = 0x7a;
+        v16PromoCards++;
+
+        console.log(
+          "TencentVideo V16 removed iwan promotion card: len=" + c.len
+        );
+      }
+
+      for (const c of innerAdCandidates) {
+        if (isNestedCandidate(c, innerAdCandidates)) continue;
+        if (body[c.tagPos] !== 0x0a) continue;
+
+        body[c.tagPos] = 0x7a;
+        v16InnerAdEnvelopes++;
+
+        console.log(
+          "TencentVideo V16 removed InnerAd extension: len=" + c.len
+        );
+      }
+    }
+  } catch (e) {
+    console.log("TencentVideo V16 iwan/InnerAd error: " + e);
+  }
+
+  // =====================================================
+  // D1. V15: remove the WHOLE VideoDetail AdFeedInfo card item
   // =====================================================
   try {
     if (url === "https://i.video.qq.com/") {
@@ -582,7 +737,7 @@
           innerNeutralized++;
 
           console.log(
-            "TencentVideo V15 neutralized inner AdFeedInfo wrapper: len=" +
+            "TencentVideo V16 neutralized inner AdFeedInfo wrapper: len=" +
             c.childLen +
             ", score=" +
             c.score
@@ -733,7 +888,7 @@
           removedShells++;
 
           console.log(
-            "TencentVideo V15 removed whole AdFeedInfo card shell: len=" +
+            "TencentVideo V16 removed whole AdFeedInfo card shell: len=" +
             c.len +
             ", score=" +
             c.score
@@ -743,7 +898,7 @@
 
       if (removedShells > 0 || innerNeutralized > 0) {
         console.log(
-          "TencentVideo V15 detail cards: shells=" +
+          "TencentVideo V16 detail cards: shells=" +
           removedShells +
           ", inner=" +
           innerNeutralized
@@ -753,11 +908,11 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V15 AdFeedInfo-card error: " + e);
+    console.log("TencentVideo V16 AdFeedInfo-card error: " + e);
   }
 
   // =====================================================
-  // D. V9: suppress complete MVL ad-card items
+  // D2. V9: suppress complete MVL ad-card items
   // =====================================================
   try {
     if (url === "https://i.video.qq.com/") {
@@ -848,7 +1003,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V15 removed MVL ad card: type=" +
+            "TencentVideo V16 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -859,13 +1014,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V15 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V16 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V15 MVL-card error: " + e);
+    console.log("TencentVideo V16 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -916,7 +1071,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V15 suppressed getAdDetail payload: len=" +
+          "TencentVideo V16 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -927,11 +1082,11 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V15 getAdDetail error: " + e);
+    console.log("TencentVideo V16 getAdDetail error: " + e);
   }
 
   // =====================================================
-  // F. Marker fallback
+  // F. Marker fallback + commit V16-only mutations
   // =====================================================
   try {
     let renamed = 0;
@@ -953,14 +1108,26 @@
     renamed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
-    if (renamed > 0) {
-      console.log("TencentVideo V15 renamed fallback markers: " + renamed);
+    if (renamed > 0 || v16PromoCards > 0 || v16InnerAdEnvelopes > 0) {
+      console.log(
+        "TencentVideo V16 final: fallback=" +
+        renamed +
+        ", iwanCards=" +
+        v16PromoCards +
+        ", innerAd=" +
+        v16InnerAdEnvelopes
+      );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V15 fallback error: " + e);
-    $done({});
+    console.log("TencentVideo V16 fallback error: " + e);
+
+    if (v16PromoCards > 0 || v16InnerAdEnvelopes > 0) {
+      $done({ body });
+    } else {
+      $done({});
+    }
   }
 })();
