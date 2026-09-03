@@ -1,9 +1,9 @@
-#!name=中国联通开屏倒计时 Test V1
-#!desc=基于 2026-09-04 00:13 HAR 实抓：本地立即返回服务端同款“无开屏广告”结果，同时把 getclientconfig 的 adMaxTime=5、startMaxTime=3 改为 0。仅用于独立验证。
+#!name=中国联通开屏倒计时 Test V2
+#!desc=V2 修复 V1 响应脚本未执行：对实抓的 iphone_c@12.1400 配置立即返回完整原结构，仅将 adMaxTime=5、startMaxTime=3 改为 0；其他版本继续动态响应净化。
 #!category=广告拦截测试
 #!author=Night & ChatGPT
 #!date=2026-09-04
-#!version=1.0.0-test
+#!version=2.0.0-test
 #!system=ios
 
 
@@ -20,7 +20,17 @@
 
 [Script]
 
-中国联通-开屏倒计时配置净化 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test.txt?v=1,timeout=30
+# 请求阶段：当前 12.1400 版本直接得到完整的零倒计时配置，避开服务器响应被 CANCEL。
+中国联通-开屏配置立即返回 = type=http-request,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt,timeout=10,debug=true
+
+# 响应阶段：未来或其他版本仍使用服务器实时配置，只改两个已验证字段。
+中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt,timeout=30,debug=true
+
+# 使用教程：
+# 1. 将本模块和 ChinaUnicom-LaunchCountdown-Test-V2.txt 一起上传到 GitHub 仓库根目录。
+# 2. Surge 只安装本 .sgmodule；TXT 不需要单独安装。
+# 3. 更新模块后彻底划掉中国联通，先启动一次并停留到首页 10 秒，让配置落盘。
+# 4. 再划掉 App 并冷启动第二次，观察是否不再等待倒计时。
 
 
 [MITM]
