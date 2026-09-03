@@ -1,11 +1,5 @@
 /*
- * Tencent Video Ad Filter Stable V14
- * Stable status:
- * - Verified together with AdBlock Hybrid V4.2.0 Stable.
- * - Tencent Video long QAD video ads are handled in the module.
- * - This script handles the first-party page/ad-card protobuf path.
- * - Keep the existing GitHub raw path unchanged if desired.
- *
+ * Tencent Video Ad Filter Test V15
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
@@ -13,6 +7,10 @@
  *
  * V13 keeps the V12/V10 stable path and only extends REQUEST-side
  * suppression for the remaining image-ad cards.
+ *
+ * V15 keeps all V14 behavior. New 21:59 HAR proves V14's inner
+ * field #5 -> #15 mutation is executing, but Tencent now retains
+ * the outer field #1 card envelope. V15 removes that whole envelope.
  *
  * V14 keeps every V13/V12 behavior, but adds one precise response-side
  * fix for the card shell that is now visible on almost every detail page.
@@ -233,7 +231,7 @@
 
         if (changed > 0) {
           console.log(
-            "TencentVideo V14 page ad request neutralized: " + changed
+            "TencentVideo V15 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -260,7 +258,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V14 getvinfo request normalized");
+          console.log("TencentVideo V15 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -270,7 +268,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V14 request error: " + e);
+      console.log("TencentVideo V15 request error: " + e);
       $done({});
     }
     return;
@@ -372,7 +370,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V14 getvinfo: adObjects=" +
+          "TencentVideo V15 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -383,7 +381,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V14 getvinfo response error: " + e);
+      console.log("TencentVideo V15 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -473,26 +471,43 @@
   }
 
   // =====================================================
-  // D0. V14: remove exact AdFeedInfo card-list items
+  // D0. V15: remove the WHOLE VideoDetail AdFeedInfo card item
   // =====================================================
   try {
     if (url === "https://i.video.qq.com/") {
-      const parents = {};
+      const innerParents = {};
 
       /*
-       * Exact structure verified repeatedly in the supplied HAR:
+       * V14 already proved the inner ad wrapper is identifiable:
        *
-       * field #5 (0x2A)
-       *   payload starts with exactly one field #1 (0x0A)
-       *   whose payload is a 10 KB ~ 45 KB AdFeedInfo ad card.
+       *   field #5
+       *     -> exactly one field #1
+       *          -> 10 KB ~ 45 KB
+       *          -> AdFeedInfo
+       *          -> >=2 independent ad signals
        *
-       * We require:
-       *   - AdFeedInfo
-       *   - plus >=2 independent ad signals
-       *   - exact field#5 -> field#1 framing
+       * V14 changed only field #5 -> field #15.
        *
-       * This avoids matching ordinary Tencent Video content cards.
+       * 2026-09-03 21:59 HAR proves that mutation really DID happen
+       * (three wrappers are already 0x7A), but Tencent Video can now keep
+       * rendering the surrounding card shell from the OUTER repeated item.
+       *
+       * V15 therefore keeps the V14 inner neutralization, then removes the
+       * complete outer field #1 card envelope as well.
        */
+
+      const evidence = [
+        "gdt_stats.fcg",
+        "ad_request_id",
+        "advertiser",
+        "mod_banner_ad",
+        "ad_detail_feeds_spa",
+        "outerPaster"
+      ];
+
+      // -------------------------------------------------
+      // D0-A. Keep V14 inner wrapper neutralization
+      // -------------------------------------------------
       for (let p = 0; p < body.length - 2; p++) {
         if (body[p] !== 0x0a) continue; // field #1, wire type 2
 
@@ -519,15 +534,6 @@
 
         let score = 0;
 
-        const evidence = [
-          "gdt_stats.fcg",
-          "ad_request_id",
-          "advertiser",
-          "mod_banner_ad",
-          "ad_detail_feeds_spa",
-          "outerPaster"
-        ];
-
         for (const x of evidence) {
           if (containsText(body, payloadStart, payloadEnd, x)) {
             score++;
@@ -537,11 +543,8 @@
         if (score < 2) continue;
 
         /*
-         * Find the exact enclosing field #5.
-         *
-         * Since the field #1 item itself is ~10-45 KB, its parent length
-         * varint is only a few bytes before p.  Require the parent payload
-         * to start EXACTLY at p and end EXACTLY at this child item's end.
+         * Exact old wrapper:
+         * field #5 payload starts at this field #1 and ends with it.
          */
         for (let q = Math.max(0, p - 8); q < p; q++) {
           if (body[q] !== 0x2a) continue; // field #5, wire type 2
@@ -557,7 +560,7 @@
             parentPayloadStart === p &&
             parentPayloadEnd === payloadEnd
           ) {
-            parents[String(q)] = {
+            innerParents[String(q)] = {
               tagPos: q,
               childPos: p,
               childLen: len,
@@ -568,18 +571,18 @@
         }
       }
 
-      let removed = 0;
+      let innerNeutralized = 0;
 
-      for (const k in parents) {
-        const c = parents[k];
+      for (const k in innerParents) {
+        const c = innerParents[k];
 
         if (body[c.tagPos] === 0x2a) {
-          // field #5 -> field #15, same wire type and same 1-byte tag size.
+          // field #5 -> field #15; same wire type, same one-byte tag size.
           body[c.tagPos] = 0x7a;
-          removed++;
+          innerNeutralized++;
 
           console.log(
-            "TencentVideo V14 removed AdFeedInfo card: len=" +
+            "TencentVideo V15 neutralized inner AdFeedInfo wrapper: len=" +
             c.childLen +
             ", score=" +
             c.score
@@ -587,14 +590,170 @@
         }
       }
 
-      if (removed > 0) {
-        console.log("TencentVideo V14 removed page ad cards: " + removed);
+      // -------------------------------------------------
+      // D0-B. V15: remove the surrounding card envelope
+      // -------------------------------------------------
+      function hasNeutralizedAdWrapper(start, end) {
+        for (let q = start; q < end - 2; q++) {
+          if (body[q] !== 0x7a) continue; // field #15 after D0-A
+
+          const wrapLenInfo = readVarint(body, q + 1);
+          if (!wrapLenInfo) continue;
+
+          const wrapLen = wrapLenInfo.value;
+          const wrapStart = wrapLenInfo.next;
+          const wrapEnd = wrapStart + wrapLen;
+
+          if (wrapEnd > end || wrapEnd > body.length) continue;
+          if (wrapStart >= wrapEnd) continue;
+
+          // The neutralized wrapper must contain exactly one field #1 child.
+          if (body[wrapStart] !== 0x0a) continue;
+
+          const childLenInfo = readVarint(body, wrapStart + 1);
+          if (!childLenInfo) continue;
+
+          const childLen = childLenInfo.value;
+          const childStart = childLenInfo.next;
+          const childEnd = childStart + childLen;
+
+          if (childEnd !== wrapEnd) continue;
+
+          if (
+            containsText(
+              body,
+              childStart,
+              childEnd,
+              "AdFeedInfo"
+            )
+          ) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      const shells = [];
+
+      /*
+       * The latest leaking detail response exposes exactly three shells:
+       *
+       *   field #1, 18138 bytes
+       *   field #1, 19331 bytes
+       *   field #1, 20099 bytes
+       *
+       * Each contains:
+       *   - AdFeedInfo
+       *   - >=2 ad signals
+       *   - the field #15 wrapper produced by our own V14/V15 D0-A
+       *
+       * Requiring all three conditions makes this much safer than deleting
+       * generic field #1 page items.
+       */
+      for (let p = 0; p < body.length - 2; p++) {
+        if (body[p] !== 0x0a) continue; // repeated page item
+
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
+
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (len < 10000 || len > 45000) continue;
+        if (payloadEnd > body.length) continue;
+
+        if (
+          !containsText(
+            body,
+            payloadStart,
+            payloadEnd,
+            "AdFeedInfo"
+          )
+        ) {
+          continue;
+        }
+
+        let score = 0;
+
+        for (const x of evidence) {
+          if (containsText(body, payloadStart, payloadEnd, x)) {
+            score++;
+          }
+        }
+
+        if (score < 2) continue;
+
+        if (!hasNeutralizedAdWrapper(payloadStart, payloadEnd)) {
+          continue;
+        }
+
+        shells.push({
+          tagPos: p,
+          len: len,
+          payloadStart: payloadStart,
+          payloadEnd: payloadEnd,
+          score: score
+        });
+      }
+
+      /*
+       * Nested field #1 messages can all satisfy the same markers.
+       * Remove only the OUTERMOST matching item in each group.
+       */
+      let removedShells = 0;
+
+      for (let i = 0; i < shells.length; i++) {
+        const c = shells[i];
+        let nested = false;
+
+        for (let j = 0; j < shells.length; j++) {
+          if (i === j) continue;
+
+          const o = shells[j];
+
+          if (
+            o.tagPos < c.tagPos &&
+            o.payloadStart <= c.tagPos &&
+            o.payloadEnd >= c.payloadEnd &&
+            o.len > c.len
+          ) {
+            nested = true;
+            break;
+          }
+        }
+
+        if (nested) continue;
+
+        if (body[c.tagPos] === 0x0a) {
+          // field #1 -> unknown field #15, same one-byte tag size.
+          // This removes the whole card item instead of leaving its shell.
+          body[c.tagPos] = 0x7a;
+          removedShells++;
+
+          console.log(
+            "TencentVideo V15 removed whole AdFeedInfo card shell: len=" +
+            c.len +
+            ", score=" +
+            c.score
+          );
+        }
+      }
+
+      if (removedShells > 0 || innerNeutralized > 0) {
+        console.log(
+          "TencentVideo V15 detail cards: shells=" +
+          removedShells +
+          ", inner=" +
+          innerNeutralized
+        );
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V14 AdFeedInfo-card error: " + e);
+    console.log("TencentVideo V15 AdFeedInfo-card error: " + e);
   }
 
   // =====================================================
@@ -689,7 +848,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V14 removed MVL ad card: type=" +
+            "TencentVideo V15 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -700,13 +859,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V14 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V15 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V14 MVL-card error: " + e);
+    console.log("TencentVideo V15 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -757,7 +916,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V14 suppressed getAdDetail payload: len=" +
+          "TencentVideo V15 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -768,7 +927,7 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V14 getAdDetail error: " + e);
+    console.log("TencentVideo V15 getAdDetail error: " + e);
   }
 
   // =====================================================
@@ -795,13 +954,13 @@
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     if (renamed > 0) {
-      console.log("TencentVideo V14 renamed fallback markers: " + renamed);
+      console.log("TencentVideo V15 renamed fallback markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V14 fallback error: " + e);
+    console.log("TencentVideo V15 fallback error: " + e);
     $done({});
   }
 })();
