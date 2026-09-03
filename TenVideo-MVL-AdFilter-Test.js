@@ -1,9 +1,32 @@
 /*
- * Tencent Video Ad Filter Test V12
+ * Tencent Video Ad Filter Test V13
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
  * V12 is intentionally based on the V10 branch, NOT V11.
+ *
+ * V13 keeps the V12/V10 stable path and only extends REQUEST-side
+ * suppression for the remaining image-ad cards.
+ *
+ * Latest HAR (2026-09-03 10:02) shows:
+ * - getMVLPage responses are already clean.
+ * - 70~80s QAD video is already gone through the module's media Fail-Fast.
+ * - Remaining image cards now come mainly from:
+ *     com.tencent.qqlive.protocol.pb.PageService/getPage
+ *     com.tencent.qqlive.protocol.pb.VideoDetailService/getPage
+ *
+ * PageService/getPage still sends:
+ *   AdRequestContextInfo
+ *
+ * VideoDetailService/getPage sometimes explicitly sends:
+ *   "pg_type" : "net_ad"
+ *
+ * V13 acts BEFORE those page responses are generated:
+ * - neutralize AdRequestContextInfo in ANY i.video.qq.com request
+ * - for VideoDetailService/getPage only: net_ad -> net_xx
+ *
+ * Same-length byte replacements only.
+ * No V11-style response protobuf surgery.
  *
  * Reason:
  * - V10 removed the large middle ad card.
@@ -121,22 +144,29 @@
   if (typeof $response === "undefined") {
     try {
       // -------------------------------------------------
-      // A1. i.video.qq.com / getMVLPage
+      // A1. i.video.qq.com page-layout ad requests
       //
-      // Latest HAR after V9 proves the response-side ad item itself is
-      // already moved to an unknown field, but Tencent Video still reserves
-      // the visual ad slot. The same getMVLPage REQUEST contains:
+      // Latest HAR proves remaining image cards are first-party page data,
+      // not just leaked image resources.
       //
-      // type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo
+      // Safe request-side strategy:
       //
-      // This is the server-side ad-layout request context.  V10 neutralizes
-      // ONLY that Any type URL before the request reaches Tencent:
+      // 1) AdRequestContextInfo is itself an ad-specific protobuf Any type.
+      //    Neutralize it wherever it appears on i.video.qq.com:
       //
-      // AdRequestContextInfo -> XdRequestContextInfo
+      //    AdRequestContextInfo -> XdRequestContextInfo
       //
-      // Same length; protobuf framing is unchanged.
-      // The goal is to make the server generate a naturally no-ad layout,
-      // instead of sending an ad layout and deleting its payload afterwards.
+      //    This already worked for getMVLPage and now also covers
+      //    PageService/getPage.
+      //
+      // 2) VideoDetailService/getPage has no AdRequestContextInfo in some
+      //    captures, but explicitly requests:
+      //
+      //    "pg_type" : "net_ad"
+      //
+      //    Only for that RPC, change net_ad -> net_xx.
+      //
+      // All replacements are the same byte length.
       // -------------------------------------------------
       if (/^https:\/\/i\.video\.qq\.com\/$/i.test(url)) {
         const body = $request.body;
@@ -146,22 +176,29 @@
           return;
         }
 
-        // Only touch getMVLPage calls. Other i.video.qq.com RPCs pass through.
-        if (!containsBytesGlobal(body, "getMVLPage")) {
-          $done({});
-          return;
-        }
+        let changed = 0;
 
         const fromType =
           "type.googleapis.com/com.tencent.qqlive.protocol.pb.AdRequestContextInfo";
         const toType =
           "type.googleapis.com/com.tencent.qqlive.protocol.pb.XdRequestContextInfo";
 
-        const changed = replaceAllSameLengthGlobal(body, fromType, toType);
+        // Ad-specific request context: safe to neutralize on any i.video RPC.
+        changed += replaceAllSameLengthGlobal(body, fromType, toType);
+
+        // Old detail-page route: remove the explicit network-ad page type.
+        if (
+          containsBytesGlobal(
+            body,
+            "com.tencent.qqlive.protocol.pb.VideoDetailService/getPage"
+          )
+        ) {
+          changed += replaceAllSameLengthGlobal(body, "net_ad", "net_xx");
+        }
 
         if (changed > 0) {
           console.log(
-            "TencentVideo V12 neutralized MVL AdRequestContextInfo: " + changed
+            "TencentVideo V13 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -188,7 +225,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V12 getvinfo request normalized");
+          console.log("TencentVideo V13 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -198,7 +235,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V12 request error: " + e);
+      console.log("TencentVideo V13 request error: " + e);
       $done({});
     }
     return;
@@ -300,7 +337,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V12 getvinfo: adObjects=" +
+          "TencentVideo V13 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -311,7 +348,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V12 getvinfo response error: " + e);
+      console.log("TencentVideo V13 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -492,7 +529,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V12 removed MVL ad card: type=" +
+            "TencentVideo V13 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -503,13 +540,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V12 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V13 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V12 MVL-card error: " + e);
+    console.log("TencentVideo V13 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -560,7 +597,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V12 suppressed getAdDetail payload: len=" +
+          "TencentVideo V13 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -571,7 +608,7 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V12 getAdDetail error: " + e);
+    console.log("TencentVideo V13 getAdDetail error: " + e);
   }
 
   // =====================================================
@@ -598,13 +635,13 @@
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     if (renamed > 0) {
-      console.log("TencentVideo V12 renamed fallback markers: " + renamed);
+      console.log("TencentVideo V13 renamed fallback markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V12 fallback error: " + e);
+    console.log("TencentVideo V13 fallback error: " + e);
     $done({});
   }
 })();
