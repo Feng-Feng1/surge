@@ -1,5 +1,5 @@
 /*
- * Tencent Video Ad Filter Test V13
+ * Tencent Video Ad Filter Test V14
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
@@ -7,6 +7,35 @@
  *
  * V13 keeps the V12/V10 stable path and only extends REQUEST-side
  * suppression for the remaining image-ad cards.
+ *
+ * V14 keeps every V13/V12 behavior, but adds one precise response-side
+ * fix for the card shell that is now visible on almost every detail page.
+ *
+ * Latest HAR (2026-09-03 12:50) gives a direct match:
+ * the visible ad text "全新辣芝芝双层厚鸡堡..." is physically inside a
+ * protobuf AdFeedInfo item returned by VideoDetailService/getPage.
+ *
+ * The same schema repeats across VideoDetailService/getPage and
+ * PageService/getPage:
+ *
+ *   field #5
+ *     -> exactly one field #1 item
+ *          -> 15 KB ~ 40 KB payload
+ *          -> AdFeedInfo
+ *          -> gdt_stats.fcg / ad_request_id / advertiser
+ *
+ * V14 removes that field #5 from its parent by changing ONLY its one-byte
+ * protobuf tag:
+ *
+ *   0x2A (field #5, wire type 2)
+ *     ->
+ *   0x7A (field #15, wire type 2)
+ *
+ * Payload bytes and lengths remain unchanged.  The parent page stays valid,
+ * but the repeated ad-card item is no longer exposed through field #5.
+ *
+ * This is much narrower than blanking whole getPage responses or blocking
+ * Tencent image CDNs.
  *
  * Latest HAR (2026-09-03 10:02) shows:
  * - getMVLPage responses are already clean.
@@ -198,7 +227,7 @@
 
         if (changed > 0) {
           console.log(
-            "TencentVideo V13 page ad request neutralized: " + changed
+            "TencentVideo V14 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -225,7 +254,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V13 getvinfo request normalized");
+          console.log("TencentVideo V14 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -235,7 +264,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V13 request error: " + e);
+      console.log("TencentVideo V14 request error: " + e);
       $done({});
     }
     return;
@@ -337,7 +366,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V13 getvinfo: adObjects=" +
+          "TencentVideo V14 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -348,7 +377,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V13 getvinfo response error: " + e);
+      console.log("TencentVideo V14 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -435,6 +464,131 @@
     }
 
     return count;
+  }
+
+  // =====================================================
+  // D0. V14: remove exact AdFeedInfo card-list items
+  // =====================================================
+  try {
+    if (url === "https://i.video.qq.com/") {
+      const parents = {};
+
+      /*
+       * Exact structure verified repeatedly in the supplied HAR:
+       *
+       * field #5 (0x2A)
+       *   payload starts with exactly one field #1 (0x0A)
+       *   whose payload is a 10 KB ~ 45 KB AdFeedInfo ad card.
+       *
+       * We require:
+       *   - AdFeedInfo
+       *   - plus >=2 independent ad signals
+       *   - exact field#5 -> field#1 framing
+       *
+       * This avoids matching ordinary Tencent Video content cards.
+       */
+      for (let p = 0; p < body.length - 2; p++) {
+        if (body[p] !== 0x0a) continue; // field #1, wire type 2
+
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
+
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (len < 10000 || len > 45000) continue;
+        if (payloadEnd > body.length) continue;
+
+        if (
+          !containsText(
+            body,
+            payloadStart,
+            payloadEnd,
+            "AdFeedInfo"
+          )
+        ) {
+          continue;
+        }
+
+        let score = 0;
+
+        const evidence = [
+          "gdt_stats.fcg",
+          "ad_request_id",
+          "advertiser",
+          "mod_banner_ad",
+          "ad_detail_feeds_spa",
+          "outerPaster"
+        ];
+
+        for (const x of evidence) {
+          if (containsText(body, payloadStart, payloadEnd, x)) {
+            score++;
+          }
+        }
+
+        if (score < 2) continue;
+
+        /*
+         * Find the exact enclosing field #5.
+         *
+         * Since the field #1 item itself is ~10-45 KB, its parent length
+         * varint is only a few bytes before p.  Require the parent payload
+         * to start EXACTLY at p and end EXACTLY at this child item's end.
+         */
+        for (let q = Math.max(0, p - 8); q < p; q++) {
+          if (body[q] !== 0x2a) continue; // field #5, wire type 2
+
+          const parentLenInfo = readVarint(body, q + 1);
+          if (!parentLenInfo) continue;
+
+          const parentLen = parentLenInfo.value;
+          const parentPayloadStart = parentLenInfo.next;
+          const parentPayloadEnd = parentPayloadStart + parentLen;
+
+          if (
+            parentPayloadStart === p &&
+            parentPayloadEnd === payloadEnd
+          ) {
+            parents[String(q)] = {
+              tagPos: q,
+              childPos: p,
+              childLen: len,
+              score: score
+            };
+            break;
+          }
+        }
+      }
+
+      let removed = 0;
+
+      for (const k in parents) {
+        const c = parents[k];
+
+        if (body[c.tagPos] === 0x2a) {
+          // field #5 -> field #15, same wire type and same 1-byte tag size.
+          body[c.tagPos] = 0x7a;
+          removed++;
+
+          console.log(
+            "TencentVideo V14 removed AdFeedInfo card: len=" +
+            c.childLen +
+            ", score=" +
+            c.score
+          );
+        }
+      }
+
+      if (removed > 0) {
+        console.log("TencentVideo V14 removed page ad cards: " + removed);
+        $done({ body });
+        return;
+      }
+    }
+  } catch (e) {
+    console.log("TencentVideo V14 AdFeedInfo-card error: " + e);
   }
 
   // =====================================================
@@ -529,7 +683,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V13 removed MVL ad card: type=" +
+            "TencentVideo V14 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -540,13 +694,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V13 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V14 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V13 MVL-card error: " + e);
+    console.log("TencentVideo V14 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -597,7 +751,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V13 suppressed getAdDetail payload: len=" +
+          "TencentVideo V14 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -608,7 +762,7 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V13 getAdDetail error: " + e);
+    console.log("TencentVideo V14 getAdDetail error: " + e);
   }
 
   // =====================================================
@@ -635,13 +789,13 @@
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
     if (renamed > 0) {
-      console.log("TencentVideo V13 renamed fallback markers: " + renamed);
+      console.log("TencentVideo V14 renamed fallback markers: " + renamed);
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V13 fallback error: " + e);
+    console.log("TencentVideo V14 fallback error: " + e);
     $done({});
   }
 })();
