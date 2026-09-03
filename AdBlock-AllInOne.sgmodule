@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.10 Test
-#!desc=基于 V4.1.8.9：保留 V14 图片广告卡片删除；按最新 HAR 扩展腾讯视频 QADVideo 媒体 Fail-Fast，新增 1000173/f124105/f206310 系列，修复 60~90 秒视频广告重新出现。
+#!name=AdBlock Hybrid V4.1.8.11 Test
+#!desc=基于 V4.1.8.10：保留腾讯视频 QAD 长视频广告拦截与 V14 卡片删除；按实抓 GDT 响应新增 style_factory 模块 No-Renderer，尝试彻底消除跨页面残留图片广告卡壳。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.10-tencentvideo-qadvideo-1000173-fix
+#!version=4.1.8.11-tencentvideo-gdt-renderer-nofill-test
 #!system=ios
 
 
@@ -109,6 +109,10 @@ DOMAIN,masdkv6.3g.qq.com,DIRECT
 # 返回“无填充”成功响应；其他 gdt.qq.com 广告主机仍按原规则拒绝。
 DOMAIN,v2mi.gdt.qq.com,DIRECT
 DOMAIN,mi.gdt.qq.com,DIRECT
+
+# 腾讯视频 GDT 动态广告渲染层：
+# 仅让 xs.gdt.qq.com 进入 HTTP 层，下面用 Map Local 精确返回。
+DOMAIN,xs.gdt.qq.com,DIRECT
 
 DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
 
@@ -823,6 +827,54 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 [Map Local]
 
 # =========================================================
+# 腾讯视频：GDT 动态渲染器 No-Renderer
+# =========================================================
+#
+# 2026-09-03 18:05 临时放行抓包实锤：
+#
+# A) car/p/m_list 并不是广告列表。
+# 它真实返回的是本地 ML 模型配置：
+#   model_info.models[]
+#   tflite_cdn_path
+#   business_config
+# 所以前面把它当“广告列表”处理的方向不对，这里不碰它。
+#
+# B) 真正值得处理的是：
+#   xs.gdt.qq.com/style_factory/module_list
+#
+# 它真实返回并驱动下载一批广告渲染模块，包括：
+#   reward-ad
+#   reward-ad-hippy3
+#   reward-ad-hippy3-stream
+#   reward-ad-hippy3-new
+#   ad-dynamic-canvas
+#   qqlive-stream-mosaic
+#   qqlive-splash-mosaic
+#   landing-page-mosaic
+#
+# 同一轮随后从 myqcloud 下载对应 zip。
+# 这解释了为什么第一方 VideoDetail/MVL 卡片已经被 V14 删掉，
+# 但某些页面仍会被 GDT SDK 再动态插入广告卡壳。
+#
+# 新策略不是 204 整个 xs.gdt，而是给 module_list 返回
+# “请求成功，但当前没有任何动态模块”：
+#
+#   {"modules":[],"msg":"success","ret":0}
+#
+# 让 SDK 不再激活动态广告 renderer。
+# =========================================================
+
+^https:\/\/xs\.gdt\.qq\.com\/style_factory\/module_list(?:\?.*)?$ data-type=text data="{\"modules\":[],\"msg\":\"success\",\"ret\":0}" status-code=200 header="Content-Type:application/json"
+
+# template_list 实抓本来就是 code=439 / data={}；
+# 固定成同样的“无模板”结果，避免 renderer 从模板层补回来。
+^https:\/\/xs\.gdt\.qq\.com\/style_factory\/template_list(?:\?.*)?$ data-type=text data="{\"code\":439,\"data\":{}}" status-code=200 header="Content-Type:application/json"
+
+# GDT CAR 指标上报：真实成功响应就是 {"ret_code":0}
+^https:\/\/xs\.gdt\.qq\.com\/car\/m\/report_m(?:\?.*)?$ data-type=text data="{\"ret_code\":0}" status-code=200 header="Content-Type:application/json"
+
+
+# =========================================================
 # 腾讯视频：QAD / GDT 独立广告媒体 Fail-Fast
 # =========================================================
 #
@@ -1179,4 +1231,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com, xs.gdt.qq.com
