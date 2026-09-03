@@ -1,0 +1,140 @@
+/*
+ * 中国联通开屏倒计时净化 Test V2（独立文件名，避免旧版缓存）
+ *
+ * V1 的 accountListData 本地应答已经命中，但最新 HAR 显示：
+ * getclientconfig.htm 在收到服务器响应前被客户端 CANCEL，
+ * 因而 V1 的 response 脚本根本没有机会修改 adMaxTime/startMaxTime。
+ *
+ * V2 对当前实抓版本 iphone_c@12.1400 使用请求阶段本地应答：
+ * - 完整保留 HAR 中的原始配置结构；
+ * - 只把 adMaxTime=5、startMaxTime=3 改为 0；
+ * - 无需等待服务器响应。
+ *
+ * 其他版本不会使用固定快照，仍走服务器并由 response 模式做同字段兜底，
+ * 避免将旧配置长期套到未来版本。
+ */
+
+(function () {
+  const url = ($request && $request.url) || "";
+
+  if (
+    !/^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$)/i.test(
+      url
+    )
+  ) {
+    $done({});
+    return;
+  }
+
+  const SNAPSHOT_12_1400_BASE64 =
+    "eyJ2ZXJzaW9uU1RSIjoie30iLCJEVE8iOiJ7XCJhY3Rpdml0eURvbWFpblwiOlwiXCIsXCJhY3Rpdml0eUhpZGVcIjpcIjFcIixcImFjdGl2aXR5SWNvblwiOlwiXCIsXCJhZENsb3NlVGltZVwiOlwiXCIsXCJhZE1heFRpbWVcIjpcIjBcIixcImFkZFdlYnZpZXdQdWJsaWNQYXJhbVwiOlwiMlwiLFwiYWRkcmVzc1VybFwiOlwiaHR0cHM6Ly9lZG9wX3VuaWNvbT9hcHBpZD1lZG9wX3VuaWNvbV8wYjY5YzE2ZSZwdWJsaXNoVHlwZT0yXCIsXCJhZHJfc2hvd191cF9kaWFsb2dcIjpcIjJcIixcImFkdmVydGlzaW5nU3BhY2VTaG93XCI6XCJcIixcImFuZHJvaWRJbml0U2RrU3dpdGNoXCI6XCJcIixcImFwcFdoaXRlbGlzdENvbmZpZ1wiOlwid2VpeGluOi8vLGFsaXBheTovLyxhbGlwYXlzOi8vLHRtYWxsOi8vLHRlbnZpZGVvOi8vLHRlbnZpZGVvMjovLyx0ZW52aWRlbzM6Ly8sdGFvYmFvOi8vLHRlbmNlbnRsYXVuY2gxMTA0NDY2ODIwOi8vLHlvdWt1Oi8vLHFpeWktaXBob25lOi8vLGt1Z291VVJMOi8vLFFRbXVzaWM6Ly8sd2VpYm86Ly8sc2luYXdlaWJvOi8vLGltZWl0dWFuOi8vLG9mb2FwcDovLyxjdHJpcDovLyxtb2Jpa2U6Ly8sc25zc2RrMTQxOi8vLGZsZWFtYXJrZXQ6Ly8sZGlkaXRheGk6Ly8scXF3YWxsZXRkZW1vc2NoZW1lOi8vLHdvc2hpcGluOi8vLHRib3BlbjovLyx3ZWlzaGk6Ly8saXRtcy13YXRjaDovLyxvcGVuYXBwLmpkbW9iaWxlOi8vLGl0bXMtYXBwc3M6Ly8sdGVsOixzbXM6LHdvdHY6LGlvc2FtYXA6Ly8sYmFpZHVtYXA6Ly8sc3VuaW5nOi8vLHdvc2hpcGluOi8vLHBpbmR1b2R1bzovLyx0YW9iYW90cmF2ZWw6Ly8saHR0cDovL2l0dW5lcy5hcHBsZS5jb20vY24vYXBwL2lkNDE2NDU3NDIyLHVuaWNvbXNtYXJ0aG9tZTovL2xpYW50b25nLGludGVudDovLyxtYXJrZXQ6Ly8sd3Rsb2dpbm1xcTovLyxkY2VwOi8vLHNuc3NkazIzMjk6Ly8sc25zc2RrMTEyODovLyxiYWlkdWJveGFwcDovLyxlbGVtZTovLyxrdWdvdTovLyxjaGluYXVuaWNvbTovLyxpLm1laXR1YW4uY29tOi8vLGJpLW1hbGwubWVpdHVhbi5jb206Ly8sYm9jb206Ly8sYW1hcHVyaTovLyxxcW1hcDovLyx1cHdhbGxldDovLyx1cGhvbmU6Ly8scXFtdXNpYzovLyxuYW1pc286Ly8sYWluYW1pc286Ly8sYW5kcm9pZDovL2NvbS5jaGluYXVuaWNvbS5jbG91ZC5jb21wdXRlci9vcGVuLGl0bXMtYXBwczovL2l0dW5lcy5hcHBsZS5jb20vYXBwL2lkNjc0NDY3ODgyMSxjb20uaWNiYy5pcGhvbmVjbGllbnQ6Ly8sY29tLmljYmMuYW5kcm9pZGNsaWVudDovLyxjb20uaWNiYy5oYXJtb255Y2xpZW50Oi8vLHVuaWNvbXdvY2xvdWQ6Ly8sYmFua2FiYzovL1wiLFwiYlVWaWRlb1ByZU1heENvdW50XCI6XCJcIixcImJVVmlkZW9QcmVUaW1lT3V0XCI6XCJcIixcImJhY2tzdGFnZVdha2VEZXNjXCI6XCLmnIDmlrDmtbfph4/lpb3npLzvvIznpo/liKnppojotaDvvIznrYnkvaDmnaXmi7/vvIE8YnI+5pyJ56aP5ZCM5Lqr5aSa55So5aSa5b6X77yBXCIsXCJiYWNrc3RhZ2VXYWtlVGl0bGVcIjpcIuS6sueIseeahO+8gVwiLFwiYmlnRm9udFwiOlwiMFwiLFwiYmluZEFjY291bnROZXdPbGRDb2xvclwiOlwiRkY5OTk5OTlcIixcImJpbmRBY2NvdW50TmV3VXNlckNvbG9yXCI6XCJGRjMzMzMzM1wiLFwiYmluZE51bWJlclwiOlwiOFwiLFwiYmlydGhkYXlQbGF5VGltZVwiOlwiMTVcIixcImJyb2FkYmFuZExhbmRcIjpcIjBcIixcImNhaUZ1SGlkZVwiOlwiMFwiLFwiY2FyZENhcm91c2VsVGltZVwiOlwiMTAsNVwiLFwiY2FyZVByb3ZpbmNlU3dpdGNoXCI6XCIwOThcIixcImNoZWNrTGlua1wiOlwiaHR0cHM6Ly9pbWcuY2xpZW50LjEwMDEwLmNvbS96aGliby9pbmRleC5odG1sIy9saXZlcGxheWVyXCIsXCJjaGVja1R5cGVcIjpcIjFcIixcImNpdHlDaGFuZ2VBbGxcIjpcIjFcIixcImNpdHlDaGFuZ2VMaXN0XCI6XCIzMTAsMTUzLDE3MCw5MzAsMTg1LDE4OCwxNTEsNDUwLDE3Miw3NjgsMTU4LDk3MSw3NjAsNzYxLDc2Miw3NjMsNzY0LDc2NSw3NjYsNzY3LDc2OCw3NjksNzcwLDc3MSw3NzIsNzczLDc3NCw3NzUsNzc2LDc3NywxNTksMTgwLDE4MSwxODIsMTgzLDE4NCwxODYsMTg3LDE4OSw3MjAsNzgyLDM2MCw4NDAsODQxLDg0Miw4NDMsODQ0LDg0NSw4NDYsODQ3LDg0OCw4NDksMzEyLDMxNywzNjcsOTA1LDE1NSwxOTAsODMxLDcxMCwxMzAsODkwLDg5MSw4OTgsODk2LDkxMiw1MDEsODY0LDg2Myw3MzAsNzM2LDg2OSw4OTUsODk3LDg5Miw0NzAsMzY0LDk1Miw5MDAsOTUxLDgyMlwiLFwiY2l0eUNoYW5nZVVyaUhlYWRcIjpcImh0dHBzOi8vbS5jbGllbnQuMTAwMTAuY29tL21vYmlsZVNlcnZpY2Uvb3BlblBsYXRmb3JtL29wZW5QbGF0TGluZU5ldy5odG0/dG9fdXJsPWh0dHBzOi8vY2l0eXpvbmUuMTAwMTAuY29tL2NzenF1c2VyYXBwLz9uYXZpZ2F0aW9uPTBcIixcImNpdHlPcGVub3JDbG9zZVwiOlwiMDJcIixcImNpdHlqdW1wVXJsXCI6XCJcIixcImNsaWVudEJ1c2luZXNzQ2xpY2tDb3VudFVybFwiOlwiaHR0cHM6Ly9zbWFydGFkLjEwMDEwLmNvbS9tc3VwcG9ydC9jb3VudC9idXNpbmVzc0xvZ1JlY29yZHMuaHRtXCIsXCJjbGllbnRDaGFubmVsXCI6XCJrZWh1ZHVhblwiLFwiY2xpZW50Q2l0eUNyb25cIjpcIjdcIixcImNsaWVudENpdHlMaXN0XCI6XCI5MzBcIixcImNsaWVudENsaWNrTG9nVXBsb2FkXCI6XCIwXCIsXCJjbGllbnRfc2ZlZWRiYWNrdXJsXCI6XCJodHRwczovL2ltZy5jbGllbnQuMTAwMTAuY29tL3hpbmJhbnR1Y2FvL2luZGV4Lmh0bWwjL1wiLFwiY29pbkFjY2Vzc0FkcmVzc1wiOlwiaHR0cDovL20uY2xpZW50LjEwMDEwLmNvbS9tb2JpbGVTZXJ2aWNlLy90aGlyZFJlZGlyZWN0Lmh0bT9yZWRpcmVjdF91cmk9aHR0cHM6Ly9hY3QuMTAwMTAuY29tL1NpZ25pbkFwcC9zaWduaW4vZ2V0RGF0YUNvdW50Lmh0bVwiLFwiY29uZmlndXJpbmdWb2ljZVNlYXJjaFwiOlwiaHR0cDovL2luZm8uMTAwMTAuY29tL2NoaW5hdW5pY29tU2VhcmNoSkIvc2VhcmNoL2FwaS5kb1wiLFwiY3JlYXRlVGltZVwiOlwiMjAyNi0wNS0yOCAwMTo0MTozOFwiLFwiY3JlYXRvclwiOlwiWUhfemhpYmFuXCIsXCJjcmVhdG9yUHJvdmluY2VDb2RlXCI6XCIwOThcIixcImN1c3RvbUhpbnRcIjpcIuaCqOiHquWumuS5ieeahOmikemBk+W3suS4i+e6v++8jOivt+mHjeaWsOmAieaLqeiHquWumuS5ieOAglwiLFwiZGFpbHlMb3R0ZXJ5SXNTaG93XCI6XCIwXCIsXCJkaWZmTmV0RmxhZ1wiOlwiMVwiLFwiZW5kVGltZW9mTWRcIjpcIjIwMjItMTItMDYgMjM6NTk6NTlcIixcImVycm9yTG9nVXBsb2FkQWRkcmVzc1wiOlwiaHR0cHM6Ly9zbWFydGFkLjEwMDEwLmNvbS9tc3VwcG9ydC9ubC91cGxvYWRcIixcImV4cGFuZE1hcFwiOnt9LFwiZXh0cmFuZXRBY3Rpdml0eVBhZ2VVcmxcIjpcImh0dHBzOi8vaW1nLmNsaWVudC4xMDAxMC5jb20vYWRuZXcvb3RoZXJfbmV0X2FjdGl2aXR5L1wiLFwiZmluZEljb25cIjpcIlwiLFwiZmluZFVwZG93blRpbWVcIjpcIlwiLFwiZmluZFVybFwiOlwiaHR0cHM6Ly9pbWcuY2xpZW50LjEwMDEwLmNvbS9hZG5ldy9maW5kL1wiLFwiZml4ZWRMYW5kXCI6XCIwXCIsXCJnZXRNZXNzYWdlVVJMXCI6XCJodHRwczovL3B1c2hzZXJ2aWNlLjEwMDEwLmNvbS9wdXNod2ViL3B1c2hcIixcImd1aWRlTGlua0NvcHl3cml0aW5nXCI6XCLmm7TlpJrnm7Tmkq1cIixcImhhcm1vbnlJbml0U2RrU3dpdGNoXCI6XCJcIixcImhmX2F1dG9fc3dpdGNoXCI6XCIwXCIsXCJobXVPcGVuRmxhZ1wiOlwiMVwiLFwiaG9tZUhpZGVcIjpcIjFcIixcImhvbWVJY29uXCI6XCJcIixcImhvbWVOZXdJY29uXCI6XCJcIixcImhvbWVOZXdzUmVtaW5kU2hvd1RpbWVcIjpcIjNcIixcImhvbWVQb3BVcFVybFwiOlwiaHR0cHM6Ly9pbWcuY2xpZW50LjEwMDEwLmNvbS9ob21lcG9wdXAvaW5kZXguaHRtbFwiLFwiaG9tZVVwZG93blRpbWVcIjpcIjIwMjAtMDQtMDIgMTc6MjE6MDAsMjAyMC0wNC0yNyAxNzoyMTowMFwiLFwiaWRcIjpcIjRlOGVkNzkzLWUxNGItNGRmNC1iYWIwLWM2OWZmNjJmYzg3MVwiLFwiaWRMYW5kXCI6XCIwXCIsXCJpbnRlcmZhY2VMaW5rVXJsXCI6XCJodHRwczovL2ltZy5jbGllbnQuMTAwMTAuY29tL3N0cHJvdG90eXBlL2NsaWVudG9uZWtleWxvZ2luL2NsaWVudG9uZWtleWxvZ2luLmh0bWw/YXBwaWQ9MjE0NzQ4MzY0ODBcIixcImlvc0luaXRTZGtTd2l0Y2hcIjpcIjFcIixcImlvc1Jldmlld1ZlcnNpb25cIjpcIlwiLFwiaXB2Q29weVdyaXRpbmdcIjpcIuS4reWbveiBlOmAmkFQUOaUr+aMgWlwdjQvaXB2Nue9kee7nOWNj+iurlwiLFwiaXNFbmFibGVkTm9DYWNoZVwiOlwiMFwiLFwiaXNJZlN0YXJ0TGlua1wiOlwiMVwiLFwiaXNPcGVuQ2xpY2tDb3VudFwiOlwiMVwiLFwiaXNPcGVuSHR0cHNcIjpcIjFcIixcImlzT3Blbk1ldGNoQ29sb3JcIjpcIjFcIixcImlzU3lzU2NyZWVuXCI6XCIwXCIsXCJrdWFpYmFveGlhb3hpcm9uZ2hlX2t1YWl4dW5cIjpcImh0dHBzOi8vaW1nLmNsaWVudC4xMDAxMC5jb20va3VhaWJhb3hpYW94aXJvbmdoZS9pbmRleC5odG1sP3dlYlZpZXdOYXZJc0hpZGRlbj10cnVlXCIsXCJrdWFpYmFveGlhb3hpcm9uZ2hlX2xpdXlhblwiOlwiaHR0cHM6Ly9pbWcuY2xpZW50LjEwMDEwLmNvbS9rdWFpYmFveGlhb3hpcm9uZ2hlL2luZGV4Lmh0bWwjL2xlYXZlTXNnP3dlYlZpZXdOYXZJc0hpZGRlbj10cnVlXCIsXCJrdWFpYmFveGlhb3hpcm9uZ2hlX3hpYW94aVwiOlwiaHR0cHM6Ly9pbWcuY2xpZW50LjEwMDEwLmNvbS9rdWFpYmFveGlhb3hpcm9uZ2hlL2luZGV4Lmh0bWwjL21lc3NhZ2U/d2ViVmlld05hdklzSGlkZGVuPXRydWVcIixcImxhbmd1YWdlU2V0dGluZ1N3aXRjaFwiOlwiMFwiLFwibGFyZ2VPZmZcIjpcIjAxXCIsXCJsaW5rU3BsaXRcIjpcImh0dHBzOi8vbS4xMDAxMC5jb20vaG9tZXBhZ2UvbmV3LzExXCIsXCJsb2dpbkNsaWNrVGltZUludGVydmFsXCI6XCIxXCIsXCJsb2dpblJldHJ5Q291bnRcIjpcIjFcIixcImxvZ2luUmV0cnlUaW1lSW50ZXJ2YWxcIjpcIjEwXCIsXCJsb2d1cGxvYWRcIjpcIjFcIixcIm1hcmtldEhpZGVcIjpcIjBcIixcIm1hcmtldEljb25cIjpcIlwiLFwibWFya2V0TmV3SWNvblwiOlwiXCIsXCJtYXJrZXRVcGRvd25UaW1lXCI6XCIyMDIyLTA3LTA0IDE3OjIxOjAwLDIwMjItMDctMDQgMTc6MjU6MDBcIixcIm1lbnVOYW1lMXN0XCI6XCLkvZnph4/mn6Xor6JcIixcIm1lbnVOYW1lMm5kXCI6XCLlrp7ml7bor53otLlcIixcIm1lbnVOYW1lM3JkXCI6XCLmiJHnmoTlpZfppJBcIixcIm1lbnVOYW1lNHRoXCI6XCIxMVwiLFwibWVudVVybDFzdFwiOlwiaHR0cDovL20uY2xpZW50LjEwMDEwLmNvbS9tb2JpbGVTZXJ2aWNlL2NvbW1vbi9za2lwL3F1ZXJ5TGVhdmVQYWNrYWdlLmh0bVwiLFwibWVudVVybDJuZFwiOlwiaHR0cDovL20uY2xpZW50LjEwMDEwLmNvbS9tb2JpbGVTZXJ2aWNlL2NvbW1vbi9za2lwL3F1ZXJ5UmVhbFRpbWVGZWUuaHRtXCIsXCJtZW51VXJsM3JkXCI6XCJodHRwczovL2ltZy5jbGllbnQuMTAwMTAuY29tL3dvZGV0YW9jYW4vaW5kZXguaHRtbFwiLFwibWVudVVybDR0aFwiOlwiMTFcIixcIm1lc3NhZ2VQdXNoVGltZUludGVydmFsXCI6XCIxMjAwXCIsXCJtaWFuTGl1UElEXCI6XCI4MDAwMVwiLFwibWlhbkxpdVBPUlRBTElEXCI6XCI1MDBcIixcIm1pYW5MaXVTUElEXCI6XCIzMTE0NlwiLFwibWlhbkxpdVNQS0VZXCI6XCIzOGVkNDU0YzBlMGI0NGZkOTQ3YjQxNzE5ZDVjYWQwZlwiLFwibWlhbmxpdVN3aXRjaFwiOlwiMFwiLFwibWlhbmxpdVN3aXRjaDg3XCI6XCIwXCIsXCJtaWFubGl1U3dpdGNoODdINVwiOlwiMFwiLFwibWlhbmxpdVN3aXRjaEg1XCI6XCIwXCIsXCJtaWRkbGVCdXR0b25EZXNjXCI6XCLor7fnmbvlvZVcIixcIm1pZGRsZUJ1dHRvblRpdGxlXCI6XCLnmbvlvZVcIixcIm1zZ0g1Q29uZmlnXCI6XCIxXCIsXCJteUhpZGVcIjpcIjFcIixcIm15SWNvblwiOlwiXCIsXCJteU5ld0ljb25cIjpcIlwiLFwibXlVbmljb21VcmxcIjpcImh0dHA6Ly9tLmNsaWVudC4xMDAxMC5jb20vbW9iaWxlU2VydmljZS9jdXN0b21lci9xdWVyeS9nZXRNeVVuaWNvbVByaXZpbC5odG1cIixcIm15VXBkb3duVGltZVwiOlwiXCIsXCJuZXR0eXBlVXJsXCI6XCJodHRwczovL3UuMTAwMTAuY24vcUF6STJcIixcIm5ld0NoYW5nZXJcIjpcIjAxXCIsXCJuZXdjb21lclN3aXRjaFwiOlwiMDJcIixcIm51bWJlckxhbmRcIjpcIjBcIixcIm9tb0NhcmRcIjpcIjVcIixcIm9tb1N0b3BTd2l0Y2hcIjpcIjAxXCIsXCJvcGVuRW1wdHlDYXJkQ2hlY2tcIjpcIjBcIixcIm9wZW5PbmVUb3VjaExvYWRpbmdcIjpcIjAyXCIsXCJvcmRlck51bWJlclwiOlwiMFwiLFwicG9wdXBEZWxheVRpbWVcIjpcIjJcIixcInBvcHVwTm90UG9wcGVkXCI6XCJcIixcInJlZl9vbmxpbmVfcHJvdmluY2VfY29kZVwiOlwiMDk4XCIsXCJyZWZyZXNoSW50ZXJ2YWxcIjpcIjNcIixcInJlZ2lzdGVyVVJMXCI6XCJodHRwczovL3B1c2hzZXJ2aWNlLjEwMDEwLmNvbS9wdXNod2ViL3B1c2hcIixcInJlbGF0aW9uQWNjb3VudE5ld1VzZXJDb2xvclwiOlwiRkZjZDAyMDBcIixcInJlbGF0aW9uQWNjb3VudE9sZFVzZXJDb2xvclwiOlwiRkZjZDAyMDBcIixcInJlbGF0aW9uQ2xpY2tDb2xvclwiOlwiRkY5OTk5OTlcIixcInJlbG9hZEhpbnRcIjpcIue9kee7nOivt+axguW8guW4uO+8jOivt+aCqOeojeWQjuWGjeivle+8gVwiLFwicmlnaHRTbGlwSGludFwiOlwi57K+5b2p5YaF5a6577yM5bC95Zyo5YW25Lit44CCXCIsXCJzZWFyY2hCb3hIaWdobGlnaHRUaW1lXCI6XCI1XCIsXCJzZWFyY2hDb25maWd1cmF0aW9uXCI6XCIxXCIsXCJzZWFyY2hTY3JvbGxJbnRlcnZhbFwiOlwiNVwiLFwic2VydmljZUhpZGVcIjpcIjFcIixcInNlcnZpY2VJY29uXCI6XCJcIixcInNlcnZpY2VMaW5rVXJsXCI6XCJodHRwczovL20uY2xpZW50LjEwMDEwLmNvbS9tb2JpbGVTZXJ2aWNlL2RGcmVlTG9naW4vZ2V0REZyZWVMb2dpbkRldGFpbC5odG1cIixcInNlcnZpY2VOZXdJY29uXCI6XCJcIixcInNlcnZpY2VVcGRvd25UaW1lXCI6XCIyMDIwLTA0LTAyIDE3OjIxOjAwLDIwMjAtMDQtMjcgMTc6MjE6MDBcIixcInNoYXJlUG9saXRlVXJsXCI6XCJcIixcInNob3dNZW1iZXJUZWxcIjpcIjFcIixcInNtYWxsVmlkZW9DaGVja0xpbmtcIjpcIlwiLFwic21zU3dpdGNoXCI6XCIyXCIsXCJzbXNWYWxpZGF0ZUNvZGVcIjpcIjRcIixcInNwcmVhZENoYW5nZXJcIjpcIjFcIixcInN0YXJ0TWF4VGltZVwiOlwiMFwiLFwic3RhcnRUaW1lb2ZNZFwiOlwiMjAyMi0xMS0zMCAxOTo0NDoyMFwiLFwic3RhdHVzXCI6XCIwMFwiLFwic3dlZXBGYWNlTG9naW5cIjpcIjFcIixcInN3ZWVwRmFjZVNhZmV0eURlc2NcIjpcIuWcqOaCqOW8gOmAmuWSjOS9v+eUqOWIt+iEuOeZu+W9leWKn+iDveWJje+8jOivt+aCqOWFheWIhumYheivu++8jOeQhuino+W5tuaOpeWPl+WIt+iEuOeZu+W9leeahOWFqOmDqOWGheWuueOAguS4uuS6huS/nemanOaCqOeahOi0puaIt+S/oeaBr+WuieWFqO+8jOmcgOmHh+mbhuaCqOeahOS6uuiEuOS/oeaBr+i/m+ihjOi6q+S7veaguOWunuOAguWIt+iEuOmqjOivgeacjeWKoeaYr+mAmui/h+S6uuiEuOS/oeaBr+avlOWvueaWueW8j++8jOadpeaguOWvueaCqOeahOi6q+S7veS/oeaBr+acjeWKoeOAguacjeWKoei/h+eoi+S4re+8jOWcqOaCqOWQjOaEj+aIkeS7rOaUtumbhuaCqOeahOS6uuiEuOS/oeaBr+W5tuWBmuW/heimgeeahOWkhOeQhuWQju+8jOadpeaPkOWNh+WIt+iEuOmqjOivgeeahOWHhuehruaAp+S4juS/oeaBr+eahOWuieWFqOaAp+OAglwiLFwidGVuY2VudEFkdmVydEZsYWdcIjpcIjAxXCIsXCJ0cnVzdGVkQ05TXCI6XCIqLmNkbi5teXFjbG91ZC5jb21cIixcInR1cm5PbkF1cm9yYVwiOlwiMVwiLFwidHVybk9uSGlnaGxpZ2h0UHJvXCI6XCIwOThcIixcInVpZ2h1clwiOlwiMVwiLFwidW5pY29tX2NsZWFyX2NhY2hlX3RpbWVcIjpcIjE2NTY0NzI0NzE4MzcsMTY1NjQ3MjQ3MTgzN1wiLFwidW5pY29tX2hvbWVfa2VmdV91cmxcIjpcImh0dHBzOi8vY2MuMTAwMTAuY29tL2NzL2NjYy9vbmxpbmUvcmVkaXJlY3QvYXBwUmVkaXJlY3QuaHRtbFwiLFwidW5pY29tX3Bob25lX3N5c3RlbVwiOlwiMVwiLFwidXBsb2FkSW1hZ2VBXCI6XCJodHRwOi8vbTEuaW1nLjEwMDEwLmNvbS9yZXNvdXJjZXMvNzE4ODE5MkEzMUI1QUUwNkU0MUI2NERBNkQ2NUE5QjAvMjAxODA2MTkvcG5nLzIwMTgwNjE5MDk1MjE0LnBuZ1wiLFwidXBsb2FkSW1hZ2VCXCI6XCJodHRwOi8vbTEuaW1nLjEwMDEwLmNvbS9yZXNvdXJjZXMvNzE4ODE5MkEzMUI1QUUwNkU0MUI2NERBNkQ2NUE5QjAvMjAxODA2MTkvcG5nLzIwMTgwNjE5MDk1MjIyLnBuZ1wiLFwidXNlTmF0aXZlS2V5Ym9hcmRcIjpcIjBcIixcInVzZVZvaWNlVmFsaWRhdGVDb2RlXCI6XCIxXCIsXCJ3ZWFsdGhJY29uXCI6XCJcIixcIndlYWx0aFBhZ2VVcmxcIjpcImh0dHBzOi8vaW1nLmNsaWVudC4xMDAxMC5jb20vY2FpZnVob21lL2luZGV4Lmh0bWxcIixcIndlYlVBU3dpdGNoXCI6XCIwXCIsXCJ3ZWJyZXNvdXJjZWxvZ1wiOlwiMFwiLFwid2hldGhlclNwaW5uZXJcIjpcIjFcIixcIndvS291TGluZ09wZW5cIjpcIjJcIn0ifQo=";
+
+  function base64ToBytes(input) {
+    const alphabet =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const out = [];
+    let acc = 0;
+    let bits = 0;
+
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "=") break;
+
+      const value = alphabet.indexOf(ch);
+      if (value < 0) continue;
+
+      acc = (acc << 6) | value;
+      bits += 6;
+
+      if (bits >= 8) {
+        bits -= 8;
+        out.push((acc >> bits) & 0xff);
+        acc &= bits === 0 ? 0 : (1 << bits) - 1;
+      }
+    }
+
+    return new Uint8Array(out);
+  }
+
+  // Request mode: current captured client version gets an immediate valid config.
+  if (typeof $response === "undefined") {
+    const isCapturedVersion =
+      /(?:\?|&)version=iphone_c(?:@|%40)12\.1400(?:&|$)/i.test(url);
+
+    if (!isCapturedVersion) {
+      $done({});
+      return;
+    }
+
+    try {
+      console.log(
+        "ChinaUnicom V2 served immediate 12.1400 no-countdown config"
+      );
+
+      $done({
+        response: {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store"
+          },
+          body: base64ToBytes(SNAPSHOT_12_1400_BASE64)
+        }
+      });
+    } catch (e) {
+      console.log("ChinaUnicom V2 request mock error: " + e);
+      $done({});
+    }
+
+    return;
+  }
+
+  // Response mode: future/other versions keep live config and patch only two fields.
+  try {
+    const body = $response && $response.body;
+
+    if (typeof body !== "string" || body.length === 0) {
+      $done({});
+      return;
+    }
+
+    const outer = JSON.parse(body);
+    const dtoWasString = typeof outer.DTO === "string";
+    const dto = dtoWasString ? JSON.parse(outer.DTO) : outer.DTO;
+
+    if (!dto || typeof dto !== "object") {
+      $done({});
+      return;
+    }
+
+    const changed = [];
+
+    function setField(name, value) {
+      if (!Object.prototype.hasOwnProperty.call(dto, name)) return;
+
+      if (String(dto[name]) !== String(value)) {
+        changed.push(name + ":" + String(dto[name]) + "->" + String(value));
+        dto[name] = value;
+      }
+    }
+
+    setField("adMaxTime", "0");
+    setField("startMaxTime", "0");
+
+    if (changed.length === 0) {
+      $done({});
+      return;
+    }
+
+    outer.DTO = dtoWasString ? JSON.stringify(dto) : dto;
+
+    console.log(
+      "ChinaUnicom V2 response countdown neutralized: " + changed.join(", ")
+    );
+
+    $done({ body: JSON.stringify(outer) });
+  } catch (e) {
+    console.log("ChinaUnicom V2 response error: " + e);
+    $done({});
+  }
+})();
