@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.1.8.10 Test
-#!desc=基于 V4.1.8.9：保留 V14 图片广告卡片删除；按最新 HAR 扩展腾讯视频 QADVideo 媒体 Fail-Fast，新增 1000173/f124105/f206310 系列，修复 60~90 秒视频广告重新出现。
+#!name=AdBlock Hybrid V4.1.8.10 GDT Capture ONLY
+#!desc=临时诊断版：仅用于抓取腾讯视频 xs.gdt.qq.com 的真实广告响应，定位图片广告卡壳。保留 QAD 长视频拦截和 V14 脚本；抓完 HAR 必须切回正式模块。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-02
-#!version=4.1.8.10-tencentvideo-qadvideo-1000173-fix
+#!version=4.1.8.10-gdt-capture-only
 #!system=ios
 
 
@@ -109,6 +109,11 @@ DOMAIN,masdkv6.3g.qq.com,DIRECT
 # 返回“无填充”成功响应；其他 gdt.qq.com 广告主机仍按原规则拒绝。
 DOMAIN,v2mi.gdt.qq.com,DIRECT
 DOMAIN,mi.gdt.qq.com,DIRECT
+
+# TEMP DIAGNOSTIC ONLY:
+# 放行 xs.gdt.qq.com 以抓取 car/p/m_list 的真实返回格式。
+# 抓包结束后必须切回正式模块。
+DOMAIN,xs.gdt.qq.com,DIRECT
 
 DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
 
@@ -1179,4 +1184,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, i.video.qq.com, svv.video.qq.com, xs.gdt.qq.com
