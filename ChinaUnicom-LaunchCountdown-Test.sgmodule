@@ -1,0 +1,28 @@
+#!name=中国联通开屏倒计时 Test V1
+#!desc=基于 2026-09-04 00:13 HAR 实抓：本地立即返回服务端同款“无开屏广告”结果，同时把 getclientconfig 的 adMaxTime=5、startMaxTime=3 改为 0。仅用于独立验证。
+#!category=广告拦截测试
+#!author=Night & ChatGPT
+#!date=2026-09-04
+#!version=1.0.0-test
+#!system=ios
+
+
+[Map Local]
+
+# 当前联通接口虽已返回“不展示开屏广告”，但仍有网络往返。
+# 本地返回相同业务结果，避免启动页等待该请求完成。
+^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/accountListData\.htm(?:\?.*)?$ data-type=text data="{\"respDesc\":\"黑名单用户不展示开屏广告\",\"respCode\":\"9999\"}" status-code=200 header="Content-Type:application/json"
+
+# 兼容旧版联通开屏接口；都返回“请求成功但无广告”，不使用网络 REJECT。
+^https?:\/\/m\.client\.10010\.com\/mobileService\/(?:activity|customer)\/(?:get_client_adv|get_startadv)(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https?:\/\/m\.client\.10010\.com\/uniAdmsInterface\/getWelcomeAd(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+
+[Script]
+
+中国联通-开屏倒计时配置净化 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test.txt?v=1,timeout=30
+
+
+[MITM]
+
+hostname = %APPEND% m.client.10010.com
