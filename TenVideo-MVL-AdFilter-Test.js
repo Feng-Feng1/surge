@@ -1,13 +1,32 @@
 /*
- * Tencent Video Ad Filter Test V16
+ * Tencent Video Ad Filter Test V17
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
+ *
+ * V17 keeps all V16 behavior. HAR 2026-09-04-220040 proves V16 did
+ * mutate the outer InnerAd envelope to field #15, but that field is valid
+ * in this ChannelPageConfig schema, so Tencent still constructs an empty
+ * promotion-card container after the image itself is blocked.
+ *
+ * The same payload contains all three dedicated protobuf Any types plus
+ * the confirmed iwan promotion marker "ad.pull":
+ *
+ *   InnerAdPromotionEventList
+ *   InnerAdPullRefreshEventList
+ *   InnerAdPullRefreshExtraDisplayInfo
+ *   ad.pull
+ *
+ * V17 requires that complete combination, then neutralizes only those
+ * three Any type URLs and the promotion marker with same-length byte
+ * replacements. The protobuf structure and every encoded length stay
+ * unchanged, but the client can no longer unpack the InnerAd objects that
+ * create the residual container.
  *
  * V16 keeps all V15 behavior. HAR 2026-09-03-223455(1) proves the
  * remaining homepage card is a first-party iwan promotion embedded in
  * MVLPageService/getMVLPage, not an ordinary GDT response:
  *
- *   title: 仙逆正版授权游戏 玩游戏抽视频VIP
+ *   title: ä»éæ­£çæææ¸¸æ ç©æ¸¸ææ½è§é¢VIP
  *   business: iwan
  *   game_id: 62760
  *   ptag: ad.pull
@@ -37,7 +56,7 @@
  * fix for the card shell that is now visible on almost every detail page.
  *
  * Latest HAR (2026-09-03 12:50) gives a direct match:
- * the visible ad text "全新辣芝芝双层厚鸡堡..." is physically inside a
+ * the visible ad text "å¨æ°è¾£èèåå±åé¸¡å ¡..." is physically inside a
  * protobuf AdFeedInfo item returned by VideoDetailService/getPage.
  *
  * The same schema repeats across VideoDetailService/getPage and
@@ -510,6 +529,7 @@
 
   let v16PromoCards = 0;
   let v16InnerAdEnvelopes = 0;
+  let v17InnerAdTypes = 0;
 
   // =====================================================
   // D0. V16: first-party iwan card + InnerAd extension
@@ -1086,10 +1106,39 @@
   }
 
   // =====================================================
-  // F. Marker fallback + commit V16-only mutations
+  // F. V17 InnerAd Any neutralization + marker fallback
   // =====================================================
   try {
     let renamed = 0;
+
+    const innerAdTypePairs = [
+      [
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPromotionEventList",
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XnnerAdPromotionEventList"
+      ],
+      [
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPullRefreshEventList",
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XnnerAdPullRefreshEventList"
+      ],
+      [
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.InnerAdPullRefreshExtraDisplayInfo",
+        "type.googleapis.com/com.tencent.qqlive.protocol.pb.XnnerAdPullRefreshExtraDisplayInfo"
+      ]
+    ];
+
+    const hasCompleteInnerAdGroup =
+      containsText(body, 0, body.length, innerAdTypePairs[0][0]) &&
+      containsText(body, 0, body.length, innerAdTypePairs[1][0]) &&
+      containsText(body, 0, body.length, innerAdTypePairs[2][0]) &&
+      containsText(body, 0, body.length, "ad.pull");
+
+    if (hasCompleteInnerAdGroup) {
+      for (const pair of innerAdTypePairs) {
+        v17InnerAdTypes += replaceAllSameLength(body, pair[0], pair[1]);
+      }
+
+      v17InnerAdTypes += replaceAllSameLength(body, "ad.pull", "xx.pull");
+    }
 
     for (let i = 0; i <= 9; i++) {
       renamed += replaceAllSameLength(
@@ -1108,23 +1157,34 @@
     renamed += replaceAllSameLength(body, "feeds_ad_style", "feeds_xx_style");
     renamed += replaceAllSameLength(body, "mod_adfeed", "mod_xxfeed");
 
-    if (renamed > 0 || v16PromoCards > 0 || v16InnerAdEnvelopes > 0) {
+    if (
+      renamed > 0 ||
+      v16PromoCards > 0 ||
+      v16InnerAdEnvelopes > 0 ||
+      v17InnerAdTypes > 0
+    ) {
       console.log(
-        "TencentVideo V16 final: fallback=" +
+        "TencentVideo V17 final: fallback=" +
         renamed +
         ", iwanCards=" +
         v16PromoCards +
         ", innerAd=" +
-        v16InnerAdEnvelopes
+        v16InnerAdEnvelopes +
+        ", innerAdTypes=" +
+        v17InnerAdTypes
       );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V16 fallback error: " + e);
+    console.log("TencentVideo V17 fallback error: " + e);
 
-    if (v16PromoCards > 0 || v16InnerAdEnvelopes > 0) {
+    if (
+      v16PromoCards > 0 ||
+      v16InnerAdEnvelopes > 0 ||
+      v17InnerAdTypes > 0
+    ) {
       $done({ body });
     } else {
       $done({});
