@@ -1,9 +1,16 @@
 /*
- * Tencent Video Ad Filter Test V21
+ * Tencent Video Ad Filter Recovery V22
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * V21 is an immediate safety correction for V20. HAR 2026-09-04-231625
+ * V22 is the recovery branch. HAR 2026-09-04-232812 proves VIP state has
+ * returned to 1, but the accumulated i.video.qq.com protobuf mutations still
+ * modify many page responses. V22 bypasses ALL i.video.qq.com request and
+ * response rewriting. It keeps only the previously stable getvinfo playback
+ * cleanup. Personal-center card removal is deliberately suspended until a
+ * schema-safe method is proven.
+ *
+ * V21 was an immediate safety correction for V20. HAR 2026-09-04-231625
  * shows a new detail-page ad after V20 changed adVipState=1 to 0.
  * adVipState is a VIP-state input, not a safe ad-enable switch. V21 therefore
  * completely removes that request mutation and never downgrades VIP state.
@@ -215,6 +222,13 @@
 (function () {
   const url = ($request && $request.url) || "";
 
+  // V22 recovery boundary: never mutate Tencent page-layout protobuf data.
+  if (/^https:\/\/i\.video\.qq\.com\/$/i.test(url)) {
+    console.log("TencentVideo V22 recovery: i.video bypassed");
+    $done({});
+    return;
+  }
+
   function asciiBytesGlobal(s) {
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
@@ -319,7 +333,7 @@
 
         if (changed > 0) {
           console.log(
-            "TencentVideo V21 page ad request neutralized: " + changed
+            "TencentVideo V22 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -346,7 +360,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V21 getvinfo request normalized");
+          console.log("TencentVideo V22 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -356,7 +370,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V21 request error: " + e);
+      console.log("TencentVideo V22 request error: " + e);
       $done({});
     }
     return;
@@ -458,7 +472,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V21 getvinfo: adObjects=" +
+          "TencentVideo V22 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -469,7 +483,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V21 getvinfo response error: " + e);
+      console.log("TencentVideo V22 getvinfo response error: " + e);
       $done({});
     }
     return;
