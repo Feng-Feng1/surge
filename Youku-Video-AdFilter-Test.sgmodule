@@ -1,0 +1,29 @@
+#!name=优酷播放广告净化 Test V1
+#!desc=按 2026-09-04 HAR 精确删除 ups.appinfo 播放响应中的 ad 与 ykad 广告对象；保留正片 video/stream，不封共用媒体 CDN，避免黑屏和广告读秒。
+#!category=广告拦截测试
+#!author=Night & ChatGPT
+#!date=2026-09-04
+#!version=1.0.0-test
+#!system=ios
+
+
+[Script]
+
+# HAR 实抓接口：响应内同时含正片与 8 条 15~16 秒广告候选。
+# 只删除独立广告对象，不直接 REJECT 播放接口或视频 CDN。
+优酷-播放广告响应净化 = type=http-response,pattern=^https:\/\/un-acs\.youku\.com\/gw\/mtop\.youku\.play\.ups\.appinfo\.get\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt,timeout=30,debug=true
+
+
+# 使用教程：
+# 1. 将本文件内容复制到 GitHub 的 Youku-Video-AdFilter-Test.sgmodule。
+# 2. 将 Youku-Video-AdFilter-Test.txt 脚本上传到 GitHub 仓库根目录。
+# 3. Surge 只安装 .sgmodule 的 Raw 地址；TXT 脚本不需要单独安装。
+# 4. 保持总模块开启，本模块作为独立测试分支同时启用。
+# 5. 彻底划掉优酷，再冷启动并播放刚才同一集视频。
+# 6. 在 Surge 请求备注中确认出现：Youku Test V1 removed playback ads。
+# 7. 连续测试换集、拖动进度、切换清晰度；若黑屏或无法播放，立即关闭本测试模块。
+
+
+[MITM]
+
+hostname = %APPEND% un-acs.youku.com
