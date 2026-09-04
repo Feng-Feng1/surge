@@ -1,0 +1,95 @@
+/*
+ * 优酷播放广告净化 Test V1
+ *
+ * HAR 2026-09-04 12:42 验证：
+ * mtop.youku.play.ups.appinfo.get 的正常播放响应中，同时包含：
+ * - data.data.video / stream：正片信息
+ * - data.data.ad：结构化广告位、广告视频和监测链接
+ * - data.data.ykad：播放器广告排期与旧格式广告数据
+ *
+ * 本脚本只删除 ad 与 ykad，不修改正片 video/stream，
+ * 也不封锁与正片共用的 vali*.cibntv.net 媒体 CDN。
+ */
+
+(function () {
+  try {
+    const body = $response && $response.body;
+
+    if (typeof body !== "string" || body.length === 0) {
+      $done({});
+      return;
+    }
+
+    const obj = JSON.parse(body);
+    const payload = obj && obj.data && obj.data.data;
+
+    if (!payload || typeof payload !== "object") {
+      $done({});
+      return;
+    }
+
+    let removed = 0;
+    let seats = 0;
+    let bids = 0;
+    let seconds = 0;
+
+    if (payload.ad && typeof payload.ad === "object") {
+      const adSeats = Array.isArray(payload.ad.seats)
+        ? payload.ad.seats
+        : [];
+
+      seats = adSeats.length;
+
+      for (const seat of adSeats) {
+        const seatBids = seat && Array.isArray(seat.bids)
+          ? seat.bids
+          : [];
+
+        bids += seatBids.length;
+
+        for (const bid of seatBids) {
+          const duration =
+            bid &&
+            bid.ad0 &&
+            bid.ad0.creative &&
+            bid.ad0.creative.video
+              ? Number(bid.ad0.creative.video.duration)
+              : 0;
+
+          if (Number.isFinite(duration) && duration > 0) {
+            seconds += duration;
+          }
+        }
+      }
+
+      delete payload.ad;
+      removed++;
+    }
+
+    if (payload.ykad && typeof payload.ykad === "object") {
+      delete payload.ykad;
+      removed++;
+    }
+
+    if (removed === 0) {
+      $done({});
+      return;
+    }
+
+    console.log(
+      "Youku Test V1 removed playback ads: objects=" +
+        removed +
+        ", seats=" +
+        seats +
+        ", bids=" +
+        bids +
+        ", scheduledSeconds=" +
+        seconds
+    );
+
+    $done({ body: JSON.stringify(obj) });
+  } catch (e) {
+    console.log("Youku Test V1 response error: " + e);
+    $done({});
+  }
+})();
