@@ -1,7 +1,19 @@
 /*
- * Tencent Video Ad Filter Test V18
+ * Tencent Video Ad Filter Test V19
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
+ *
+ * V19 keeps all V18 behavior. A clean reinstall plus HAR
+ * 2026-09-04-223328 proves V18 removed the separate GDT data item, but
+ * MVLPersonalService/getMVLPage independently retains a 2840-byte top-level
+ * module containing both:
+ *
+ *   /video/ad_profile/
+ *   txvideo://v.qq.com/rewardAd
+ *
+ * That module is the actual personal-center reward-ad container. V19 removes
+ * only its outer repeated field #1 tag. The following account, membership and
+ * shortcut modules remain untouched.
  *
  * V18 keeps all V17 behavior. HAR 2026-09-04-222102 exposes a separate
  * personal-center ad RPC that V17 did not remove:
@@ -543,9 +555,69 @@
   let v16InnerAdEnvelopes = 0;
   let v17InnerAdTypes = 0;
   let v18PersonalCenterAds = 0;
+  let v19PersonalRewardModules = 0;
 
   // =====================================================
-  // D0. V18: complete GetPersonalCenterAdData item
+  // D0. V19: MVLPersonal reward-ad container module
+  // =====================================================
+  try {
+    if (
+      url === "https://i.video.qq.com/" &&
+      containsText(body, 0, body.length, "/video/ad_profile/") &&
+      containsText(body, 0, body.length, "txvideo://v.qq.com/rewardAd")
+    ) {
+      const candidates = [];
+
+      for (let p = 0; p < body.length - 2; p++) {
+        if (body[p] !== 0x0a && body[p] !== 0x7a) continue;
+
+        const lenInfo = readVarint(body, p + 1);
+        if (!lenInfo) continue;
+
+        const len = lenInfo.value;
+        const payloadStart = lenInfo.next;
+        const payloadEnd = payloadStart + len;
+
+        if (len < 512 || len > 5000) continue;
+        if (payloadEnd > body.length || payloadStart >= payloadEnd) continue;
+
+        if (
+          containsText(body, payloadStart, payloadEnd, "/video/ad_profile/") &&
+          containsText(
+            body,
+            payloadStart,
+            payloadEnd,
+            "txvideo://v.qq.com/rewardAd"
+          )
+        ) {
+          candidates.push({
+            tagPos: p,
+            tag: body[p],
+            len: len,
+            payloadStart: payloadStart,
+            payloadEnd: payloadEnd
+          });
+        }
+      }
+
+      for (const c of candidates) {
+        if (isNestedCandidate(c, candidates)) continue;
+        if (body[c.tagPos] !== 0x0a) continue;
+
+        body[c.tagPos] = 0x7a;
+        v19PersonalRewardModules++;
+
+        console.log(
+          "TencentVideo V19 removed personal reward module: len=" + c.len
+        );
+      }
+    }
+  } catch (e) {
+    console.log("TencentVideo V19 personal reward error: " + e);
+  }
+
+  // =====================================================
+  // D1. V18: complete GetPersonalCenterAdData item
   // =====================================================
   try {
     if (
@@ -603,7 +675,7 @@
   }
 
   // =====================================================
-  // D1. V16: first-party iwan card + InnerAd extension
+  // D2. V16: first-party iwan card + InnerAd extension
   // =====================================================
   try {
     if (url === "https://i.video.qq.com/") {
@@ -717,7 +789,7 @@
   }
 
   // =====================================================
-  // D2. V15: remove the WHOLE VideoDetail AdFeedInfo card item
+  // D3. V15: remove the WHOLE VideoDetail AdFeedInfo card item
   // =====================================================
   try {
     if (url === "https://i.video.qq.com/") {
@@ -1177,7 +1249,7 @@
   }
 
   // =====================================================
-  // F. V17 InnerAd Any neutralization + commit V18 mutations
+  // F. V17 InnerAd Any neutralization + commit V19 mutations
   // =====================================================
   try {
     let renamed = 0;
@@ -1233,10 +1305,11 @@
       v16PromoCards > 0 ||
       v16InnerAdEnvelopes > 0 ||
       v17InnerAdTypes > 0 ||
-      v18PersonalCenterAds > 0
+      v18PersonalCenterAds > 0 ||
+      v19PersonalRewardModules > 0
     ) {
       console.log(
-        "TencentVideo V18 final: fallback=" +
+        "TencentVideo V19 final: fallback=" +
         renamed +
         ", iwanCards=" +
         v16PromoCards +
@@ -1245,20 +1318,23 @@
         ", innerAdTypes=" +
         v17InnerAdTypes +
         ", personalCenterAds=" +
-        v18PersonalCenterAds
+        v18PersonalCenterAds +
+        ", personalRewardModules=" +
+        v19PersonalRewardModules
       );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V18 fallback error: " + e);
+    console.log("TencentVideo V19 fallback error: " + e);
 
     if (
       v16PromoCards > 0 ||
       v16InnerAdEnvelopes > 0 ||
       v17InnerAdTypes > 0 ||
-      v18PersonalCenterAds > 0
+      v18PersonalCenterAds > 0 ||
+      v19PersonalRewardModules > 0
     ) {
       $done({ body });
     } else {
