@@ -1,14 +1,25 @@
 /*
- * Tencent Video Ad Filter Test V20
+ * Tencent Video Ad Filter Test V21
  * Keep the SAME GitHub raw path:
  *   TenVideo-MVL-AdFilter-Test.js
  *
- * V20 keeps all V19 behavior. The screenshot and HAR
+ * V21 is an immediate safety correction for V20. HAR 2026-09-04-231625
+ * shows a new detail-page ad after V20 changed adVipState=1 to 0.
+ * adVipState is a VIP-state input, not a safe ad-enable switch. V21 therefore
+ * completely removes that request mutation and never downgrades VIP state.
+ *
+ * Personal-center handling is now response-only and additionally requires
+ * the matching GetPersonalCenterAdData request body. It changes only the
+ * confirmed response's adjacent ad-count value from 1 to 0; it no longer
+ * retags the returned item. Playback-detail and other page responses cannot
+ * enter this branch.
+ *
+ * V20 kept all V19 behavior. The screenshot and HAR
  * 2026-09-04-225912 finally identify the visible card as the GDT feed below
  * Watch History. The dedicated request sends adVipState=1 immediately before
  * GetPersonalCenterAdData returns the ad.
  *
- * V20 adds two one-byte safeguards limited to that exact ad path:
+ * V20 added two one-byte safeguards limited to that exact ad path:
  *   request:  adVipState=1 -> adVipState=0
  *   response: returned ad count 1 -> 0
  *
@@ -306,20 +317,9 @@
           changed += replaceAllSameLengthGlobal(body, "net_ad", "net_xx");
         }
 
-        // Personal-center GDT feed: request the server's no-ad state.
-        if (
-          containsBytesGlobal(body, "GetPersonalCenterAdData")
-        ) {
-          changed += replaceAllSameLengthGlobal(
-            body,
-            "adVipState\x12\x01\x31",
-            "adVipState\x12\x01\x30"
-          );
-        }
-
         if (changed > 0) {
           console.log(
-            "TencentVideo V20 page ad request neutralized: " + changed
+            "TencentVideo V21 page ad request neutralized: " + changed
           );
           $done({ body });
         } else {
@@ -346,7 +346,7 @@
         body = body.replace(/(^|&)spadseg=[^&]*/i, "$1spadseg=0");
 
         if (body !== before) {
-          console.log("TencentVideo V20 getvinfo request normalized");
+          console.log("TencentVideo V21 getvinfo request normalized");
           $done({ body });
         } else {
           $done({});
@@ -356,7 +356,7 @@
 
       $done({});
     } catch (e) {
-      console.log("TencentVideo V20 request error: " + e);
+      console.log("TencentVideo V21 request error: " + e);
       $done({});
     }
     return;
@@ -458,7 +458,7 @@
 
       if (removedAdObjects > 0 || removedPlaylistBlocks > 0) {
         console.log(
-          "TencentVideo V20 getvinfo: adObjects=" +
+          "TencentVideo V21 getvinfo: adObjects=" +
           removedAdObjects +
           ", hlsAdBlocks=" +
           removedPlaylistBlocks
@@ -469,7 +469,7 @@
         $done({});
       }
     } catch (e) {
-      console.log("TencentVideo V20 getvinfo response error: " + e);
+      console.log("TencentVideo V21 getvinfo response error: " + e);
       $done({});
     }
     return;
@@ -580,7 +580,7 @@
   let v17InnerAdTypes = 0;
   let v18PersonalCenterAds = 0;
   let v19PersonalRewardModules = 0;
-  let v20PersonalAdCounts = 0;
+  let v21PersonalAdCounts = 0;
 
   // =====================================================
   // D0. V19: MVLPersonal reward-ad container module
@@ -633,20 +633,23 @@
         v19PersonalRewardModules++;
 
         console.log(
-          "TencentVideo V20 removed personal reward module: len=" + c.len
+          "TencentVideo V21 removed personal reward module: len=" + c.len
         );
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 personal reward error: " + e);
+    console.log("TencentVideo V21 personal reward error: " + e);
   }
 
   // =====================================================
-  // D1. V18: complete GetPersonalCenterAdData item
+  // D1. V21: dedicated GetPersonalCenterAdData response count only
   // =====================================================
   try {
     if (
       url === "https://i.video.qq.com/" &&
+      $request &&
+      $request.body instanceof Uint8Array &&
+      containsBytesGlobal($request.body, "GetPersonalCenterAdData") &&
       containsText(body, 0, body.length, "AdFeedImagePoster") &&
       containsText(body, 0, body.length, "personal_center_page") &&
       containsText(body, 0, body.length, "gdt_stats.fcg") &&
@@ -686,14 +689,11 @@
       for (const c of candidates) {
         if (isNestedCandidate(c, candidates)) continue;
 
-        if (body[c.tagPos] === 0x0a) {
-          body[c.tagPos] = 0x7a;
-          v18PersonalCenterAds++;
-        }
-
         /*
          * The confirmed response places field #5 varint ad count directly
          * after the single ad item. Keep its one-byte encoding and set 1 -> 0.
+         * V21 deliberately leaves the item tag untouched: changing a field #1
+         * item to field #15 proved unsafe because field #15 is valid elsewhere.
          */
         if (
           c.payloadEnd + 1 < body.length &&
@@ -701,21 +701,21 @@
           body[c.payloadEnd + 1] === 0x01
         ) {
           body[c.payloadEnd + 1] = 0x00;
-          v20PersonalAdCounts++;
+          v21PersonalAdCounts++;
         }
 
-        if (v18PersonalCenterAds > 0 || v20PersonalAdCounts > 0) {
+        if (v21PersonalAdCounts > 0) {
           console.log(
-            "TencentVideo V20 personal-center no-ad: len=" +
+            "TencentVideo V21 personal-center no-ad: len=" +
             c.len +
             ", counts=" +
-            v20PersonalAdCounts
+            v21PersonalAdCounts
           );
         }
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 personal-center error: " + e);
+    console.log("TencentVideo V21 personal-center error: " + e);
   }
 
   // =====================================================
@@ -812,7 +812,7 @@
         v16PromoCards++;
 
         console.log(
-          "TencentVideo V20 removed iwan promotion card: len=" + c.len
+          "TencentVideo V21 removed iwan promotion card: len=" + c.len
         );
       }
 
@@ -824,12 +824,12 @@
         v16InnerAdEnvelopes++;
 
         console.log(
-          "TencentVideo V20 removed InnerAd extension: len=" + c.len
+          "TencentVideo V21 removed InnerAd extension: len=" + c.len
         );
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 iwan/InnerAd error: " + e);
+    console.log("TencentVideo V21 iwan/InnerAd error: " + e);
   }
 
   // =====================================================
@@ -944,7 +944,7 @@
           innerNeutralized++;
 
           console.log(
-            "TencentVideo V20 neutralized inner AdFeedInfo wrapper: len=" +
+            "TencentVideo V21 neutralized inner AdFeedInfo wrapper: len=" +
             c.childLen +
             ", score=" +
             c.score
@@ -1095,7 +1095,7 @@
           removedShells++;
 
           console.log(
-            "TencentVideo V20 removed whole AdFeedInfo card shell: len=" +
+            "TencentVideo V21 removed whole AdFeedInfo card shell: len=" +
             c.len +
             ", score=" +
             c.score
@@ -1105,7 +1105,7 @@
 
       if (removedShells > 0 || innerNeutralized > 0) {
         console.log(
-          "TencentVideo V20 detail cards: shells=" +
+          "TencentVideo V21 detail cards: shells=" +
           removedShells +
           ", inner=" +
           innerNeutralized
@@ -1115,7 +1115,7 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 AdFeedInfo-card error: " + e);
+    console.log("TencentVideo V21 AdFeedInfo-card error: " + e);
   }
 
   // =====================================================
@@ -1210,7 +1210,7 @@
           removedCards++;
 
           console.log(
-            "TencentVideo V20 removed MVL ad card: type=" +
+            "TencentVideo V21 removed MVL ad card: type=" +
             c.type +
             ", len=" +
             c.len +
@@ -1221,13 +1221,13 @@
       }
 
       if (removedCards > 0) {
-        console.log("TencentVideo V20 removed MVL cards: " + removedCards);
+        console.log("TencentVideo V21 removed MVL cards: " + removedCards);
         $done({ body });
         return;
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 MVL-card error: " + e);
+    console.log("TencentVideo V21 MVL-card error: " + e);
   }
 
   // =====================================================
@@ -1278,7 +1278,7 @@
         body[best.tagPos] = 0x7a;
 
         console.log(
-          "TencentVideo V20 suppressed getAdDetail payload: len=" +
+          "TencentVideo V21 suppressed getAdDetail payload: len=" +
           best.len +
           ", score=" +
           best.score
@@ -1289,11 +1289,11 @@
       }
     }
   } catch (e) {
-    console.log("TencentVideo V20 getAdDetail error: " + e);
+    console.log("TencentVideo V21 getAdDetail error: " + e);
   }
 
   // =====================================================
-  // F. V17 InnerAd Any neutralization + commit V20 mutations
+  // F. V17 InnerAd Any neutralization + commit V21 mutations
   // =====================================================
   try {
     let renamed = 0;
@@ -1351,10 +1351,10 @@
       v17InnerAdTypes > 0 ||
       v18PersonalCenterAds > 0 ||
       v19PersonalRewardModules > 0 ||
-      v20PersonalAdCounts > 0
+      v21PersonalAdCounts > 0
     ) {
       console.log(
-        "TencentVideo V20 final: fallback=" +
+        "TencentVideo V21 final: fallback=" +
         renamed +
         ", iwanCards=" +
         v16PromoCards +
@@ -1367,14 +1367,14 @@
         ", personalRewardModules=" +
         v19PersonalRewardModules +
         ", personalAdCounts=" +
-        v20PersonalAdCounts
+        v21PersonalAdCounts
       );
       $done({ body });
     } else {
       $done({});
     }
   } catch (e) {
-    console.log("TencentVideo V20 fallback error: " + e);
+    console.log("TencentVideo V21 fallback error: " + e);
 
     if (
       v16PromoCards > 0 ||
@@ -1382,7 +1382,7 @@
       v17InnerAdTypes > 0 ||
       v18PersonalCenterAds > 0 ||
       v19PersonalRewardModules > 0 ||
-      v20PersonalAdCounts > 0
+      v21PersonalAdCounts > 0
     ) {
       $done({ body });
     } else {
