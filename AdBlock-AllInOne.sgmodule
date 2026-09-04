@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.2.0.4 Stable
-#!desc=V4.2.0.4 Stable：腾讯视频 V17 精确失效个人中心 InnerAd 内置推广对象，修复素材消失后仍保留卡片容器；保留中国移动开屏修复及全部既有规则。
+#!name=AdBlock Hybrid V4.2.0.5 Stable
+#!desc=V4.2.0.5 Stable：腾讯视频 V18 精确移除 GetPersonalCenterAdData 完整 GDT 广告项，修复个人中心素材被拦后仍保留卡片容器；保留 V17 与全部既有规则。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-04
-#!version=4.2.0.4-stable-tencent-innerad-shell
+#!version=4.2.0.5-stable-tencent-personal-card-shell
 #!system=ios
 
 
@@ -1198,18 +1198,18 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 # 直接下发的广告组件。脚本使用 binary-body-mode=true，在原始字节中
 # 做“等长度标识符替换”，不增删 Protobuf 字节，尽量避免破坏页面结构。
 #
-# V17 在 V16 基础上继续精确失效 InnerAd 的三个 protobuf Any 类型，
-# 修复个人中心素材已拦截、但客户端仍生成空卡片容器的问题。
-# ?v=17 只用于让 Surge 重新下载脚本，GitHub 文件名与路径没有改变。
+# V18 在 V17 基础上精确移除 GetPersonalCenterAdData 的完整 GDT 广告项，
+# 修复个人中心素材已拦截、但广告数据仍让客户端生成空卡片容器的问题。
+# ?v=18 只用于让 Surge 重新下载脚本，GitHub 文件名与路径没有改变。
 #
 # 注意：这是实验分支。
 # 若详情页空白、闪退、正常视频/选集异常，立即退回 V4.1.8.2。
 # =========================================================
 
-腾讯视频-MVL广告布局请求净化 = type=http-request,pattern=^https:\/\/i\.video\.qq\.com\/$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=17,timeout=30
-腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=17,timeout=30
-腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=17,timeout=30
-腾讯视频-MVL广告组件净化 = type=http-response,pattern=^https:\/\/i\.video\.qq\.com\/,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=17,timeout=30
+腾讯视频-MVL广告布局请求净化 = type=http-request,pattern=^https:\/\/i\.video\.qq\.com\/$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=18,timeout=30
+腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=18,timeout=30
+腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=18,timeout=30
+腾讯视频-MVL广告组件净化 = type=http-response,pattern=^https:\/\/i\.video\.qq\.com\/,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=18,timeout=30
 
 
 # =========================================================
