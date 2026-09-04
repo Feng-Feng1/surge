@@ -1,17 +1,208 @@
 /*
- * 优酷播放广告净化 Test V1
+ * 优酷播放广告净化 Test V2
  *
- * HAR 2026-09-04 12:42 验证：
+ * HAR 2026-09-04 12:42 / 13:08 验证：
  * mtop.youku.play.ups.appinfo.get 的正常播放响应中，同时包含：
  * - data.data.video / stream：正片信息
  * - data.data.ad：结构化广告位、广告视频和监测链接
  * - data.data.ykad：播放器广告排期与旧格式广告数据
  *
- * 本脚本只删除 ad 与 ykad，不修改正片 video/stream，
- * 也不封锁与正片共用的 vali*.cibntv.net 媒体 CDN。
+ * V1 已在 13:08 HAR 中确认成功删除 ad / ykad，但同一响应的
+ * stream.m3u8_url 仍会让 pl-ali.youku.com 返回服务端拼接广告：
+ * - 正片区块：ccode=02010101，vid 与请求主 VID 相同
+ * - 广告区块：ccode=0902，vid 与请求主 VID 不同
+ * - 每个广告区块都由 #EXT-X-DISCONTINUITY 分隔
+ *
+ * V2 保留 V1，并精确删除上述 HLS 广告区块。
+ * 不改 m3u8 签名参数，不封锁与正片共用的媒体 CDN。
  */
 
 (function () {
+  const url = ($request && $request.url) || "";
+
+  function safeDecode(value) {
+    try {
+      return decodeURIComponent(value);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  function cleanStitchedPlaylist(text) {
+    const vidMatch = url.match(/[?&]vid=([^&#]+)/i);
+
+    if (!vidMatch) {
+      return {
+        text: text,
+        removedBlocks: 0,
+        removedSegments: 0,
+        removedSeconds: 0
+      };
+    }
+
+    const mainVid = safeDecode(vidMatch[1]);
+    const eol = text.indexOf("\r\n") !== -1 ? "\r\n" : "\n";
+    const lines = text.split(/\r?\n/);
+    const blocks = [];
+    let current = [];
+
+    for (const line of lines) {
+      if (line === "#EXT-X-DISCONTINUITY") {
+        if (current.length > 0) blocks.push(current);
+        current = [line];
+      } else {
+        current.push(line);
+      }
+    }
+
+    if (current.length > 0) blocks.push(current);
+
+    const kept = [];
+    let removedBlocks = 0;
+    let removedSegments = 0;
+    let removedSeconds = 0;
+    let removedLeadingAd = false;
+    let keptMedia = false;
+    let preserveEndList = false;
+
+    for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
+      const block = blocks[blockIndex];
+      const joined = block.join("\n");
+      const hasAdCcode = /[?&]ccode=0902(?:&|["\r\n]|$)/i.test(joined);
+      const blockVids = [];
+      const vidPattern = /[?&]vid=([^&"\r\n]+)/gi;
+      let match;
+
+      while ((match = vidPattern.exec(joined)) !== null) {
+        blockVids.push(safeDecode(match[1]));
+      }
+
+      const hasMainVid = blockVids.indexOf(mainVid) !== -1;
+      const isInjectedAd =
+        hasAdCcode &&
+        blockVids.length > 0 &&
+        !hasMainVid;
+
+      if (!isInjectedAd) {
+        let keptBlock = block;
+
+        // 若片头广告位于首个 DISCONTINUITY 之前，保留 HLS 头部，
+        // 并去掉随后正片前已经失去意义的第一个分隔标记。
+        if (
+          removedLeadingAd &&
+          !keptMedia &&
+          block[0] === "#EXT-X-DISCONTINUITY"
+        ) {
+          keptBlock = block.slice(1);
+        }
+
+        kept.push(keptBlock);
+
+        if (
+          keptBlock.some(function (line) {
+            return /^#EXTINF:/i.test(line) || /^https?:\/\//i.test(line);
+          })
+        ) {
+          keptMedia = true;
+        }
+        continue;
+      }
+
+      removedBlocks++;
+
+      if (block.indexOf("#EXT-X-ENDLIST") !== -1) {
+        preserveEndList = true;
+      }
+
+      if (blockIndex === 0) {
+        const firstMediaLine = block.findIndex(function (line) {
+          return (
+            /^#EXTINF:/i.test(line) ||
+            /^#EXT-X-(?:MAP|KEY|BYTERANGE|PROGRAM-DATE-TIME|DATERANGE|GAP)(?::|$)/i.test(line) ||
+            /^https?:\/\//i.test(line)
+          );
+        });
+
+        if (firstMediaLine > 0) {
+          kept.push(block.slice(0, firstMediaLine));
+        }
+
+        removedLeadingAd = true;
+      }
+
+      for (const line of block) {
+        if (/^https?:\/\/.*\.mp4(?:\?|$)/i.test(line)) {
+          removedSegments++;
+        }
+
+        const durationMatch = line.match(/^#EXTINF:([0-9.]+)/i);
+        if (durationMatch) {
+          const seconds = Number(durationMatch[1]);
+          if (Number.isFinite(seconds) && seconds > 0) {
+            removedSeconds += seconds;
+          }
+        }
+      }
+    }
+
+    if (
+      preserveEndList &&
+      !kept.some(function (block) {
+        return block.indexOf("#EXT-X-ENDLIST") !== -1;
+      })
+    ) {
+      kept.push(
+        text.endsWith(eol)
+          ? ["#EXT-X-ENDLIST", ""]
+          : ["#EXT-X-ENDLIST"]
+      );
+    }
+
+    return {
+      text: kept.map(function (block) {
+        return block.join(eol);
+      }).join(eol),
+      removedBlocks: removedBlocks,
+      removedSegments: removedSegments,
+      removedSeconds: removedSeconds
+    };
+  }
+
+  // HLS：删除服务端拼接的广告区块，保留主 VID 的正片区块。
+  if (/^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$)/i.test(url)) {
+    try {
+      const playlist = $response && $response.body;
+
+      if (typeof playlist !== "string" || playlist.length === 0) {
+        $done({});
+        return;
+      }
+
+      const cleaned = cleanStitchedPlaylist(playlist);
+
+      if (cleaned.removedBlocks === 0) {
+        $done({});
+        return;
+      }
+
+      console.log(
+        "Youku Test V2 removed HLS ad blocks: blocks=" +
+          cleaned.removedBlocks +
+          ", segments=" +
+          cleaned.removedSegments +
+          ", seconds=" +
+          Math.round(cleaned.removedSeconds)
+      );
+
+      $done({ body: cleaned.text });
+    } catch (e) {
+      console.log("Youku Test V2 playlist error: " + e);
+      $done({});
+    }
+    return;
+  }
+
+  // UPS JSON：删除客户端广告对象和广告排期。
   try {
     const body = $response && $response.body;
 
@@ -77,7 +268,7 @@
     }
 
     console.log(
-      "Youku Test V1 removed playback ads: objects=" +
+      "Youku Test V2 removed playback ads: objects=" +
         removed +
         ", seats=" +
         seats +
@@ -89,7 +280,7 @@
 
     $done({ body: JSON.stringify(obj) });
   } catch (e) {
-    console.log("Youku Test V1 response error: " + e);
+    console.log("Youku Test V2 response error: " + e);
     $done({});
   }
 })();
