@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.3.0 Stable
-#!desc=V4.3.0 Stable：并入已完成实机验证的贴吧 V2、瓜子漫画、中国联通 V2、优酷 V2 与高德 V2；携程宽范围图片兜底继续留在独立分支；腾讯视频 Recovery 策略保持不变。
+#!name=AdBlock Hybrid V4.3.0.1 Stable
+#!desc=V4.3.0.1 Stable：修正高德合并错误，移除仓库中不存在的 V2 脚本地址，改用已实测正常的 V1 内置空响应；其余 V4.3.0 规则及腾讯视频 Recovery 策略保持不变。
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-05
-#!version=4.3.0-stable-tested-branches-merge
+#!version=4.3.0.1-stable-amap-inline-hotfix
 #!system=ios
 
 
@@ -892,6 +892,14 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 ^http:\/\/[^\/]+\/youku\/[^?]+\.mp4\?(?:[^#]*&)?ykVideoShowType=2(?:&[^#]*)?$ data-type=text data="" status-code=204
 
+
+# =========================================================
+# 高德地图：已验证 V1 开屏空响应
+# =========================================================
+
+# 直接在模块内返回无广告结果，不再依赖外部高德脚本文件。
+^https:\/\/amap-aos-info-nogw\.amap\.com\/ws\/aos\/alimama\/splash_screen_rt(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
 # =========================================================
 # 腾讯视频：QAD / GDT 独立广告媒体 Fail-Fast
 # =========================================================
@@ -1204,12 +1212,6 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 优酷-播放广告响应净化 = type=http-response,pattern=^https:\/\/un-acs\.youku\.com\/gw\/mtop\.youku\.play\.ups\.appinfo\.get\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt?v=2,timeout=30
 优酷-HLS拼接广告净化 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$),requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt?v=2,timeout=30
 
-
-# =========================================================
-# 高德地图：开屏配置有效空响应
-# =========================================================
-
-高德地图-开屏有效空结果 = type=http-request,pattern=^https:\/\/amap-aos-info-nogw\.amap\.com\/ws\/aos\/alimama\/splash_screen_rt(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/AMap-Splash-AdFilter-Test.txt?v=2,timeout=10
 
 # =========================================================
 # 铁路12306：开屏广告无广告正常返回
