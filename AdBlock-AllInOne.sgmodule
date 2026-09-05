@@ -1,9 +1,9 @@
-#!name=AdBlock Hybrid V4.2.0.9 Recovery
-#!desc=V4.2.0.9 Recovery：腾讯视频停止全部 i.video.qq.com 页面 Protobuf 改写，恢复原生页面与 VIP 判断；仅保留已验证稳定的 getvinfo 播放流净化。
+#!name=AdBlock Hybrid V4.3.0 Stable
+#!desc=V4.3.0 Stable：并入已完成实机验证的贴吧 V2、瓜子漫画、中国联通 V2、优酷 V2 与高德 V2；携程宽范围图片兜底继续留在独立分支；腾讯视频 Recovery 策略保持不变。
 #!category=广告拦截
 #!author=Night & ChatGPT
-#!date=2026-09-04
-#!version=4.2.0.9-recovery-tencent-page-bypass
+#!date=2026-09-05
+#!version=4.3.0-stable-tested-branches-merge
 #!system=ios
 
 
@@ -676,6 +676,27 @@ DOMAIN,smartad.10010.com,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
+# 29.1 瓜子漫画：专用广告域
+# =========================================================
+
+DOMAIN,xhs794.xhsqd12.com,REJECT
+DOMAIN,xddxxy.dasdnajksn.com,REJECT
+DOMAIN,rk7p.avdog-t0199.vip,REJECT
+DOMAIN,oytsuig.kwvqaj.cn,REJECT
+DOMAIN,jsqp.rk00h.cn,REJECT
+DOMAIN,rc210fx9byte.9sawv.cn,REJECT
+DOMAIN,mt0simgbyte.lvautm.cn,REJECT
+
+
+# =========================================================
+# 29.2 高德地图：开屏广告素材
+# =========================================================
+
+DOMAIN,optimus-ads.amap.com,REJECT,extended-matching,pre-matching
+DOMAIN,optimus-ads-ykx.amap.com,REJECT,extended-matching,pre-matching
+
+
+# =========================================================
 # 30. 乐播 / 投屏广告
 # =========================================================
 
@@ -821,7 +842,16 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 
 
 # =========================================================
-# F. 中国移动：开屏广告与倒计时
+# F. 瓜子漫画：页面广告脚本
+# =========================================================
+
+^https:\/\/www\.guazimanhua\.com\/assets\/ad\/ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-top-static-ad\.js(?:\?.*)?$ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-bottom-ad\.js(?:\?.*)?$ _ reject
+
+
+# =========================================================
+# G. 中国移动：开屏广告与倒计时
 # =========================================================
 #
 # 2026-09-03 23:44 HAR 实抓：
@@ -846,6 +876,21 @@ DOMAIN,adks.hpplay.cn,REJECT,extended-matching,pre-matching
 # =========================================================
 
 [Map Local]
+
+# =========================================================
+# 中国联通：开屏广告与倒计时
+# =========================================================
+
+^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/accountListData\.htm(?:\?.*)?$ data-type=text data="{\"respDesc\":\"黑名单用户不展示开屏广告\",\"respCode\":\"9999\"}" status-code=200 header="Content-Type:application/json"
+^https?:\/\/m\.client\.10010\.com\/mobileService\/(?:activity|customer)\/(?:get_client_adv|get_startadv)(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https?:\/\/m\.client\.10010\.com\/uniAdmsInterface\/getWelcomeAd(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+
+# =========================================================
+# 优酷：缓存残留广告媒体
+# =========================================================
+
+^http:\/\/[^\/]+\/youku\/[^?]+\.mp4\?(?:[^#]*&)?ykVideoShowType=2(?:&[^#]*)?$ data-type=text data="" status-code=204
 
 # =========================================================
 # 腾讯视频：QAD / GDT 独立广告媒体 Fail-Fast
@@ -1127,6 +1172,46 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 [Script]
 
 # =========================================================
+# 百度贴吧：已验证的专用接口与内嵌广告净化
+# =========================================================
+
+贴吧-信息流广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getFeedAd(?:\?|$),requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2,timeout=30
+贴吧-开屏广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getSplashAd(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2,timeout=30
+贴吧-个性推荐内嵌广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/excellent\/personalized(?:\?|$),requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2,timeout=30
+贴吧-广告竞价净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/b\/ad\/adBid(?:\?|$),requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2,timeout=30
+贴吧-商城推广净化 = type=http-response,pattern=^https:\/\/tieba\.baidu\.com\/c\/f\/forum\/shopGoodsFeed(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2,timeout=30
+
+
+# =========================================================
+# 瓜子漫画：页面净化
+# =========================================================
+
+瓜子漫画-页面净化 = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/guazi-clean.js,requires-body=true,max-size=8388608,timeout=10,engine=webview
+
+
+# =========================================================
+# 中国联通：开屏配置与倒计时归零
+# =========================================================
+
+中国联通-开屏配置立即返回 = type=http-request,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt?v=2,timeout=10
+中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt?v=2,timeout=30
+
+
+# =========================================================
+# 优酷：播放响应与 HLS 拼接广告净化
+# =========================================================
+
+优酷-播放广告响应净化 = type=http-response,pattern=^https:\/\/un-acs\.youku\.com\/gw\/mtop\.youku\.play\.ups\.appinfo\.get\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt?v=2,timeout=30
+优酷-HLS拼接广告净化 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$),requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt?v=2,timeout=30
+
+
+# =========================================================
+# 高德地图：开屏配置有效空响应
+# =========================================================
+
+高德地图-开屏有效空结果 = type=http-request,pattern=^https:\/\/amap-aos-info-nogw\.amap\.com\/ws\/aos\/alimama\/splash_screen_rt(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/AMap-Splash-AdFilter-Test.txt?v=2,timeout=10
+
+# =========================================================
 # 铁路12306：开屏广告无广告正常返回
 # =========================================================
 #
@@ -1219,4 +1304,4 @@ http-response-jq ^https:\/\/g-acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopse
 
 [MITM]
 
-hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, svv.video.qq.com, client.app.coc.10086.cn, clientaccess.10086.cn
+hostname = %APPEND% ebike-client.xiaoantech.com, ebike-client-prod.xiaoantech.net, wxsmw.wxs.qq.com, wximg.wxs.qq.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, acs.m.goofish.com, acs.m.taobao.com, g-acs.m.goofish.com, api.pinduoduo.com, api.yangkeduo.com, images.pinduoduo.com, video-dsp.pddpic.com, t-dsp.pinduoduo.com, ad.12306.cn, app-gw.csdn.net, gw.csdn.net, pic1.chelaile.net.cn, api.chelaile.net.cn, atrace.chelaile.net.cn, web.chelaile.net.cn, kad.gotokeep.com, api.gotokeep.com, home.mi.com, www.xiaohongshu.com, interface.music.163.com, interface1.music.163.com, interface2.music.163.com, sp.kaola.com, support.you.163.com, api.douban.com, api.xueqiu.com, api.smzdm.com, issuecdn.baidupcs.com, *.cainiao.com, guide-acs.m.taobao.com, acs4miniapp-inner.m.taobao.com, app.bilibili.com, v2mi.gdt.qq.com, api.coolapk.com, ebike-client-j.xiaoantech.net, svv.video.qq.com, client.app.coc.10086.cn, clientaccess.10086.cn, tiebac.baidu.com, tieba.baidu.com, www.guazimanhua.com, m.client.10010.com, un-acs.youku.com, pl-ali.youku.com, amap-aos-info-nogw.amap.com
