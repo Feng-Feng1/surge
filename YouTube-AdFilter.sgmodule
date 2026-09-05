@@ -1,0 +1,27 @@
+#!name=YouTube 去广告 Test V1
+#!desc=基于 2026-09-05 iOS HAR 验证：净化 YouTube 首页、播放页、搜索、Shorts 与相关推荐中的 Protobuf 广告，并对 rr*.googlevideo.com/initplayback 返回有效空结果；不修改后台播放、画中画、字幕或普通功能按钮。
+#!category=广告拦截测试
+#!author=Night（模块整理） & Maasea（核心脚本）
+#!date=2026-09-05
+#!version=1.0.0-test
+#!system=ios
+
+
+[Map Local]
+
+# HAR 实抓命中：YouTube iOS 会先访问 redirector.googlevideo.com，
+# 再跳转到 rr*.googlevideo.com/initplayback。仅对最终 initplayback
+# 返回 HTTP 200 + {}，不拦截正常 videoplayback 音视频分片。
+^https:\/\/rr[\w-]+\.googlevideo\.com\/initplayback(?:\?|$) data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+
+[Script]
+
+# 使用 Maasea 的 Apache-2.0 Protobuf 净化核心，由自己的仓库固定托管。
+# 显式关闭与去广告无关的按钮隐藏和字幕增强功能。
+YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/YouTube-AdFilter.js?v=1,argument="{"captionLang":"off","blockUpload":false,"blockImmersive":false,"blockShorts":false}",timeout=60
+
+
+[MITM]
+
+hostname = %APPEND% rr*.googlevideo.com, youtubei.googleapis.com
