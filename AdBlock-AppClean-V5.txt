@@ -1,5 +1,5 @@
 /*
- * AdBlock AppClean V5.0.0-rc1 | Surge iOS
+ * AdBlock AppClean V5.0.1-rc2 | Surge iOS
  * 2026-09-07, Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -195,6 +195,24 @@
 
   function processBody(root, host, path, query) {
     switch (label) {
+
+      case "bcomic":
+        if (host !== "manga.bilibili.com") break;
+        if (/^\/twirp\/comic\.v\d+\.Comic\/ListFlash\/?$/.test(path)) {
+          ["list", "ad_list", "show", "verifying_list"].forEach(function (key) {
+            setExisting(root, "data." + key, []);
+          });
+          setExisting(root, "data.ad_loc", false);
+        } else if (/^\/twirp\/comic\.v\d+\.Comic\/AppInit\/?$/.test(path)) {
+          var flash = get(root, "data.flash");
+          if (object(flash) && typeof flash.img === "string" && has(flash, "id")) {
+            setExisting(flash, "id", 0);
+            setExisting(flash, "show_limit", 0);
+            ["img", "video", "back_img", "button"].forEach(function (key) { setExisting(flash, key, ""); });
+          }
+        }
+        break;
+
       case "bili":
         if (host === "app.bilibili.com" && /^\/x\/v2\/feed\/index(?:\/story)?$/.test(path)) {
           filter(root, "data.items", biliAd);
@@ -263,12 +281,7 @@
       case "jd":
         if (host !== "api.m.jd.com" || path !== "/client.action" || !/(?:^|&)functionId=start(?:&|$)/.test(query)) break;
         if (!Array.isArray(root.images)) break;
-        root.images.forEach(function (group) {
-          if (!Array.isArray(group)) return;
-          group.forEach(function (x) {
-            setExisting(x, "showTimes", 0); setExisting(x, "time", 0);
-          });
-        });
+        setExisting(root, "images", []);
         setExisting(root, "showTimesDaily", 0);
         break;
       case "meituan":
