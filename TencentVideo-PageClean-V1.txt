@@ -1,8 +1,11 @@
 /*
- * TencentVideo PageClean V1.0.0 RC1 / 2026-09-08
+ * TencentVideo PageClean V1.1.0 RC1 / 2026-09-09
  * Surge http-response, requires-body=true, binary-body-mode=true.
  * Evidence: 2026-09-08-100604.har, entries 285 and 363 (one-based).
- * Scope: captured homepage channel$100101, MVL normal module list only.
+ * Scope: existing channel$100101 homepage plus the exact captured reward-ad pendant.
+ * Added evidence: 2026-09-09-003815.har entry 823 (one-based).
+ * Only display child #2/#2 is removed; state/reward/time siblings stay byte-identical.
+ * New pendant branch is an offline-verified candidate; phone UI effect needs confirmation.
  * Playback stays with the existing TenVideo-MVL-AdFilter-Test.js?v=22.
  * No request changes, VIP flags, token storage, HTTP calls or CDN blocking.
  * Parse real protobuf boundaries, remove confirmed repeated ad items,
@@ -12,7 +15,7 @@
  */
 (function () {
   "use strict";
-  const VERSION = "TencentVideo PageClean V1.0.0 RC1";
+  const VERSION = "TencentVideo PageClean V1.1.0 RC1";
   const PREFIX = "type.googleapis.com/com.tencent.qqlive.protocol.pb.";
   const MAX_BODY = 2097152;
   const MAX_FIELDS = 20000;
@@ -301,19 +304,115 @@
     return { body: output, counts };
   }
 
+  // RC4: only the captured reward-ad pendant display schema. No state changes.
+  function cleanRewardPromotionPayload(fs, h) {
+    const { parse, one, numeric, textEquals, contains, concat, wrap } = h;
+    function shape(fields, schema, repeated = []) {
+      if (fields.some(f => !Object.prototype.hasOwnProperty.call(schema, f.n) || schema[f.n] !== f.w)) return false;
+      return Object.keys(schema).every(key => {
+        const n = Number(key), count = fields.filter(f => f.n === n).length;
+        return repeated.includes(n) ? count > 0 : count === 1;
+      });
+    }
+    function fixedBytes(b, expected) {
+      return b.length === expected.length && expected.every((v, i) => b[i] === v);
+    }
+    function event(fields, kind, key) {
+      return fields.some(f => {
+        if (f.n !== 4 || f.w !== 2) return false;
+        const e = parse(f.data);
+        if (!shape(e, { 1: 0, 2: 2 }) || numeric(e, 1, -1) !== kind) return false;
+        const list = parse(one(e, 2, 2).data);
+        if (!shape(list, { 1: 2 })) return false;
+        const item = parse(one(list, 1, 2).data);
+        return shape(item, { 1: 2, 2: 0 }) &&
+          textEquals(one(item, 1, 2).data, key) && numeric(item, 2, -1) > 0;
+      });
+    }
+    if (!shape(fs, { 2: 2 })) return null;
+    const envelope = one(fs, 2, 2), fields = parse(envelope.data);
+    if (!shape(fields, { 1: 2, 2: 2, 3: 0, 4: 2, 6: 0, 7: 2, 10: 2, 11: 2 }, [4])) return null;
+    if (!event(fields, 4, "pendant_frequency_feed_back")) return null;
+    const display = one(fields, 2, 2), ui = parse(display.data);
+    if (!shape(ui, { 1: 2, 2: 2, 3: 2, 4: 0, 5: 0, 6: 2, 7: 2, 8: 2, 11: 2, 17: 2, 18: 2, 22: 0, 23: 2, 25: 0 }, [17])) return null;
+    if (!contains(one(ui, 1, 2).data, "ad_request_id")) return null;
+    // The captured headline starts with çå¹¿åï¼åè´¹ç and includes VIP.
+    // Guard the fixed meaning without hard-coding the offered minute count.
+    const headline = one(ui, 3, 2).data;
+    const intro = [0xe7, 0x9c, 0x8b, 0xe5, 0xb9, 0xbf, 0xe5, 0x91, 0x8a, 0xef, 0xbc, 0x8c, 0xe5, 0x85, 0x8d, 0xe8, 0xb4, 0xb9, 0xe7, 0x9c, 0x8b];
+    if (!fixedBytes(headline.subarray(0, intro.length), intro) || !contains(headline, "VIP")) return null;
+    // UTF-8 for the captured fixed label: åè´¹ç.
+    if (!fixedBytes(one(ui, 8, 2).data, [0xe5, 0x85, 0x8d, 0xe8, 0xb4, 0xb9, 0xe7, 0x9c, 0x8b])) return null;
+    const maps = ui.filter(f => f.n === 17), wanted = { link_type: "1", ad_pr_id: "203", ad_pr_type: "1" };
+    if (maps.length !== 3) return null;
+    const seen = new Set();
+    for (const f of maps) {
+      const map = parse(f.data);
+      if (!shape(map, { 1: 2, 2: 2 })) return null;
+      const key = Object.keys(wanted).find(k => textEquals(one(map, 1, 2).data, k));
+      if (!key || seen.has(key) || !textEquals(one(map, 2, 2).data, wanted[key])) return null;
+      seen.add(key);
+    }
+    const popup = parse(one(ui, 18, 2).data);
+    if (!shape(popup, { 2: 2, 3: 0, 4: 2 }, [4])) return null;
+    const popupText = parse(one(popup, 2, 2).data);
+    if (!shape(popupText, { 1: 2, 2: 2, 3: 2, 4: 2 })) return null;
+    if (!event(popup, 2, "pendant_animation_frequency_exposure")) return null;
+    const action = parse(one(ui, 23, 2).data);
+    if (!shape(action, { 1: 0, 2: 2 }) || numeric(action, 1, -1) !== 2) return null;
+    const actionPayload = parse(one(action, 2, 2).data);
+    if (!shape(actionPayload, { 1: 0, 2: 2 }) || numeric(actionPayload, 1, -1) !== 5) return null;
+    const link = parse(one(actionPayload, 2, 2).data);
+    if (!shape(link, { 1: 2 }) || !contains(one(link, 1, 2).data, "ad_request_id")) return null;
+    return concat([wrap(envelope, concat(fields.filter(f => f !== display).map(f => f.raw)))]);
+  }
+  
+
+  function cleanRewardFrame(b) {
+    if (b.length < 256 || b.length > 65536 || b[0] !== 9 || b[1] !== 48 ||
+        b[2] !== 0 || b[3] !== 0 || read32(b, 4) !== b.length) return null;
+    const offset = 16 + b[8] * 256 + b[9];
+    if (offset < 16 || offset >= b.length) return null;
+    const meta = parse(b.subarray(16, offset));
+    if ([1, 2, 4, 5, 9, 10, 12].some(n => numeric(meta, n, 0) !== 0)) return null;
+    const payload = cleanRewardPromotionPayload(parse(b.subarray(offset)),
+      { parse, one, numeric, textEquals, contains, concat, wrap });
+    if (!payload) return null;
+    const output = concat([b.subarray(0, offset), payload]);
+    const len = output.length;
+    output[4] = Math.floor(len / 16777216) & 255;
+    output[5] = Math.floor(len / 65536) & 255;
+    output[6] = Math.floor(len / 256) & 255;
+    output[7] = len & 255;
+    return { body: output, rewardPendant: 1 };
+  }
+
+  function hasHeader(headers, name) {
+    name = name.toLowerCase();
+    return Array.isArray(headers)
+      ? headers.some(h => String(h.field || "").toLowerCase() === name)
+      : Object.keys(headers || {}).some(key => key.toLowerCase() === name);
+  }
+
   try {
     if (typeof $request === "undefined" || typeof $response === "undefined" ||
         !/^https:\/\/i\.video\.qq\.com\/$/i.test($request.url || "") ||
-        $request.method !== "POST" || Number($response.status) !== 200 ||
-        header($request.headers, "servicetag") !== "channel$100101") {
+        $request.method !== "POST" || Number($response.status) !== 200) {
       finish(); return;
     }
+    const serviceTag = header($request.headers, "servicetag");
+    const rewardCandidate = !hasHeader($request.headers, "servicetag");
+    if (serviceTag !== "channel$100101" && !rewardCandidate) { finish(); return; }
     const b = bytes($response.body);
     if (!b || !/^application\/octet-stream(?:\s*;|$)/i.test(header($response.headers, "content-type"))) {
       finish(); return;
     }
-    const result = cleanFrame(b);
+    const result = rewardCandidate ? cleanRewardFrame(b) : cleanFrame(b);
     if (!result) { finish(); return; }
+    if (result.rewardPendant) {
+      console.log(VERSION + ": rewardPendant=1");
+      finish({ body: result.body }); return;
+    }
     console.log(VERSION + ": feed=" + result.counts.feed + ", focus=" + result.counts.focus +
       ", adResponse=" + result.counts.adResponse + ", innerPromotion=" + result.counts.innerPromotion);
     finish({ body: result.body });
