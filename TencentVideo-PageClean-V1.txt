@@ -1,13 +1,11 @@
 /*
- * TencentVideo PageClean V1.3.0 RC1 / 2026-09-09
+ * TencentVideo PageClean V1.2.1 RC1 / 2026-09-09
  * Surge http-response, requires-body=true, binary-body-mode=true.
  * Evidence: 2026-09-08-100604.har, entries 285 and 363 (one-based).
- * Scope: confirmed homepage/personal-center schemas, captured reward pendant, and iacc splash command 63743.
+ * Scope: channel$100101 homepage, captured reward pendant, and iacc splash command 63743.
  * Added evidence: 2026-09-09-003815.har entry 823 (one-based).
  * RC5 homepage evidence: 2026-09-09-073247.har entry 1342 (one-based).
  * Recognize the captured gdt_report.fcg focus-ad tracking variant as well.
- * RC8 evidence: 2026-09-09-180250.har entries 280, 852, 853 (one-based).
- * Remove only the personal ad slot and the dedicated confirmed ad-list item.
  * RC7 evidence: 2026-09-09-130402.har entry 755, exact magic-act pull-refresh promotion.
  * Remove its dedicated extension only when all nested events match; no generic tag changes.
  * RC5 splash evidence: same HAR entry 916, gzip-wrapped Tars/JCE response.
@@ -24,7 +22,7 @@
  */
 (function () {
   "use strict";
-  const VERSION = "TencentVideo PageClean V1.3.0 RC1";
+  const VERSION = "TencentVideo PageClean V1.2.1 RC1";
   const PREFIX = "type.googleapis.com/com.tencent.qqlive.protocol.pb.";
   const MAX_BODY = 2097152;
   const MAX_FIELDS = 20000;
@@ -391,106 +389,6 @@
     output[6] = Math.floor(len / 256) & 255;
     output[7] = len & 255;
     return { body: output, counts };
-  }
-
-  // RC8: remove the personal-center ad slot and its dedicated returned ad item.
-  // Both guards use response structure only; Surge response scripts need no request body.
-  function cleanPersonalFrame(b) {
-    if (b.length < 16 || b.length > MAX_BODY || b[0] !== 9 || b[1] !== 48 ||
-        b[2] !== 0 || b[3] !== 0 || read32(b, 4) !== b.length) return null;
-    const offset = 16 + b[8] * 256 + b[9];
-    if (offset < 16 || offset >= b.length) return null;
-    const meta = parse(b.subarray(16, offset));
-    if ([1, 2, 4, 5, 9, 10, 12].some(n => numeric(meta, n, 0) !== 0)) return null;
-    const fs = parse(b.subarray(offset));
-    function shape(fields, schema, repeated = []) {
-      if (fields.some(f => !Object.prototype.hasOwnProperty.call(schema, f.n) || schema[f.n] !== f.w)) return false;
-      return Object.keys(schema).every(key => {
-        const n = Number(key), count = fields.filter(f => f.n === n).length;
-        return repeated.includes(n) ? count > 0 : count === 1;
-      });
-    }
-    function output(payload, kind) {
-      const body = concat([b.subarray(0, offset), payload]);
-      const len = body.length;
-      body[4] = Math.floor(len / 16777216) & 255;
-      body[5] = Math.floor(len / 65536) & 255;
-      body[6] = Math.floor(len / 256) & 255;
-      body[7] = len & 255;
-      return { body, personalKind: kind };
-    }
-    function userCenterModule(fields, name) {
-      const type = one(fields, 2, 2), extra = one(fields, 15, 2);
-      if (!type || !extra || !textEquals(type.data, name)) return false;
-      const any = parse(extra.data), nameField = one(any, 1, 2), payload = one(any, 2, 2);
-      return shape(any, { 1: 2, 2: 2 }) && nameField && payload &&
-        textEquals(nameField.data, "type.googleapis.com/trpc.vector_layout.page_view.UserCenter") &&
-        payload.data.length > 0;
-    }
-    // The captured initial personal page contains a separate 55-byte ad slot
-    // between history and more functions. Its entire repeated item is 57 bytes.
-    if (shape(fs, { 1: 2, 3: 2, 5: 2, 7: 2, 8: 2 }, [3, 7])) {
-      const page = one(fs, 1, 2), map = parse(page.data);
-      if (!shape(map, { 1: 2, 2: 2 }) || !textEquals(one(map, 1, 2).data, "normal")) return null;
-      const value = one(map, 2, 2), modules = parse(value.data);
-      if (!modules.length || modules.length > 100 || modules.some(f => f.n !== 1 || f.w !== 2)) return null;
-      const fields = modules.map(f => parse(f.data));
-      const slots = fields.map((f, i) => ({ f, i })).filter(x => {
-        const type = one(x.f, 2, 2);
-        return type && textEquals(type.data, "user_center_ad_middle");
-      });
-      if (slots.length !== 1) return null;
-      const slot = slots[0];
-      if (!shape(slot.f, { 1: 2, 2: 2, 8: 2, 14: 0 }) ||
-          !one(slot.f, 1, 2).data.length || one(slot.f, 8, 2).data.length !== 0 ||
-          numeric(slot.f, 14, -1) !== 9) return null;
-      // Establish the personal-page schema with normal siblings, not with URLs
-      // inside an unrelated top-function module or with a generic field number.
-      if (fields.filter(f => userCenterModule(f, "user_center_user_info")).length !== 1 ||
-          fields.filter(f => userCenterModule(f, "user_center_history")).length !== 1 ||
-          fields.filter(f => userCenterModule(f, "user_center_more_function")).length !== 1) return null;
-      const kept = concat(modules.filter((f, i) => i !== slot.i).map(f => f.raw));
-      const newMap = rebuild(map, new Map([[value, wrap(value, kept)]]));
-      // Keep all normal modules, pagination cursors and page-context counters verbatim.
-      return output(rebuild(fs, new Map([[page, wrap(page, newMap)]])), "slot");
-    }
-    // Dedicated GetPersonalCenterAdData success-response shape from both
-    // captured image and video cases. No normal page module can enter here.
-    if (!shape(fs, { 1: 2, 2: 2, 3: 2, 5: 2 }) || one(fs, 1, 2).data.length !== 0) return null;
-    const config = parse(one(fs, 2, 2).data);
-    if (!shape(config, { 4: 2, 5: 0, 6: 0 })) return null;
-    const group = one(fs, 3, 2), list = parse(group.data);
-    // Only the observed one-item response. Mixed or expanded schemas pass through.
-    if (!shape(list, { 1: 2, 5: 0 }) || numeric(list, 5, -1) !== 1) return null;
-    const ad = parse(one(list, 1, 2).data);
-    if (!shape(ad, { 1: 0, 2: 0, 3: 2, 4: 2, 5: 2, 14: 2 }, [5]) ||
-        ad.filter(f => f.n === 5).length !== 2 || numeric(ad, 1, -1) !== 61) return null;
-    const mode = numeric(ad, 2, -1), posterAny = one(ad, 3, 2);
-    const poster = mode === 1 ? anyPayload(posterAny.data, "AdFeedImagePoster") :
-      mode === 2 ? anyPayload(posterAny.data, "AdFeedVideoPoster") : null;
-    if (!poster || !poster.length || !parse(poster).length) return null;
-    const tracking = one(ad, 4, 2).data;
-    if (!contains(tracking, "personal_center_page") || !contains(tracking, "ad_request_id") ||
-        !contains(tracking, "gdt_stats.fcg")) return null;
-    const report = parse(one(fs, 5, 2).data);
-    if (!shape(report, { 3: 2 })) return null;
-    const reportMap = parse(one(report, 3, 2).data);
-    if (!reportMap.length || reportMap.some(f => f.n !== 1 || f.w !== 2)) return null;
-    let personalPageIds = 0;
-    for (const f of reportMap) {
-      const pair = parse(f.data);
-      if (!shape(pair, { 1: 2, 2: 2 })) return null;
-      if (textEquals(one(pair, 1, 2).data, "page_id")) {
-        if (!textEquals(one(pair, 2, 2).data, "personal_center_page")) return null;
-        personalPageIds++;
-      }
-    }
-    if (personalPageIds !== 1) return null;
-    // Remove the complete ad item and zero only its adjacent list count.
-    // Configuration fields, reporting context and the frame metadata stay intact.
-    const count = one(list, 5, 0);
-    const emptyList = concat([count.tag, encodeVarint(0)]);
-    return output(rebuild(fs, new Map([[group, wrap(group, emptyList)]])), "item");
   }
 
   // RC4: only the captured reward-ad pendant display schema. No state changes.
@@ -939,18 +837,6 @@ function cleanIaccSplashFrame(input, gunzipFn, gzipFn) {
     const b = bytes($response.body);
     if (!b || !/^application\/octet-stream(?:\s*;|$)/i.test(header($response.headers, "content-type"))) {
       finish(); return;
-    }
-    if (rewardCandidate) {
-      // A rejected personal candidate must not consume the legacy branch budget
-      // or prevent a known reward pendant from being processed.
-      const savedBudget = parsedFields;
-      let personal = null;
-      try { personal = cleanPersonalFrame(b); } catch (e) { personal = null; }
-      parsedFields = savedBudget;
-      if (personal) {
-        console.log(VERSION + ": personalAd" + (personal.personalKind === "slot" ? "Slot" : "Item") + "=1");
-        finish({ body: personal.body }); return;
-      }
     }
     const result = rewardCandidate ? cleanRewardFrame(b) : cleanFrame(b);
     if (!result) { finish(); return; }
