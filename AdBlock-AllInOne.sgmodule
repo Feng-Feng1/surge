@@ -1,9 +1,9 @@
-#!name=AdBlock AllInOne V5.0.4 RC8
-#!desc=RC8个人中心整卡修复候选：移除已确认的广告占位模块与个人广告列表，保留RC7其他处理。需同时更新同名页面脚本；真机效果待确认。
+#!name=AdBlock AllInOne V5.0.3 RC7
+#!desc=RC7：修正首页下拉推广漏匹配；补充本次PCAP确认的腾讯IP解密候选。空卡与浮球未完成验证。需要同时更新同名页面脚本，详见RC7说明。
 #!category=广告拦截
 #!author=Night & ChatGPT；规则参考 blackmatrix7、TG-Twilight、anti-AD 等
 #!date=2026-09-09
-#!version=5.0.4-rc8
+#!version=5.0.3-rc7
 #!system=ios
 
 # 基于 2026-09-07 读取的 Feng-Feng1/surge 在线模块制作。
@@ -14,7 +14,7 @@
 # 仅本模块撤销 pre-matching；其他模块或主配置中的提前拦截仍可能抢先命中。
 # 新脚本在 GitHub 保持 .txt；不要改成 .js，也不要使用 GitHub /blob/ 页面作脚本地址。
 
-# RC8 安装、证据和回退说明见 TencentVideo-RC8-README.txt；本轮更新总模块与同名页面脚本。
+# RC7 安装、证据和回退说明见 TencentVideo-RC7-README.txt；本轮更新总模块与同名页面脚本。
 # RC2 其余修改仍见 AdBlock-V5.0.1-Changes.txt；12306等待、淘宝闪购状态不变。
 # RC5 在同名页面脚本补充 iacc gzip/JCE 开屏响应；V22 与 AppClean 路径不变。
 [Rule]
@@ -701,7 +701,7 @@ V5-优酷播放广告字段 = type=http-response,pattern=^https:\/\/un-acs\.youk
 V5-优酷拼接广告 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=5.0.1-rc2,argument=youku,timeout=10,script-update-interval=86400
 
 # RC5：修正已确认的首页轮播漏拦，并处理 iacc 压缩开屏广告；未知格式原样放行。
-腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.0-rc1,timeout=10,script-update-interval=86400
+腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.2.1-rc1,timeout=10,script-update-interval=86400
 腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30,max-size=1048576
 腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30
 V5-哔哩哔哩漫画开屏 = type=http-response,pattern=^https?:\/\/manga\.bilibili\.com\/twirp\/comic\.v\d+\.Comic\/(?:ListFlash|AppInit)\/?(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=5.0.1-rc2,argument=bcomic,timeout=10,script-update-interval=86400
