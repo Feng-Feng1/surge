@@ -1,11 +1,13 @@
 /*
- * TencentVideo PageClean V1.2.0 RC1 / 2026-09-09
+ * TencentVideo PageClean V1.2.1 RC1 / 2026-09-09
  * Surge http-response, requires-body=true, binary-body-mode=true.
  * Evidence: 2026-09-08-100604.har, entries 285 and 363 (one-based).
  * Scope: channel$100101 homepage, captured reward pendant, and iacc splash command 63743.
  * Added evidence: 2026-09-09-003815.har entry 823 (one-based).
  * RC5 homepage evidence: 2026-09-09-073247.har entry 1342 (one-based).
  * Recognize the captured gdt_report.fcg focus-ad tracking variant as well.
+ * RC7 evidence: 2026-09-09-130402.har entry 755, exact magic-act pull-refresh promotion.
+ * Remove its dedicated extension only when all nested events match; no generic tag changes.
  * RC5 splash evidence: same HAR entry 916, gzip-wrapped Tars/JCE response.
  * Remove verified splash records and their matching schedule references.
  * Unmatched prior candidate references remain unchanged; phone UI needs verification.
@@ -20,7 +22,7 @@
  */
 (function () {
   "use strict";
-  const VERSION = "TencentVideo PageClean V1.2.0 RC1";
+  const VERSION = "TencentVideo PageClean V1.2.1 RC1";
   const PREFIX = "type.googleapis.com/com.tencent.qqlive.protocol.pb.";
   const MAX_BODY = 2097152;
   const MAX_FIELDS = 20000;
@@ -234,6 +236,76 @@
     return changes.size ? wrap(moduleField, rebuild(fs, changes)) : moduleField.raw;
   }
 
+  // RC7: the captured a.iwan magic-act pull-refresh promotion.
+  // Parse the dedicated Any/event/action chain; unknown sibling events keep the extension.
+  function confirmedMagicActPullPromotion(payload) {
+    function shape(fields, schema, repeated = []) {
+      if (fields.some(f => !Object.prototype.hasOwnProperty.call(schema, f.n) || schema[f.n] !== f.w)) return false;
+      return Object.keys(schema).every(key => {
+        const n = Number(key), count = fields.filter(f => f.n === n).length;
+        return repeated.includes(n) ? count > 0 : count === 1;
+      });
+    }
+    function ascii(b) {
+      let s = "";
+      for (const c of b) { if (c < 33 || c > 126) return null; s += String.fromCharCode(c); }
+      return s;
+    }
+    function confirmedPull(field) {
+      if (field.n !== 1 || field.w !== 2) return false;
+      const pull = parse(field.data);
+      if (!shape(pull, { 1: 2, 3: 2 })) return false;
+      const creative = parse(one(pull, 1, 2).data);
+      if (!shape(creative, { 1: 2, 2: 2, 3: 2 })) return false;
+      const display = parse(one(creative, 1, 2).data);
+      if (!shape(display, { 1: 2, 5: 0, 9: 2, 10: 2 }) || numeric(display, 5, -1) !== 3) return false;
+      const extra = extensionPayload(one(display, 9, 2), 2, "InnerAdPullRefreshExtraDisplayInfo");
+      if (!extra) return false;
+      const variants = parse(extra);
+      if (!shape(variants, { 3: 2 }, [3]) || variants.length !== 2) return false;
+      const seenVariants = new Set();
+      for (const item of variants) {
+        const v = parse(item.data);
+        if (!shape(v, { 1: 0, 2: 2 })) return false;
+        const kind = numeric(v, 1, -1), text = parse(one(v, 2, 2).data);
+        if ((kind !== 1 && kind !== 2) || seenVariants.has(kind) ||
+            !shape(text, { 1: 2 }) || !one(text, 1, 2).data.length) return false;
+        seenVariants.add(kind);
+      }
+      const action = parse(one(creative, 2, 2).data);
+      if (!shape(action, { 1: 0, 2: 2, 6: 2, 8: 2 }, [8]) || numeric(action, 1, -1) !== 1) return false;
+      const link = parse(one(action, 2, 2).data);
+      if (!shape(link, { 1: 2 })) return false;
+      const url = ascii(one(link, 1, 2).data);
+      if (!url || !/^https:\/\/a\.iwan\.qq\.com\/magic-act\/[A-Za-z0-9_-]+\/index_index\.html(?:\?[^\s#]*)?$/.test(url)) return false;
+      const required = { ptag: "ad.pull", from_promo_sys: "vg", business: "fp", banner_type: "small" };
+      const keys = new Set(), matched = new Set();
+      for (const item of action.filter(f => f.n === 8)) {
+        const map = parse(item.data);
+        if (!shape(map, { 1: 2, 2: 2 })) return false;
+        const key = ascii(one(map, 1, 2).data);
+        if (!key || keys.has(key)) return false;
+        keys.add(key);
+        if (Object.prototype.hasOwnProperty.call(required, key)) {
+          if (!textEquals(one(map, 2, 2).data, required[key])) return false;
+          matched.add(key);
+        }
+      }
+      if (matched.size !== Object.keys(required).length) return false;
+      const metadata = parse(one(creative, 3, 2).data), settings = parse(one(pull, 3, 2).data);
+      return shape(metadata, { 1: 2, 3: 0, 4: 0, 12: 2 }) &&
+        shape(settings, { 1: 0, 6: 0, 7: 0 });
+    }
+    const promotions = parse(payload);
+    if (!promotions.length || promotions.some(f => f.n !== 1 || f.w !== 2)) return false;
+    return promotions.every(item => {
+      const pullsPayload = extensionPayload(item, 7, "InnerAdPullRefreshEventList");
+      if (!pullsPayload) return false;
+      const pulls = parse(pullsPayload);
+      return pulls.length > 0 && pulls.every(confirmedPull);
+    });
+  }
+
   function extensionName(field) {
     const fs = parse(field.data);
     if (fs.length !== 2) return null;
@@ -248,6 +320,7 @@
       const ad = anyPayload(any.data, "InnerAdPromotionEventList");
       if (ad && contains(ad, "s.iwan.qq.com/opengame") &&
           contains(ad, PREFIX + "InnerAdPullRefreshEventList")) return "innerPromotion";
+      if (ad && confirmedMagicActPullPromotion(ad)) return "innerPromotion";
     }
     return null;
   }
