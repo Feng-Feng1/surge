@@ -1,9 +1,9 @@
-#!name=AdBlock AllInOne V5.0.2 RC5
-#!desc=补齐腾讯视频压缩开屏广告响应与首页轮播广告新追踪格式，保留悬浮及V22播放处理。按9月9日新HAR回放验证，手机效果待验收。先覆盖同名页面TXT脚本，再更新本模块。
+#!name=AdBlock AllInOne V5.0.2 RC6
+#!desc=RC6素材兜底：补齐截图中pgdt图片路径漏拦。保留RC5页面脚本与V22播放处理。卡片外壳、个人浮球及播放等待尚未解决；详见RC6报告。只需更新本模块。
 #!category=广告拦截
 #!author=Night & ChatGPT；规则参考 blackmatrix7、TG-Twilight、anti-AD 等
 #!date=2026-09-09
-#!version=5.0.2-rc5
+#!version=5.0.2-rc6
 #!system=ios
 
 # 基于 2026-09-07 读取的 Feng-Feng1/surge 在线模块制作。
@@ -14,7 +14,7 @@
 # 仅本模块撤销 pre-matching；其他模块或主配置中的提前拦截仍可能抢先命中。
 # 新脚本在 GitHub 保持 .txt；不要改成 .js，也不要使用 GitHub /blob/ 页面作脚本地址。
 
-# RC5 安装、证据和回退说明见 TencentVideo-RC5-README.txt；先更新同名页面 TXT 脚本。
+# RC6 安装、证据和回退说明见 TencentVideo-RC6-README.txt；本轮仅更新总模块。
 # RC2 其余修改仍见 AdBlock-V5.0.1-Changes.txt；12306等待、淘宝闪购状态不变。
 # RC5 在同名页面脚本补充 iacc gzip/JCE 开屏响应；V22 与 AppClean 路径不变。
 [Rule]
@@ -631,6 +631,8 @@ AND,((NOT,((OR,((DOMAIN,i.video.qq.com,extended-matching),(DOMAIN,iacc.qq.com,ex
 # RC2：恢复原总模块的中国移动 startInit 定点规则；加密响应不伪造 JSON。
 ^https:\/\/(?:client\.app\.coc|clientaccess)\.10086\.cn\/biz-orange\/DN\/init\/startInit(?:\?.*)?$ _ reject
 [Map Local]
+# RC6：9月9日两份HAR实证的pgdt图片路径；仅阻止后续素材下载，可能保留卡片空壳。
+^http:\/\/pgdt\.gtimg\.cn\/141\/20204\/snscosdownload\/SZ\/reserved\/[0-9a-f]{48}(?:_dGltYWdl_[0-9]+)?(?:\?[^#]*)?$ data-type=text data="" status-code=204
 # 按接口返回原有空响应；携程仅 tripAds，YouTube 仅 initplayback。
 ^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/accountListData\.htm(?:\?.*)?$ data-type=text data="{\"respDesc\":\"黑名单用户不展示开屏广告\",\"respCode\":\"9999\"}" status-code=200 header="Content-Type:application/json"
 ^https?:\/\/m\.client\.10010\.com\/mobileService\/(?:activity|customer)\/(?:get_client_adv|get_startadv)(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
