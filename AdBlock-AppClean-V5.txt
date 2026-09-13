@@ -1,5 +1,5 @@
 /*
- * AdBlock AppClean V5.1.0-rc1 | Surge iOS
+ * AdBlock AppClean V5.1.0-rc2 | Surge iOS
  * 2026-09-13, Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -156,7 +156,8 @@
       (x.type === "common_card" && get(x, "common_card.footline.elements.0.text.panel_text") === "广告"));
   }
   function weiboAd(x) {
-    return object(x) && (x.mblogtypename === "广告" || x.mblogtypename === "热推" ||
+    return object(x) && (flag(x.is_ad) || flag(x.is_ad_card) ||
+      x.mblogtypename === "广告" || x.mblogtypename === "热推" ||
       get(x, "promotion.type") === "ad" || get(x, "page_info.actionlog.source") === "ad" ||
       get(x, "content_auth_info.content_auth_title") === "广告");
   }
@@ -301,8 +302,13 @@
         break;
       case "weibo":
         if (/^(?:m?api)\.weibo\.(?:cn|com)$/.test(host) &&
-          /^\/\d+\/(?:statuses\/(?:[^/]*timeline|friends\/timeline|unread_friends\/timeline|container_detail|extend)|groups\/timeline|cardlist|searchall|page|0flowpage|search\/(?:container_timeline|container_discover|finder))$/.test(path)) {
+          /^\/\d+\/(?:statuses\/(?:[^/]*timeline|container_timeline_hot|friends\/timeline|unread_friends\/timeline|container_detail|extend)|groups\/timeline|cardlist|searchall|page|0flowpage|search\/(?:container_timeline|container_discover|finder))$/.test(path)) {
           weiboContainers(root, 0);
+          // 2026-09-13 HAR: 详情广告位于 pageHeader.data.items，而正文位于 detailInfo。
+          // 只遍历这个已确认的页眉容器；移除整张广告项，保留正文、分享入口和分页。
+          if (/\/statuses\/container_detail$/.test(path) && object(root.pageHeader)) {
+            weiboContainers(root.pageHeader, 0);
+          }
           remove(root, "ad"); remove(root, "advertises");
         }
         break;
@@ -526,15 +532,15 @@
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V5.1] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V5.1.0-rc2] " + label + ": " + edits + " changes");
       $done({body: body});
     } else {
-      if (debug) console.log("[AdBlock V5.1] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V5.1.0-rc2] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V5] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V5.1.0-rc2] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();
