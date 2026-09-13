@@ -1,0 +1,215 @@
+/* Tieba Ad Filter V3.0.0 RC1; retains dedicated V2 ad response behavior. */
+/* App2smile schema reference: https://github.com/app2smile/rules/tree/df6366a7024e0b3f0aa3510c5b791eea6f3cba89
+ * Scope: named advertisement fields only. Unknown fields keep their raw bytes.
+ * Offline schema/negative-case tests passed; current phone UI is not verified.
+ * app2smile MIT notice follows. Wire parser and restricted handlers are local changes.
+MIT License
+
+Copyright (c) 2023 app2smile
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ */
+// Parse only actual protobuf boundaries. Untouched fields remain byte-identical.
+function read32(bytes, start) {
+  let n = 0, pos = start;
+  for (let shift = 0; shift <= 28 && pos < bytes.length; shift += 7) {
+    const b = bytes[pos++];
+    if (shift === 28 && b > 15) throw Error("uint32 overflow");
+    n += (b & 127) * Math.pow(2, shift);
+    if (!(b & 128)) return { n, pos };
+  }
+  throw Error("truncated uint32");
+}
+function wireFields(bytes) {
+  const list = [];
+  let pos = 0;
+  while (pos < bytes.length) {
+    const start = pos, tag = read32(bytes, pos), no = Math.floor(tag.n / 8), wire = tag.n & 7;
+    if (!no || no > 536870911) throw Error("bad field");
+    pos = tag.pos;
+    let begin = pos, value = null;
+    if (wire === 0) {
+      let ended = false;
+      for (let i = 0; i < 10 && pos < bytes.length; i++) {
+        const b = bytes[pos++];
+        if (i === 9 && b > 1) throw Error("uint64 overflow");
+        if (!(b & 128)) { ended = true; break; }
+      }
+      if (!ended) throw Error("truncated uint64");
+      if (pos === begin + 1) value = bytes[begin];
+    } else if (wire === 1) pos += 8;
+    else if (wire === 2) { const len = read32(bytes, pos); begin = len.pos; pos = begin + len.n; }
+    else if (wire === 5) pos += 4;
+    else throw Error("unsupported group wire type");
+    if (pos > bytes.length) throw Error("truncated field");
+    list.push({ no, wire, value, raw: bytes.subarray(start, pos), tag: bytes.subarray(start, tag.pos), data: bytes.subarray(begin, pos) });
+  }
+  return list;
+}
+function var32(n) {
+  const out = [];
+  do { const b = n % 128; n = Math.floor(n / 128); out.push(n ? b | 128 : b); } while (n);
+  return new Uint8Array(out);
+}
+function concat(parts) {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let pos = 0;
+  for (const p of parts) { out.set(p, pos); pos += p.length; }
+  return out;
+}
+function rebuilt(field, data) { return concat([field.tag, var32(data.length), data]); }
+function ascii(bytes) { let out = ""; for (const b of bytes) { if (b > 127) return ""; out += String.fromCharCode(b); } return out; }
+function contains(bytes, text) {
+  outer: for (let i = 0; i <= bytes.length - text.length; i++) {
+    for (let j = 0; j < text.length; j++) if (bytes[i + j] !== text.charCodeAt(j)) continue outer;
+    return true;
+  }
+  return false;
+}
+// null means no change; an empty Uint8Array means the container became empty.
+function rewriteMessage(bytes, transform) {
+  let changed = false;
+  const parts = [];
+  for (const f of wireFields(bytes)) {
+    const replacement = transform(f);
+    if (replacement === null) parts.push(f.raw);
+    else { changed = true; if (replacement.length) parts.push(replacement); }
+  }
+  return changed ? concat(parts) : null;
+}
+function nested(field, transform, removeEmpty) {
+  const result = transform(field.data);
+  return result === null ? null : (removeEmpty && result.length === 0 ? new Uint8Array(0) : rebuilt(field, result));
+}
+
+(function () {
+  try {
+    if (typeof $request === "undefined" || typeof $response === "undefined") { $done({}); return; }
+    const url = $request.url || "", match = /^https?:\/\/(tiebac|c\.tieba|tieba)\.baidu\.com(\/[^?#]*)(?:\?|$)/.exec(url);
+    if (!match || (typeof $response.status === "number" && $response.status !== 200)) { $done({}); return; }
+    const path = match[2], rawInput = $response.body, binaryJSON = rawInput instanceof Uint8Array;
+    let input = rawInput;
+    function utf8Decode(bytes) {
+      if (typeof TextDecoder !== "undefined") return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      let output = "";
+      for (let i = 0; i < bytes.length;) {
+        const a = bytes[i++];
+        if (a < 128) { output += String.fromCharCode(a); continue; }
+        const count = a >= 0xc2 && a <= 0xdf ? 1 : a >= 0xe0 && a <= 0xef ? 2 : a >= 0xf0 && a <= 0xf4 ? 3 : -1;
+        if (count < 0 || i + count > bytes.length) throw Error("invalid UTF-8");
+        let code = a & (count === 1 ? 31 : count === 2 ? 15 : 7);
+        for (let j = 0; j < count; j++) { const b = bytes[i++]; if ((b & 192) !== 128) throw Error("invalid UTF-8 continuation"); code = code * 64 + (b & 63); }
+        if (code < (count === 1 ? 128 : count === 2 ? 2048 : 65536) || code > 1114111 || (code >= 55296 && code <= 57343)) throw Error("invalid UTF-8 scalar");
+        output += String.fromCodePoint(code);
+      }
+      return output;
+    }
+    function utf8Encode(text) {
+      if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(text);
+      const output = [];
+      for (const char of text) {
+        const n = char.codePointAt(0);
+        if (n < 128) output.push(n);
+        else if (n < 2048) output.push(192 | (n >> 6), 128 | (n & 63));
+        else if (n < 65536) output.push(224 | (n >> 12), 128 | ((n >> 6) & 63), 128 | (n & 63));
+        else output.push(240 | (n >> 18), 128 | ((n >> 12) & 63), 128 | ((n >> 6) & 63), 128 | (n & 63));
+      }
+      return new Uint8Array(output);
+    }
+    if (binaryJSON) {
+      if (!input.length || input.length > 4194304) { $done({}); return; }
+      let start = 0;
+      if (input[0] === 239 && input[1] === 187 && input[2] === 191) start = 3;
+      while (start < input.length && [9,10,13,32].includes(input[start])) start++;
+      if (input[start] === 123) input = utf8Decode(input.subarray(start));
+    }
+    if (match[1] === "tieba" && path !== "/c/f/forum/shopGoodsFeed") { $done({}); return; }
+    if (typeof input === "string") {
+      const obj = JSON.parse(input);
+      if (!obj || typeof obj !== "object" || Array.isArray(obj) ||
+          (obj.error_code !== undefined && Number(obj.error_code) !== 0)) { $done({}); return; }
+      let changed = 0;
+      function clear(o, k) { if (o && Object.prototype.hasOwnProperty.call(o, k) && o[k] != null && (!Array.isArray(o[k]) || o[k].length)) { o[k] = Array.isArray(o[k]) ? [] : null; changed++; } }
+      function appAd(item) { return item && ((Array.isArray(item.goods_info) && item.goods_info.length > 0) || (item.live_ad && typeof item.live_ad === "object")); }
+      function apps(o, key) {
+        if (!o || !Array.isArray(o[key])) return;
+        const old = o[key]; o[key] = old.filter(x => !appAd(x)); changed += old.length - o[key].length;
+      }
+      function banner(b) { if (!b || typeof b !== "object") return; apps(b, "app"); if (appAd(b.pb_banner_ad)) clear(b, "pb_banner_ad"); }
+      if (path === "/c/f/ad/getSplashAd") clear(obj, "data");
+      else if (path === "/tiebaads/commonbatch") clear(obj.res, "ad");
+      else if (path === "/c/f/forum/shopGoodsFeed") { if (obj.data) clear(obj.data, "shop_list"); }
+      else if (path === "/c/s/sync") {
+        if (obj.advertisement_config && obj.advertisement_config.advertisement_str) clear(obj, "advertisement_config");
+        if (obj.config && Array.isArray(obj.config.switch)) for (const item of obj.config.switch) {
+          if (item && /^(?:platform_(?:csj|ks|gdt|baidu_bqt|jy|ubix|hw)_init|ad_baichuan_open)$/.test(item.name) && String(item.type) !== "0") { item.type = typeof item.type === "number" ? 0 : "0"; changed++; }
+        }
+        const fill = obj.screen_fill_data_result;
+        if (fill && typeof fill === "object") for (const key of ["screen_fill_advertisement_bear_switch", "screen_fill_advertisement_plj_cpc_switch", "screen_fill_advertisement_plj_switch"]) {
+          if (String(fill[key]) === "1") { fill[key] = typeof fill[key] === "number" ? 0 : "0"; changed++; }
+        }
+        // Keep generic floating icons, all AB switches and socket transport unchanged.
+      } else if (path === "/c/f/frs/page") {
+        if (obj.activityhead && (obj.activityhead.is_ad === true || Number(obj.activityhead.is_ad) === 1)) clear(obj, "activityhead");
+        banner(obj.forum && obj.forum.banner_list);
+      } else if (["/c/f/pb/page", "/c/f/frs/threadlist", "/c/f/excellent/personalized"].includes(path)) banner(obj.banner_list);
+      else if (path === "/c/f/frs/generalTabList") apps(obj, "app_list");
+      else { $done({}); return; }
+      if (changed) { console.log("Tieba V3 JSON: ad containers/settings=" + changed); const text = JSON.stringify(obj); $done({ body: binaryJSON ? utf8Encode(text) : text }); }
+      else $done({});
+      return;
+    }
+    if (!(input instanceof Uint8Array) || !input.length || input.length > 4194304) { $done({}); return; }
+    if (path === "/c/f/ad/getFeedAd" || path === "/c/b/ad/adBid") {
+      // V2's HAR-confirmed successful envelope is retained for dedicated ad RPCs.
+      wireFields(input);
+      const empty = new Uint8Array([10,6,8,0,18,0,26,0]);
+      if (input.length === empty.length && input.every((v, i) => v === empty[i])) $done({});
+      else $done({ body: empty });
+      return;
+    }
+    function appAd(bytes) {
+      return wireFields(bytes).some(f => f.wire === 2 && (f.no === 30 || f.no === 38) && f.data.length > 0);
+    }
+    function banner(bytes) {
+      return rewriteMessage(bytes, f => (f.no === 1 || f.no === 5) && f.wire === 2 && appAd(f.data) ? new Uint8Array(0) : null);
+    }
+    function personalBanner(bytes) {
+      // Preserve V2's proven fallback for this exact personalized BannerList field.
+      if (contains(bytes,"ad_source") && contains(bytes,"ad_title") &&
+          (contains(bytes,"pglstatp") || contains(bytes,"ad_common") || contains(bytes,"csjAPI"))) return new Uint8Array(0);
+      return banner(bytes);
+    }
+    let cleanData;
+    if (path === "/c/f/excellent/personalized") cleanData = bytes => rewriteMessage(bytes, f => f.no === 9 && f.wire === 2 ? nested(f, personalBanner, true) : null);
+    else if (path === "/c/f/frs/page") cleanData = bytes => rewriteMessage(bytes, f => {
+      if (f.no === 2 && f.wire === 2) return nested(f, bytes => rewriteMessage(bytes, x => x.no === 33 && x.wire === 2 ? nested(x, banner, true) : null), false);
+      if (f.no === 23 && f.wire === 2 && wireFields(f.data).some(x => x.no === 13 && x.wire === 0 && x.value === 1)) return new Uint8Array(0);
+      return null;
+    });
+    else if (path === "/c/f/frs/threadlist") cleanData = bytes => rewriteMessage(bytes, f => f.no === 3 && f.wire === 2 ? nested(f, banner, true) : null);
+    else if (path === "/c/f/frs/generalTabList") cleanData = bytes => rewriteMessage(bytes, f => f.no === 10 && f.wire === 2 && appAd(f.data) ? new Uint8Array(0) : null);
+    else if (path === "/c/f/pb/page" && /[?&]cmd=302001(?:&|$)/.test(url)) cleanData = bytes => rewriteMessage(bytes, f => f.no === 12 && f.wire === 2 ? nested(f, banner, true) : null);
+    else { $done({}); return; }
+    const result = rewriteMessage(input, f => f.no === 2 && f.wire === 2 ? nested(f, cleanData, false) : null);
+    if (result !== null) { console.log("Tieba V3 protobuf: complete ad items removed"); $done({ body: result }); }
+    else $done({});
+  } catch (error) { console.log("Tieba V3 bypass: " + error.message); $done({}); }
+})();
