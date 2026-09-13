@@ -1,6 +1,6 @@
 /*
- * AdBlock AppClean V5.0.1-rc2 | Surge iOS
- * 2026-09-07, Night & ChatGPT
+ * AdBlock AppClean V5.1.0-rc1 | Surge iOS
+ * 2026-09-13, Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
  * 配套模块：AdBlock-AllInOne.sgmodule。此文件在 GitHub 保持 .txt 后缀。
@@ -9,6 +9,9 @@
  * 接口与字段参考 blackmatrix7/ios_rule_script、ddgksf2013/Scripts，
  * 以及用户原模块；详见 AdBlock-V5-README.txt 和 AdBlock-V5-COPYING.txt。
  * 本实现另加类型检查、超大整数保真与限定容器遍历，并保留普通推荐内容。
+ * 本次接口字段核对：ishowshu/qx/script/goofish.js、fmz200/wool_scripts
+ * 的 Scripts/{jingdong/jingdong,cainiao/cainiao,coolapk,xiaohongshu/xiaohongshu,zhihu/zhihu}.js。
+ * 依据接口名与数据字段独立实现；未复制其界面白名单、会员或权限修改。
  */
 (function () {
   "use strict";
@@ -59,27 +62,72 @@
     var parts = path.split(".");
     var key = parts.pop();
     var parent = parts.length ? get(root, parts.join(".")) : root;
-    if (!has(parent, key) || !Array.isArray(parent[key])) return;
+    if (!has(parent, key) || !Array.isArray(parent[key])) return 0;
     var old = parent[key];
     var out = old.filter(function (item) { return !isAd(item); });
     if (out.length !== old.length) { parent[key] = out; mark(); }
+    return old.length - out.length;
   }
   function each(root, path, fn) {
     var items = get(root, path);
     if (Array.isArray(items)) items.forEach(function (x) { if (object(x)) fn(x); });
   }
 
+  // MTOP 的 data 有对象和 JSON 字符串两种包装；仅在实际修改后重新编码。
+  function embedded(root, key, fn) {
+    if (!has(root, key)) return;
+    if (object(root[key])) { fn(root[key]); return; }
+    if (typeof root[key] !== "string") return;
+    var nested = parsePreservingIntegers(root[key]);
+    if (!object(nested.value)) return;
+    var previous = edits;
+    fn(nested.value);
+    if (edits !== previous) root[key] = nested.stringify(nested.value);
+  }
+
+  function queryValue(text, key) {
+    if (typeof text !== "string") return "";
+    var entries = text.split("&");
+    for (var i = 0; i < entries.length; i++) {
+      var at = entries[i].indexOf("=");
+      if (at < 0) continue;
+      var name = decodeURIComponent(entries[i].slice(0, at).replace(/\+/g, " "));
+      if (name === key) return decodeURIComponent(entries[i].slice(at + 1).replace(/\+/g, " "));
+    }
+    return "";
+  }
+
+  // 只接受已经使用的广告类型值，不将任意包含 ad 的文本视为广告。
+  function goofishAdType(value) {
+    return typeof value === "string" && /^(?:ad|ads|advertisement|mamaad)$/i.test(value);
+  }
+  function goofishSectionAd(section) {
+    return goofishAdType(get(section, "data.bizType")) || flag(get(section, "data.isAd"));
+  }
+  function goofishSearchAd(item) {
+    var main = get(item, "data.item.main");
+    return flag(get(main, "exContent.isAliMaMaAD")) ||
+      goofishAdType(get(main, "clickParam.args.item_type")) ||
+      goofishAdType(get(main, "clickParam.args.biz_type"));
+  }
+
   // JSON.parse 会舍入大于 2^53-1 的整数。先保护这些数值，再恢复原始数字文本。
   // 不匹配字符串内的数字；占位前缀在原响应中不得出现，防止误替换普通文本。
   function parsePreservingIntegers(text) {
     var prefix = "__ABV5_INTEGER_";
-    while (text.indexOf(prefix) !== -1) prefix += "X";
+    var stringValues = [];
+    text.replace(/"(?:\\.|[^"\\])*"/g, function (token) {
+      stringValues.push(JSON.parse(token));
+      return token;
+    });
+    // 检查解码后的字符串，防止 \u0049 等转义拼出占位符而误恢复成数字。
+    while (text.indexOf(prefix) !== -1 || stringValues.some(function (value) { return value.indexOf(prefix) !== -1; })) prefix += "X";
     var numbers = [];
     var protectedText = text.replace(/"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (token) {
       if (token.charAt(0) === '"') return token;
       var n = Number(token);
       if (!isFinite(n)) throw new Error("non-finite numeric value");
-      if (!/[.eE]/.test(token) && (Math.abs(n) > 9007199254740991)) {
+      if (Math.abs(n) > 9007199254740991) {
         var index = numbers.push(token) - 1;
         return '"' + prefix + index + '__"';
       }
@@ -103,8 +151,9 @@
       (typeof x.goto === "string" && /^ad(?:_|$)/.test(x.goto)));
   }
   function zhihuAd(x) {
-    return object(x) && (x.type === "feed_advert" || x.type === "ad" || x.type === "market_card" ||
-      active(x.ad) || active(x.adjson) || active(get(x, "ad_info.data")) || active(x.ad_commercial_json));
+    return object(x) && (x.type === "feed_advert" || x.type === "ad" ||
+      active(x.ad) || active(x.adjson) || active(get(x, "ad_info.data")) || active(x.ad_commercial_json) ||
+      (x.type === "common_card" && get(x, "common_card.footline.elements.0.text.panel_text") === "广告"));
   }
   function weiboAd(x) {
     return object(x) && (x.mblogtypename === "广告" || x.mblogtypename === "热推" ||
@@ -118,8 +167,16 @@
   function weiboContainers(root, depth) {
     if (!object(root) || depth > 8) return;
     ["statuses", "cards", "items", "card_group"].forEach(function (key) {
-      filter(root, key, weiboCard);
-      each(root, key, function (x) { weiboContainers(x, depth + 1); });
+      filter(root, key, function (x) {
+        if (weiboCard(x)) return true;
+        if (!object(x)) return false;
+        var groupSize = Array.isArray(x.card_group) ? x.card_group.length : 0;
+        weiboContainers(x, depth + 1);
+        // 已知 card_group 原本全部是广告，且父项不承载另一份正文时移除父壳。
+        return groupSize > 0 && x.card_group.length === 0 &&
+          !active(x.mblog) && !active(x.data) && !Array.isArray(x.statuses) &&
+          !Array.isArray(x.items) && !Array.isArray(x.cards);
+      });
     });
     if (object(root.data)) weiboContainers(root.data, depth + 1);
   }
@@ -190,7 +247,12 @@
   }
 
   function cainiaoList(root) {
-    filter(root, "data.result.dataList", function (x) { return object(x) && x.type === "big_banner_area_v870"; });
+    embedded(root, "data", function (data) {
+      filter(data, "result.dataList", function (x) {
+        return object(x) && typeof x.type === "string" &&
+          /^(?:(?:big_)?banner_area(?:_v\d+)?|promotion(?:_area)?(?:_v\d+)?)$/.test(x.type);
+      });
+    });
   }
 
   function processBody(root, host, path, query) {
@@ -217,8 +279,10 @@
         if (host === "app.bilibili.com" && /^\/x\/v2\/feed\/index(?:\/story)?$/.test(path)) {
           filter(root, "data.items", biliAd);
         } else if (host === "api.bilibili.com" && path === "/pgc/page/bangumi") {
-          each(root, "result.modules", function (module) {
-            filter(module, "items", function (x) { return object(x) && active(get(x, "source_content.ad_content")); });
+          filter(root, "result.modules", function (module) {
+            var removed = filter(module, "items", function (x) { return object(x) && active(get(x, "source_content.ad_content")); });
+            // 混合模块只删广告项；全是已确认广告的模块连同外壳一起移除。
+            return removed > 0 && get(module, "items.length") === 0;
           });
         }
         break;
@@ -227,11 +291,12 @@
           /^\/(?:topstory\/recommend|next-render|(?:v4\/)?questions\/\d+(?:\/answers)?|search\/recommend_query)$/.test(path)) {
           filter(root, "data", zhihuAd);
           filter(root, "recommend_queries.queries", zhihuAd);
-          if (/\/questions\//.test(path)) remove(root, "ad_info");
+          if (/\/questions\//.test(path)) { remove(root, "ad_info"); remove(root.data, "ad_info"); }
         } else if ((host === "api.zhihu.com" || host === "page-info.zhihu.com") &&
           /^\/(?:answers\/v2\/\d+|articles\/v\d+\/\d+)$/.test(path)) {
-          remove(root, "third_business");
           remove(root, "ad_info");
+          // third_business 也承载普通相关问题，保留整个业务对象。
+          remove(root.third_business, "ad_info");
         }
         break;
       case "weibo":
@@ -247,14 +312,17 @@
           if (path === "/v6/main/init") filter(root, "data", function (x) { return object(x) && (x.entityId === 945 || x.entityId === "945"); });
         } else if (host === "api.coolapk.com" && path === "/v6/feed/detail") {
           setExisting(root, "data.detailSponsorCard", []);
+          if (object(get(root, "data.detailSponsorCard"))) remove(root.data, "detailSponsorCard");
           filter(root, "data.hotReplyRows", coolapkAd);
           filter(root, "data.topReplyRows", coolapkAd);
         }
         break;
       case "smzdm":
         if (host === "homepage-api.smzdm.com" && path === "/v3/home") {
-          each(root, "data.component", function (component) {
-            if (component.zz_type === "banner" || component.zz_type === "list") filter(component, "zz_content", smzdmAd);
+          filter(root, "data.component", function (component) {
+            if (!object(component) || (component.zz_type !== "banner" && component.zz_type !== "list")) return false;
+            var removed = filter(component, "zz_content", smzdmAd);
+            return removed > 0 && get(component, "zz_content.length") === 0;
           });
         } else if ((host === "haojia-api.smzdm.com" && path === "/home/list") ||
                    (host === "baike-api.smzdm.com" && path === "/home_v3/list") ||
@@ -273,16 +341,37 @@
         } else if (/^\/discovery-category\/v\d+\/category$/.test(path)) {
           filter(root, "focusImages.data", ximaAd);
         } else if (path === "/focus-mobile/focusPic") {
-          each(root, "header", function (x) {
-            each(x, "item.list", function (item) { filter(item, "data", ximaAd); });
+          filter(root, "header", function (x) {
+            var removedGroups = filter(x, "item.list", function (item) {
+              var removed = filter(item, "data", ximaAd);
+              return removed > 0 && get(item, "data.length") === 0;
+            });
+            return removedGroups > 0 && get(x, "item.list.length") === 0;
           });
         }
         break;
       case "jd":
-        if (host !== "api.m.jd.com" || path !== "/client.action" || !/(?:^|&)functionId=start(?:&|$)/.test(query)) break;
-        if (!Array.isArray(root.images)) break;
-        setExisting(root, "images", []);
-        setExisting(root, "showTimesDaily", 0);
+        if (host !== "api.m.jd.com" || path !== "/client.action") break;
+        var functionId = queryValue(query, "functionId");
+        // 某些客户端将 functionId 放在 POST 表单或 JSON；只处理已知功能名。
+        if (!functionId && typeof $request.body === "string") {
+          if (/^\s*\{/.test($request.body)) {
+            var jdRequest = parsePreservingIntegers($request.body).value;
+            if (object(jdRequest) && typeof jdRequest.functionId === "string") functionId = jdRequest.functionId;
+          } else functionId = queryValue($request.body, "functionId");
+        }
+        if (functionId === "start") {
+          setExisting(root, "images", []);
+          // 两字段独立处理；images 缺失或为空不应跳过次数开关。
+          setExisting(root, "showTimesDaily", 0);
+        } else if (functionId === "welcomeHome") {
+          filter(root, "floorList", function (x) {
+            return object(x) && ["bottomXview", "float", "photoCeiling", "tabBarAtmosphere"].indexOf(x.type) !== -1;
+          });
+        } else if (functionId === "deliverLayer" || functionId === "orderTrackBusiness") {
+          remove(root, "bannerInfo");
+          filter(root, "floors", function (x) { return object(x) && (x.mId === "banner" || x.mId === "jdDeliveryBanner"); });
+        }
         break;
       case "meituan":
         if (host !== "wmapi.meituan.com" || !/^\/api\/v\d+\/loadInfo$/.test(path)) break;
@@ -295,7 +384,6 @@
         break;
       case "dida":
         if (!/^capis(?:-?\w*)?\.didapinche\.com$/.test(host) || path !== "/ad/cx/startup") break;
-        if (!Array.isArray(root.startupPages)) break;
         setExisting(root, "startupPages", []);
         setExisting(root, "show_time", 0);
         setExisting(root, "full_screen", 0);
@@ -310,39 +398,49 @@
         break;
       case "goofish":
         if (!/^(?:g-)?acs\.m\.(?:goofish|taobao)\.com$/.test(host)) break;
-        if (/^\/gw\/mtop\.taobao\.(?:idlehome\.home\.nextfresh|idle\.local\.home)\//.test(path)) {
-          var before = get(root, "data.sections");
-          var count = Array.isArray(before) ? before.length : -1;
-          // 只排除明确的广告类型；新类型默认保留，避免旧版“只留 item”误删功能卡。
-          filter(root, "data.sections", function (x) {
-            return ["ad", "ads", "advertisement", "mamaAD"].indexOf(get(x, "data.bizType")) !== -1 ||
-              (object(x) && flag(get(x, "data.isAd")));
-          });
-          var after = get(root, "data.sections");
-          if (Array.isArray(after) && after.length !== count && Number(get(root, "data.feedsCount")) === count) {
-            setExisting(root, "data.feedsCount", typeof get(root, "data.feedsCount") === "string" ? String(after.length) : after.length);
+        embedded(root, "data", function (data) {
+          if (/^\/gw\/mtop\.taobao\.(?:idlehome\.home\.nextfresh|idle\.local\.home)(?:\/|$)/.test(path)) {
+            var count = Array.isArray(data.sections) ? data.sections.length : -1;
+            var removed = filter(data, "sections", goofishSectionAd);
+            // feedsCount 只有等于本批数组长度才同步；服务器总数/分页游标不猜测。
+            if (removed && Number(data.feedsCount) === count) {
+              setExisting(data, "feedsCount", typeof data.feedsCount === "string" ? String(data.sections.length) : data.sections.length);
+            }
+          } else if (/^\/gw\/mtop\.taobao\.idlemtopsearch\.search(?:\/|$)/.test(path)) {
+            filter(data, "resultList", goofishSearchAd);
+          } else if (/^\/gw\/mtop\.taobao\.idle\.item\.recommend(?:\.list)?(?:\/|$)/.test(path)) {
+            filter(data, "cardList", function (x) { return goofishAdType(get(x, "cardData.bizType")); });
+          } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads(?:\/|$)/.test(path)) {
+            setExisting(data, "adMap", {});
+          } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.ads(?:\/|$)/.test(path)) {
+            // 独立开屏广告 RPC：保留外层 api/ret/v，仅清空广告负载。
+            Object.keys(data).forEach(function (key) { remove(data, key); });
           }
-        } else if (/^\/gw\/mtop\.taobao\.idlemtopsearch\.search\//.test(path)) {
-          filter(root, "data.resultList", function (x) {
-            return ["ad", "ads", "advertisement", "mamaAD"].indexOf(get(x, "data.item.main.clickParam.args.item_type")) !== -1 ||
-              ["ad", "ads", "advertisement", "mamaAD"].indexOf(get(x, "data.item.main.clickParam.args.biz_type")) !== -1;
-          });
-        } else if (/^\/gw\/mtop\.taobao\.idle\.item\.recommend\//.test(path)) {
-          filter(root, "data.cardList", function (x) { return get(x, "cardData.bizType") === "mamaAD"; });
-        } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads\//.test(path)) {
-          setExisting(root, "data.adMap", {});
-        }
+        });
         break;
       case "cainiao":
         if (!/^[a-z0-9.-]+\.cainiao\.com$/.test(host)) break;
-        if (/^\/gw\/mtop\.cainiao\.nbpresentation\.protocol\.homepage\.get\.cn\//.test(path)) {
+        if (/^\/gw\/mtop\.cainiao\.nbpresentation\.protocol\.homepage\.get\.cn(?:\/|$)/.test(path)) {
           cainiaoList(root);
-        } else if (/^\/gw\/mtop\.cainiao\.nbpresentation\.homepage\.merge\.get\.cn\//.test(path) && object(root.data)) {
-          Object.keys(root.data).forEach(function (key) {
-            if (/^mtop\.cainiao\.nbpresentation\.protocol\.homepage\.get\.cn@\d+$/.test(key)) cainiaoList(root.data[key]);
+        } else if (/^\/gw\/mtop\.cainiao\.nbpresentation\.homepage\.merge\.get\.cn(?:\/|$)/.test(path)) {
+          embedded(root, "data", function (data) {
+            Object.keys(data).forEach(function (key) {
+              if (/^mtop\.cainiao\.nbpresentation\.protocol\.homepage\.get\.cn@\d+$/.test(key)) {
+                embedded(data, key, cainiaoList);
+              }
+            });
           });
         } else if (/^\/gw\/mtop\.cainiao\.adkeyword(?:\.|\/)/.test(path)) {
-          setExisting(root, "data.result.adHotKeywords", []);
+          embedded(root, "data", function (data) { setExisting(data, "result.adHotKeywords", []); });
+        } else if (/^\/gw\/mtop\.cainiao\.guoguo\.nbnetflow\.ads\.show\.cn(?:\/|$)/.test(path)) {
+          embedded(root, "data", function (data) {
+            filter(data, "result", function (item) {
+              var material = get(item, "materialContentMapper");
+              return object(material) && (active(material.adItemDetail) ||
+                (active(material.bgImg) && active(material.advRecGmtModifiedTime)) ||
+                material.group_id === "common_header_banner" || material.group_id === "kuaishou_banner");
+            });
+          });
         }
         break;
       case "unicom":
@@ -357,15 +455,18 @@
         if (changed && isString) root.DTO = nested.stringify(dto);
         break;
       case "xhs":
-        if (!/^(?:edith|www|rec|so)\.xiaohongshu\.com$/.test(host)) break;
+        if (!/^(?:edith|www|rec|so|ci)\.xiaohongshu\.com$/.test(host)) break;
         if (/^\/api\/sns\/v6\/homefeed$/.test(path)) {
-          filter(root, "data", function (x) { return object(x) && active(x.ads_info); });
+          filter(root, "data", function (x) { return object(x) && (object(x.ads_info) || active(x.ads_info)); });
         } else if (/^\/api\/sns\/v\d+\/search\/notes$/.test(path)) {
           filter(root, "data.items", function (x) {
-            return object(x) && (active(x.ads_info) || x.model_type === "ad" || x.model_type === "ads");
+            return object(x) && (object(x.ads_info) || active(x.ads_info) || x.model_type === "ad" || x.model_type === "ads");
           });
         } else if (/^\/api\/sns\/v\d+\/system_service\/splash_config$/.test(path)) {
           setExisting(root, "data.ads_groups", []);
+        } else if (/^\/api\/sns\/v\d+\/system_service\/config$/.test(path)) {
+          // 只删开屏配置，保留主题、商城及其他正常设置。
+          remove(root.data, "splash");
         }
         break;
       case "tencent":
@@ -406,7 +507,12 @@
       return;
     }
     if (typeof $response.body !== "string" || !$response.body) { $done({}); return; }
-    if (typeof $response.status === "number" && ($response.status < 200 || $response.status >= 300)) { $done({}); return; }
+    var status = $response.statusCode !== undefined ? $response.statusCode : $response.status;
+    if (typeof status === "string") {
+      var statusMatch = /^(?:HTTP\/\d(?:\.\d)?\s+)?(\d{3})(?:\s|$)/.exec(status);
+      if (statusMatch) status = Number(statusMatch[1]);
+    }
+    if (typeof status === "number" && (status < 200 || status >= 300)) { $done({}); return; }
     if (label === "youku" && match[1] === "pl-ali.youku.com" && match[2] === "/playlist/m3u8") {
       var hls = cleanPlaylist($response.body, "youku", $request.url);
       $done(hls !== $response.body ? {body: hls} : {});
@@ -414,12 +520,16 @@
     }
     var parsed = parsePreservingIntegers($response.body);
     if (!object(parsed.value)) { $done({}); return; }
-    processBody(parsed.value, match[1].toLowerCase(), match[2] || "/", match[3] || "");
+    var responsePath = match[2] || "/";
+    // 只规范普通 JSON 接口的单个尾斜杠；腾讯/优酷播放分支保留原判断。
+    if (label !== "tencent" && label !== "youku" && responsePath.length > 1 && !/\/$/.test(responsePath.slice(0, -1))) responsePath = responsePath.replace(/\/$/, "");
+    processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      if (debug) console.log("[AdBlock V5] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V5.1] " + label + ": " + edits + " changes");
       $done({body: body});
     } else {
+      if (debug) console.log("[AdBlock V5.1] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
