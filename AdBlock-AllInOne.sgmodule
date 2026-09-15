@@ -1,5 +1,5 @@
-#!name=AdBlock AllInOne V5.1 RC2
-#!desc=补9月13日HAR确认的微博热门流/详情页广告卡及pgdt HTTPS素材漏项；腾讯视频页面处理保留RC7。安装说明见AdBlock-V5.1-RC2-README.txt。
+#!name=AdBlock AllInOne RC2 - B站详情脚本暂停对照
+#!desc=仅暂停B站播放页广告容器脚本以定位详情/评论等待；其他RC2功能保留。临时诊断版，详情广告可能恢复。
 #!category=广告拦截
 #!author=Night & ChatGPT；参考 fmz200、app2smile、blackmatrix7 等，许可见说明
 #!date=2026-09-13
@@ -812,7 +812,8 @@ V5-优酷拼接广告 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.co
 V5-哔哩哔哩漫画开屏 = type=http-response,pattern=^https?:\/\/manga\.bilibili\.com\/twirp\/comic\.v\d+\.Comic\/(?:ListFlash|AppInit)\/?(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=5.1.0-rc2,argument=bcomic&debug=1,timeout=10,script-update-interval=86400
 # V5.1：每个接口只交给一个处理脚本。
 贴吧-V3-广告容器 = type=http-response,pattern=^https?:\/\/(?:(?:tiebac|c\.tieba)\.baidu\.com\/(?:c\/(?:s\/sync|b\/ad\/adBid|f\/(?:ad\/(?:getFeedAd|getSplashAd)|excellent\/personalized|frs\/(?:page|threadlist|generalTabList)|pb\/page))|tiebaads\/commonbatch)|tieba\.baidu\.com\/c\/f\/forum\/shopGoodsFeed)(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.0-rc1,timeout=10,script-update-interval=86400
-B站-播放页广告容器 = type=http-response,pattern=^https:\/\/(?:grpc\.biliapi\.net|app\.bilibili\.com)\/bilibili\.app\.viewunite\.v1\.View\/View(?:\?|$),requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Bilibili-View-AdClean-V1.txt?v=1.0.0-rc1,timeout=15,script-update-interval=86400
+# 对照测试：仅暂停下一条绑定；脚本文件本身不变。
+# B站-播放页广告容器 = type=http-response,pattern=^https:\/\/(?:grpc\.biliapi\.net|app\.bilibili\.com)\/bilibili\.app\.viewunite\.v1\.View\/View(?:\?|$),requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Bilibili-View-AdClean-V1.txt?v=1.0.0-rc1,timeout=15,script-update-interval=86400
 YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1,timeout=60,script-update-interval=86400
 瓜子漫画-页面净化 = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1,timeout=10,script-update-interval=86400,engine=webview
 V5.1-腾讯新闻广告容器 = type=http-response,pattern=^https:\/\/(?:news\.ssp\.qq\.com\/app|r\.inews\.qq\.com\/(?:getQQNewsUnreadList|getTagFeedList|gw\/page\/(?:channel_feed|event_detail)|news_feed\/hot_module_list))(?:\?|$),requires-body=true,max-size=4194304,timeout=10,script-update-interval=86400,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0
