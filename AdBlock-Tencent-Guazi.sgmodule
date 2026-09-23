@@ -1,0 +1,114 @@
+#!name=腾讯RC7与瓜子保留・fmz兼容
+#!desc=保留腾讯RC7与瓜子；补齐fmz解密域名和闲鱼异步开屏，京东/值得买直引作者脚本。搭配安装清单使用，停用旧总模块。
+#!category=广告拦截
+#!author=Night & ChatGPT
+#!date=2026-09-23
+#!version=1.0.0
+#!system=ios
+
+# 腾讯/瓜子脚本正文、原四项绑定和版本参数不改。其余主功能由安装清单里的远程模块提供。
+# 兼容补丁需要 Surge iOS 5.14+（JQ）；不包含上游整套规则副本，也不包含旧多应用脚本。
+# 请将本模块放在其他普通广告规则之前；不要与旧版总模块或另一腾讯模块同时启用。
+# DIRECT 仅保护普通路由规则：不能覆盖 pre-matching、URL Rewrite 或 Map Local。
+# 不修改 DNS、GeoIP、CA、HTTP/2 与 QUIC 全局设置。
+
+[Rule]
+# 业务域名精确保护：从旧广告集合例外迁出，避免普通广告域名规则先行拒绝。
+DOMAIN,i.video.qq.com,DIRECT,extended-matching
+DOMAIN,iacc.qq.com,DIRECT,extended-matching
+DOMAIN,svv.video.qq.com,DIRECT,extended-matching
+DOMAIN,vv.video.qq.com,DIRECT,extended-matching
+DOMAIN,www.guazimanhua.com,DIRECT,extended-matching
+
+# 既有腾讯 SDK / GDT 兼容例外；GDT 仍由下面精确接口返回无广告数据。
+DOMAIN,tdid.m.qq.com,DIRECT,extended-matching
+DOMAIN,tpns.qq.com,DIRECT,extended-matching
+DOMAIN,access1.tpns.tencent.com,DIRECT,extended-matching
+DOMAIN,sdk.e.qq.com,DIRECT,extended-matching
+DOMAIN,sdkreport.e.qq.com,DIRECT,extended-matching
+DOMAIN,tangram.e.qq.com,DIRECT,extended-matching
+DOMAIN,masdkv6.3g.qq.com,DIRECT,extended-matching
+DOMAIN,v2mi.gdt.qq.com,DIRECT,extended-matching
+DOMAIN,mi.gdt.qq.com,DIRECT,extended-matching
+
+# 既有腾讯广告联盟与广告素材规则；共享于其他接入该联盟的应用。
+DOMAIN,wxa.wxs.qq.com,REJECT,extended-matching
+DOMAIN,wximg.wxs.qq.com,REJECT,extended-matching
+DOMAIN,wxsmw.wxs.qq.com,REJECT,extended-matching
+DOMAIN,1500020991.vodplayer.wxamedia.com,REJECT,extended-matching
+DOMAIN,1500022744.vodplayer.wxamedia.com,REJECT,extended-matching
+DOMAIN,1500026601.vodplayer.wxamedia.com,REJECT,extended-matching
+DOMAIN,wxsnsad.tc.qq.com,REJECT,extended-matching
+DOMAIN,wxsnsdy.tc.qq.com,REJECT,extended-matching
+DOMAIN,wxsnsdy.wxs.qq.com,REJECT,extended-matching
+DOMAIN,wxsnsdythumb.wxs.qq.com,REJECT,extended-matching
+DOMAIN,wxaintpcos.wxqcloud.qq.com.cn,REJECT,extended-matching
+DOMAIN,adsfile.qq.com,REJECT,extended-matching
+DOMAIN,adslvfile.qq.com,REJECT,extended-matching
+DOMAIN,adstore-1252524079.file.myqcloud.com,REJECT,extended-matching
+DOMAIN,adstore-index-1252524079.file.myqcloud.com,REJECT,extended-matching
+DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
+DOMAIN-SUFFIX,gdtimg.com,REJECT,extended-matching
+DOMAIN-SUFFIX,ugdtimg.com,REJECT,extended-matching
+DOMAIN,ad.qq.com,REJECT,extended-matching
+DOMAIN,ads.privacy.qq.com,REJECT,extended-matching
+DOMAIN,p.l.qq.com,REJECT,extended-matching
+DOMAIN,t.l.qq.com,REJECT,extended-matching
+DOMAIN,us.l.qq.com,REJECT,extended-matching
+DOMAIN,w.l.qq.com,REJECT,extended-matching
+DOMAIN,vd6.l.qq.com,REJECT,extended-matching
+DOMAIN,vi.l.qq.com,REJECT,extended-matching
+
+# 瓜子漫画原有专用广告域名。
+DOMAIN,xhs794.xhsqd12.com,REJECT
+DOMAIN,xddxxy.dasdnajksn.com,REJECT
+DOMAIN,rk7p.avdog-t0199.vip,REJECT
+DOMAIN,oytsuig.kwvqaj.cn,REJECT
+DOMAIN,jsqp.rk00h.cn,REJECT
+DOMAIN,rc210fx9byte.9sawv.cn,REJECT
+DOMAIN,mt0simgbyte.lvautm.cn,REJECT
+
+[URL Rewrite]
+# 既有腾讯素材与瓜子广告脚本定点规则。
+^https:\/\/wxsmw\.wxs\.qq\.com\/.*\/ads_svp_video_ _ reject
+^https:\/\/wximg\.wxs\.qq\.com\/141\/20204\/snscosdownload\/SZ\/reserved\/ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/ad\/ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-top-static-ad\.js(?:\?.*)?$ _ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-bottom-ad\.js(?:\?.*)?$ _ reject
+
+[Map Local]
+# 腾讯已确认广告素材兜底；只拦素材，不等于保证所有客户端空壳消失。
+^https?:\/\/pgdt\.gtimg\.cn\/141\/20204\/snscosdownload\/SZ\/reserved\/[0-9a-f]{48}(?:_dGltYWdl_[0-9]+)?(?:\?[^#]*)?$ data-type=text data="" status-code=204
+^http:\/\/[^\/]+\/(?:[^?]*\/)?gzc_1000127_[^?\/]+\.f10215\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+^http:\/\/[^\/]+\/(?:[^?]*\/)?gzc_1000173_[^?\/]+\.f(?:124105|206310[0-9]*)\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+^http:\/\/vgdt\.gtimg\.cn\/[0-9]+\/[^?\/]+\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+# 精确 GDT 请求返回无广告状态，避免仅断网触发广告 SDK 重试。
+^https?:\/\/(?:v2)?mi\.gdt\.qq\.com\/gdt_mview\.fcg(?:\?.*)?$ data-type=text data="{\"ret\":102006,\"msg\":\"\"}" status-code=200 header="Content-Type:application/json"
+
+[Body Rewrite]
+# 补齐上游闲鱼当前缺失的异步开屏与旧 taobao 域名；JQ自身仅清广告字段，保留 api/ret/v。
+# acs.m.goofish.com 的同步开屏仍按上游 Map Local 返回 {}；本补丁无法恢复已被上游替换的原始返回体。
+http-response-jq ^https?:\/\/(?:g-)?acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads(?:\/|\?|$) 'if (.data|type)=="object" then if (.data|has("adMap")) then .data.adMap={} else . end elif (.data|type)=="string" then .data |= (. as $s | try (fromjson | if type=="object" then if has("adMap") then .adMap={} | tojson else $s end else $s end) catch $s) else . end'
+http-response-jq ^https?:\/\/(?:g-)?acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.taobao\.idlecommerce\.splash\.ads(?:\/|\?|$) 'if (.data|type)=="object" then .data={} elif (.data|type)=="string" then .data |= (. as $s | try (fromjson | if type=="object" then "{}" else $s end) catch $s) else . end'
+
+[Script]
+# 腾讯三项绑定逐字保留；RC7 页面脚本和 V22 播放脚本不改。
+腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.2.1-rc1,timeout=10,script-update-interval=86400
+腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30,max-size=1048576
+腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30
+# 瓜子使用当前已修复嵌套 HTML 容器的 V5.1 RC1 脚本，逐字保留绑定。
+瓜子漫画-页面净化 = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1,timeout=10,script-update-interval=86400,engine=webview
+
+# 京东只引用原作者远程脚本；不带入其 mapi.m.jd.com 整域拒绝。
+fmz-京东原作者脚本 = type=http-response, pattern=^https:\/\/api\.m\.jd\.com\/client\.action\?functionId=(deliverLayer|getTabHomeInfo|myOrderInfo|orderTrackBusiness|personinfoBusiness|start|welcomeHome), script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/jingdong/jingdong.js, requires-body=true, timeout=60
+# 值得买只直引首页、好价、开屏、搜索脚本；不带入阿里共享SDK等整域拒绝。
+fmz-值得买-1 = type=http-response, pattern=^https?:\/\/homepage-api\.smzdm\.com\/v3\/home, script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/Smzdm.js, requires-body=true, timeout=60
+fmz-值得买-2 = type=http-response, pattern=^https?:\/\/haojia-api\.smzdm\.com\/home\/list, script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/Smzdm.js, requires-body=true, timeout=60
+fmz-值得买-3 = type=http-response, pattern=^https?:\/\/app-api\.smzdm\.com\/util\/loading, script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/Smzdm.js, requires-body=true, timeout=60
+fmz-值得买-4 = type=http-response, pattern=^https?:\/\/s-api\.smzdm\.com\/sou\/list_v10\?, script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/smzdm_ads.js, requires-body=true, timeout=60
+
+[MITM]
+# RC7 已有 11 个 IP:443 条目原样保留：仅为解密覆盖，不是永久服务器清单。
+# IP 上真实 URL 若仍为 IP，不扩大脚本路由去处理共享服务器任意响应。
+# 后19项为闲鱼补丁/京东/值得买脚本及所选fmz分模块缺失的精确解密域名。
+hostname = %APPEND% 112.60.20.144:443, 111.33.110.202:443, 111.33.110.163:443, 120.241.130.172:443, 112.60.23.213:443, 36.155.163.124:443, 36.155.228.69:443, 120.241.130.240:443, 120.232.131.191:443, 36.155.163.112:443, 36.155.205.219:443, i.video.qq.com, iacc.qq.com, mi.gdt.qq.com, svv.video.qq.com, v2mi.gdt.qq.com, vv.video.qq.com, www.guazimanhua.com, wximg.wxs.qq.com, wxsmw.wxs.qq.com, pgdt.gtimg.cn, acs.m.goofish.com, g-acs.m.goofish.com, acs.m.taobao.com, g-acs.m.taobao.com, api.m.jd.com, wmapi.meituan.com, guide-acs.m.taobao.com, news.ssp.qq.com, r.inews.qq.com, page-info.zhihu.com, zhstatic.zhihu.com, live.ximalaya.com, livewsa.ximalaya.com, app02.vgtime.com:8080, ucmp-static.sf-express.com, homepage-api.smzdm.com, haojia-api.smzdm.com, app-api.smzdm.com, s-api.smzdm.com
