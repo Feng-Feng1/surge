@@ -1,26 +1,8 @@
-/*
- * TencentVideo PageClean V1.3.1 V6 / 2026-09-26
- * Surge http-response, requires-body=true, binary-body-mode=true.
- * Evidence: 2026-09-08-100604.har, entries 285 and 363 (one-based).
- * Scope: confirmed homepage/personal-center schemas, captured reward pendant, and iacc splash command 63743.
- * Added evidence: 2026-09-09-003815.har entry 823 (one-based).
- * RC5 homepage evidence: 2026-09-09-073247.har entry 1342 (one-based).
- * Recognize the captured gdt_report.fcg focus-ad tracking variant as well.
- * RC8 evidence: 2026-09-09-180250.har entries 280, 852, 853 (one-based).
- * Remove only the personal ad slot and the dedicated confirmed ad-list item.
- * RC7 evidence: 2026-09-09-130402.har entry 755, exact magic-act pull-refresh promotion.
- * Remove its dedicated extension only when all nested events match; no generic tag changes.
- * RC5 splash evidence: same HAR entry 916, gzip-wrapped Tars/JCE response.
- * Remove verified splash records and their matching schedule references.
- * Unmatched prior candidate references remain unchanged; phone UI needs verification.
- * Pendant branch removes only display child #2/#2; its siblings stay byte-identical.
- * New pendant branch is an offline-verified candidate; phone UI effect needs confirmation.
- * Playback uses the already published AppClean tencent handler in the V6 module.
- * No request changes, VIP flags, token storage, HTTP calls or CDN blocking.
- * Parse real protobuf boundaries, remove confirmed repeated ad items,
- * rebuild enclosing lengths and the tRPC frame length. Never rename tags.
- * Unknown/malformed formats pass through unchanged; gzip is handled only on the captured iacc route.
- * New code: SPDX-License-Identifier: MIT
+/* TencentVideo PageClean V1.3.1 V6
+ * Surge: http-response, requires-body=true, binary-body-mode=true.
+ * Remove confirmed ad items; preserve normal modules and VIP state.
+ * Unknown or malformed responses pass through unchanged.
+ * SPDX-License-Identifier: MIT
  */
 (function () {
   "use strict";
@@ -162,7 +144,6 @@
     return any ? anyPayload(any.data, name) : null;
   }
 
-  // A real Block with an exact AdFeedInfo Any and confirmed tracking evidence.
   function confirmedAdBlock(b, mode) {
     const fs = parse(b);
     if (numeric(fs, 1, -1) !== 16 || numeric(fs, 2, -1) !== mode) return false;
@@ -170,9 +151,7 @@
     if (!any) return false;
     const ad = anyPayload(any.data, "AdFeedInfo");
     if (!ad || !contains(ad, "ad_request_id")) return false;
-    // RC5: captured focus ad uses gdt_report.fcg instead of gdt_stats.fcg.
-    // Require all three exact tracking endpoint prefixes; keep the original
-    // Block/Any/poster checks below and do not extend this variant to feed ads.
+
     const legacyTracking = contains(ad, "gdt_stats.fcg");
     const focusTracking = mode === 1 &&
       contains(ad, "://nc.gdt.qq.com/gdt_report.fcg?") &&
@@ -187,7 +166,6 @@
       anyPayload(poster.data, "AdFeedVideoPoster") !== null;
   }
 
-  // Captured feed module: a sole field #10 wraps Module -> one ad Block.
   // Do not remove a Module containing several blocks or unknown sibling fields.
   function isFeedAd(field) {
     const fs = parse(field.data);
@@ -217,7 +195,6 @@
     return block !== null && confirmedAdBlock(block, 1);
   }
 
-  // Only the captured carousel map key "0". Keep every normal carousel item.
   function cleanCarousel(moduleField, counts) {
     const fs = parse(moduleField.data);
     const changes = new Map();
@@ -238,7 +215,6 @@
     return changes.size ? wrap(moduleField, rebuild(fs, changes)) : moduleField.raw;
   }
 
-  // RC7: the captured a.iwan magic-act pull-refresh promotion.
   // Parse the dedicated Any/event/action chain; unknown sibling events keep the extension.
   function confirmedMagicActPullPromotion(payload) {
     function shape(fields, schema, repeated = []) {
@@ -337,7 +313,7 @@
     const offset = 16 + b[8] * 256 + b[9];
     if (offset < 16 || offset >= b.length) return null;
     const meta = parse(b.subarray(16, offset));
-    // Known plain protobuf success frames only; no attachments or inner compression.
+
     if ([1, 2, 4, 5, 9, 10, 12].some(n => numeric(meta, n, 0) !== 0)) return null;
     const fs = parse(b.subarray(offset));
     const extensions = one(fs, 8, 2);
@@ -368,7 +344,7 @@
         if (isFeedAd(module)) { counts.feed++; continue; }
         parts.push(cleanCarousel(module, counts));
       }
-      // Do not create a wholly empty homepage from an unfamiliar all-ad response.
+
       if (!parts.length) return null;
       if (counts.feed + counts.focus > before) {
         changes.set(f, wrap(f, rebuild(mp, new Map([[value, wrap(value, concat(parts))]]))));
@@ -393,7 +369,6 @@
     return { body: output, counts };
   }
 
-  // RC8: remove the personal-center ad slot and its dedicated returned ad item.
   // Both guards use response structure only; Surge response scripts need no request body.
   function cleanPersonalFrame(b) {
     if (b.length < 16 || b.length > MAX_BODY || b[0] !== 9 || b[1] !== 48 ||
@@ -427,8 +402,7 @@
         textEquals(nameField.data, "type.googleapis.com/trpc.vector_layout.page_view.UserCenter") &&
         payload.data.length > 0;
     }
-    // The captured initial personal page contains a separate 55-byte ad slot
-    // between history and more functions. Its entire repeated item is 57 bytes.
+
     if (shape(fs, { 1: 2, 3: 2, 5: 2, 7: 2, 8: 2 }, [3, 7])) {
       const page = one(fs, 1, 2), map = parse(page.data);
       if (!shape(map, { 1: 2, 2: 2 }) || !textEquals(one(map, 1, 2).data, "normal")) return null;
@@ -444,8 +418,7 @@
       if (!shape(slot.f, { 1: 2, 2: 2, 8: 2, 14: 0 }) ||
           !one(slot.f, 1, 2).data.length || one(slot.f, 8, 2).data.length !== 0 ||
           numeric(slot.f, 14, -1) !== 9) return null;
-      // Establish the personal-page schema with normal siblings, not with URLs
-      // inside an unrelated top-function module or with a generic field number.
+
       if (fields.filter(f => userCenterModule(f, "user_center_user_info")).length !== 1 ||
           fields.filter(f => userCenterModule(f, "user_center_history")).length !== 1 ||
           fields.filter(f => userCenterModule(f, "user_center_more_function")).length !== 1) return null;
@@ -454,8 +427,7 @@
       // Keep all normal modules, pagination cursors and page-context counters verbatim.
       return output(rebuild(fs, new Map([[page, wrap(page, newMap)]])), "slot");
     }
-    // Dedicated GetPersonalCenterAdData success-response shape from both
-    // captured image and video cases. No normal page module can enter here.
+
     if (!shape(fs, { 1: 2, 2: 2, 3: 2, 5: 2 }) || one(fs, 1, 2).data.length !== 0) return null;
     const config = parse(one(fs, 2, 2).data);
     if (!shape(config, { 4: 2, 5: 0, 6: 0 })) return null;
@@ -487,13 +459,12 @@
     }
     if (personalPageIds !== 1) return null;
     // Remove the complete ad item and zero only its adjacent list count.
-    // Configuration fields, reporting context and the frame metadata stay intact.
+
     const count = one(list, 5, 0);
     const emptyList = concat([count.tag, encodeVarint(0)]);
     return output(rebuild(fs, new Map([[group, wrap(group, emptyList)]])), "item");
   }
 
-  // RC4: only the captured reward-ad pendant display schema. No state changes.
   function cleanRewardPromotionPayload(fs, h) {
     const { parse, one, numeric, textEquals, contains, concat, wrap } = h;
     function shape(fields, schema, repeated = []) {
@@ -525,12 +496,11 @@
     const display = one(fields, 2, 2), ui = parse(display.data);
     if (!shape(ui, { 1: 2, 2: 2, 3: 2, 4: 0, 5: 0, 6: 2, 7: 2, 8: 2, 11: 2, 17: 2, 18: 2, 22: 0, 23: 2, 25: 0 }, [17])) return null;
     if (!contains(one(ui, 1, 2).data, "ad_request_id")) return null;
-    // The captured headline starts with 看广告，免费看 and includes VIP.
-    // Guard the fixed meaning without hard-coding the offered minute count.
+
     const headline = one(ui, 3, 2).data;
     const intro = [0xe7, 0x9c, 0x8b, 0xe5, 0xb9, 0xbf, 0xe5, 0x91, 0x8a, 0xef, 0xbc, 0x8c, 0xe5, 0x85, 0x8d, 0xe8, 0xb4, 0xb9, 0xe7, 0x9c, 0x8b];
     if (!fixedBytes(headline.subarray(0, intro.length), intro) || !contains(headline, "VIP")) return null;
-    // UTF-8 for the captured fixed label: 免费看.
+
     if (!fixedBytes(one(ui, 8, 2).data, [0xe5, 0x85, 0x8d, 0xe8, 0xb4, 0xb9, 0xe7, 0x9c, 0x8b])) return null;
     const maps = ui.filter(f => f.n === 17), wanted = { link_type: "1", ad_pr_id: "203", ad_pr_type: "1" };
     if (maps.length !== 3) return null;
@@ -555,7 +525,6 @@
     if (!shape(link, { 1: 2 }) || !contains(one(link, 1, 2).data, "ad_request_id")) return null;
     return concat([wrap(envelope, concat(fields.filter(f => f !== display).map(f => f.raw)))]);
   }
-  
 
   function cleanRewardFrame(b) {
     if (b.length < 256 || b.length > 65536 || b[0] !== 9 || b[1] !== 48 ||
@@ -576,9 +545,6 @@
     return { body: output, rewardPendant: 1 };
   }
 
-
-  // Instantiate the gzip codec only for a captured iacc request.
-  // Homepage and reward handling do not allocate the codec or JCE tree.
   function cleanCapturedSplash(body) {
 /*
 Embedded dependency: pako 1.0.11, inflate-only browser distribution.
@@ -637,12 +603,8 @@ var __SurgePakoInflate = (function () {
   return module.exports;
 })();
 
-/* Codec adapter written for this task. Embedded pako vendor code is unmodified.
- * Input buffers are read only. Only one complete RFC1952 gzip member is accepted.
- * Output limit is enforced while decoding; maxOutput must be 0..32 MiB.
- * A chunk may temporarily exceed the requested limit by at most 16 KiB before
- * the exception; no oversized result is returned. All parse errors throw.
- * Header size limit: 64 KiB. Compressed input size limit: 64 MiB.
+/* Bounded gzip codec: read-only input; one complete member only.
+ * Decode errors or oversized output are rejected.
  */
 
 var __SurgeCrcTable = (function () {
@@ -725,12 +687,12 @@ function encodeGzipStored(input) {
   if (input.length > 33554432) throw new RangeError("gzip input exceeds 32 MiB");
   var blocks = Math.max(1, Math.ceil(input.length / 65535));
   var output = new Uint8Array(10 + 5 * blocks + input.length + 8);
-  // CM=DEFLATE, FLG=0, MTIME=0, XFL=0, OS=255. Header fields are deterministic.
+
   output[0] = 31; output[1] = 139; output[2] = 8; output[9] = 255;
   var offset = 10, read = 0;
   for (var i = 0; i < blocks; i++) {
     var length = Math.min(65535, input.length - read), complement = length ^ 65535;
-    output[offset++] = i === blocks - 1 ? 1 : 0; // BFINAL then BTYPE=00, pad to byte.
+    output[offset++] = i === blocks - 1 ? 1 : 0;  
     output[offset++] = length & 255; output[offset++] = length >>> 8;
     output[offset++] = complement & 255; output[offset++] = complement >>> 8;
     output.set(input.subarray(read, read + length), offset);
@@ -741,9 +703,6 @@ function encodeGzipStored(input) {
   return output;
 }
 
-/* Evidence-scoped Tencent iacc splash filter. No network or platform dependencies.
- * gzip callbacks accept and return Uint8Array. All unknown/malformed packets pass through.
- */
 function cleanIaccSplashFrame(input, gunzipFn, gzipFn) {
   var MAX_BYTES = 2 * 1024 * 1024, MAX_NODES = 100000, MAX_DEPTH = 48;
   function no(reason) { return { changed: false, reason: reason }; }
@@ -892,7 +851,6 @@ function cleanIaccSplashFrame(input, gunzipFn, gzipFn) {
   } catch (_) { return no('parse-or-codec-error'); }
 }
 
-
     return cleanIaccSplashFrame(body,
       function (compressed) { return inflateGzip(compressed, MAX_BODY); },
       encodeGzipStored);
@@ -907,7 +865,6 @@ function cleanIaccSplashFrame(input, gunzipFn, gzipFn) {
 
   try {
 
-    // HAR #916 uses HTTP. Keep i.video on its existing HTTPS-only route.
     if (typeof $request !== "undefined" && /^https?:\/\/iacc\.qq\.com\/$/i.test($request.url || "")) {
       if (typeof $response === "undefined" || $request.method !== "POST" || Number($response.status) !== 200) {
         finish(); return;
