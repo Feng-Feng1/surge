@@ -2,7 +2,7 @@
 #!desc=保留腾讯RC7与瓜子；微博使用奶思模块中的原作者远程脚本；秋风完整原址订阅。
 #!category=广告拦截
 #!author=Night; fmz200; TG-Twilight; original script authors
-#!version=5.2.2
+#!version=5.2.3
 #!system=ios
 
 # 只启用这一份总模块，关闭旧的同类整合模块，保持重写、脚本和 HTTPS 解密开启。
