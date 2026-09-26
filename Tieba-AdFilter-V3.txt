@@ -1,11 +1,9 @@
-/* Tieba Ad Filter V3.0.1; preserves numeric JSON lexemes outside ad containers.
+/* Tieba Ad Filter V3.0.1
  * SPDX-License-Identifier: GPL-2.0-only
- * Number-preservation helper from local AppClean; upstream MIT notice retained below.
+ * Number-preservation helper: AppClean (GPL-2.0-only).
  */
-/* App2smile schema reference: https://github.com/app2smile/rules/tree/df6366a7024e0b3f0aa3510c5b791eea6f3cba89
- * Scope: named advertisement fields only. Unknown fields keep their raw bytes.
- * Offline schema/negative-case tests passed; current phone UI is not verified.
- * app2smile MIT notice follows. Wire parser and restricted handlers are local changes.
+/* Schema reference: https://github.com/app2smile/rules/tree/df6366a7024e0b3f0aa3510c5b791eea6f3cba89
+ * Wire parser and restricted handlers are local changes.
 MIT License
 
 Copyright (c) 2023 app2smile
@@ -27,9 +25,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
  */
-// Parse only actual protobuf boundaries. Untouched fields remain byte-identical.
+
 function read32(bytes, start) {
   let n = 0, pos = start;
   for (let shift = 0; shift <= 28 && pos < bytes.length; shift += 7) {
@@ -201,7 +198,7 @@ function parsePreservingIntegers(text) {
         if (fill && typeof fill === "object") for (const key of ["screen_fill_advertisement_bear_switch", "screen_fill_advertisement_plj_cpc_switch", "screen_fill_advertisement_plj_switch"]) {
           if (String(fill[key]) === "1") { fill[key] = typeof fill[key] === "number" ? 0 : "0"; changed++; }
         }
-        // Keep generic floating icons, all AB switches and socket transport unchanged.
+
       } else if (path === "/c/f/frs/page") {
         if (obj.activityhead && (obj.activityhead.is_ad === true || Number(obj.activityhead.is_ad) === 1)) clear(obj, "activityhead");
         banner(obj.forum && obj.forum.banner_list);
@@ -214,7 +211,7 @@ function parsePreservingIntegers(text) {
     }
     if (!(input instanceof Uint8Array) || !input.length || input.length > 4194304) { $done({}); return; }
     if (path === "/c/f/ad/getFeedAd" || path === "/c/b/ad/adBid") {
-      // V2's HAR-confirmed successful envelope is retained for dedicated ad RPCs.
+
       wireFields(input);
       const empty = new Uint8Array([10,6,8,0,18,0,26,0]);
       if (input.length === empty.length && input.every((v, i) => v === empty[i])) $done({});
@@ -228,7 +225,7 @@ function parsePreservingIntegers(text) {
       return rewriteMessage(bytes, f => (f.no === 1 || f.no === 5) && f.wire === 2 && appAd(f.data) ? new Uint8Array(0) : null);
     }
     function personalBanner(bytes) {
-      // Preserve V2's proven fallback for this exact personalized BannerList field.
+
       if (contains(bytes,"ad_source") && contains(bytes,"ad_title") &&
           (contains(bytes,"pglstatp") || contains(bytes,"ad_common") || contains(bytes,"csjAPI"))) return new Uint8Array(0);
       return banner(bytes);
