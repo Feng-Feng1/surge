@@ -1,17 +1,13 @@
 /*
- * AdBlock AppClean V5.1.0-rc2 | Surge iOS
- * 2026-09-13, Night & ChatGPT
+ * AdBlock AppClean V6.0.1 | Surge iOS
+ * Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
  * 配套模块：AdBlock-AllInOne.sgmodule。此文件在 GitHub 保持 .txt 后缀。
  * 仅处理指定接口中的明确广告结构；不修改会员状态、权限、正文或分页游标。
  * 无网络请求、无持久化、无通知。异常、未知结构与非预期响应原样放行。
- * 接口与字段参考 blackmatrix7/ios_rule_script、ddgksf2013/Scripts，
- * 以及用户原模块；详见 AdBlock-V5-README.txt 和 AdBlock-V5-COPYING.txt。
- * 本实现另加类型检查、超大整数保真与限定容器遍历，并保留普通推荐内容。
- * 本次接口字段核对：ishowshu/qx/script/goofish.js、fmz200/wool_scripts
- * 的 Scripts/{jingdong/jingdong,cainiao/cainiao,coolapk,xiaohongshu/xiaohongshu,zhihu/zhihu}.js。
- * 依据接口名与数据字段独立实现；未复制其界面白名单、会员或权限修改。
+ * 字段来源：blackmatrix7/ios_rule_script、ddgksf2013/Scripts、
+ * ishowshu/qx、fmz200/wool_scripts。保留大整数原值及正常内容。
  */
 (function () {
   "use strict";
@@ -173,7 +169,7 @@
         if (!object(x)) return false;
         var groupSize = Array.isArray(x.card_group) ? x.card_group.length : 0;
         weiboContainers(x, depth + 1);
-        // 已知 card_group 原本全部是广告，且父项不承载另一份正文时移除父壳。
+
         return groupSize > 0 && x.card_group.length === 0 &&
           !active(x.mblog) && !active(x.data) && !Array.isArray(x.statuses) &&
           !Array.isArray(x.items) && !Array.isArray(x.cards);
@@ -186,6 +182,26 @@
       x.entityTemplate === "sponsorCard" ||
       (typeof x.entityId === "string" && /^sponsor-/.test(x.entityId)));
   }
+  function coolapkSplashConfig(card) {
+    if (!object(card) || card.entityTemplate !== "configCard" || !object(card.extraDataArr)) return;
+    var config = card.extraDataArr;
+    // 配置键中的点是字面字符；保留超时和重试间隔，避免 0 被解释为无限等待或立即重试。
+    ["SplashAd.Type", "SplashAd.hType", "SplashAd.resumeType"].forEach(function (key) {
+      if (has(config, key) && typeof config[key] === "string" && config[key] !== "") {
+        config[key] = ""; mark();
+      }
+    });
+    ["SplashAd.onResume", "Ad.PRELOAD", "Ad.PRELOAD_AFTER_USE"].forEach(function (key) {
+      if (!has(config, key)) return;
+      var value = config[key], off;
+      if (value === true) off = false;
+      else if (value === 1) off = 0;
+      else if (value === "1") off = "0";
+      else if (value === "true") off = "false";
+      else return;
+      config[key] = off; mark();
+    });
+  }
   function smzdmAd(x) {
     return object(x) && (active(x.ad_banner_id) || x.article_tag === "广告" || x.tag === "广告" ||
       x.logo_title === "广告" || x.model_type === "ads" || get(x, "zz_content.model_type") === "ads");
@@ -195,7 +211,6 @@
       get(x, "item.moduleType") === "mix_ad");
   }
 
-  // 仅过滤基本、非加密的 VOD 播放列表，并要求广告区块中每个分片都满足证据。
   // KEY/MAP/BYTERANGE/直播/低延迟等格式原样保留，避免破坏解密和分片序列。
   function cleanPlaylist(text, kind, url) {
     if (typeof text !== "string" || !/^#EXTM3U(?:\r?\n|$)/.test(text) || !/#EXT-X-ENDLIST(?:\r?\n|$)/.test(text)) return text;
@@ -235,7 +250,7 @@
         removed++;
         group.forEach(function (line) { if (headerPrefixes.test(line)) output.push(line); });
       } else {
-        // 删除片头广告后保留原播放头部，但不留下开头的孤立不连续标记。
+
         if (removed > 0 && normal === 0 && group[0] === "#EXT-X-DISCONTINUITY") group = group.slice(1);
         output = output.concat(group.filter(function (line) { return line !== "#EXT-X-ENDLIST"; }));
         normal += uris.length;
@@ -282,7 +297,7 @@
         } else if (host === "api.bilibili.com" && path === "/pgc/page/bangumi") {
           filter(root, "result.modules", function (module) {
             var removed = filter(module, "items", function (x) { return object(x) && active(get(x, "source_content.ad_content")); });
-            // 混合模块只删广告项；全是已确认广告的模块连同外壳一起移除。
+
             return removed > 0 && get(module, "items.length") === 0;
           });
         }
@@ -304,8 +319,7 @@
         if (/^(?:m?api)\.weibo\.(?:cn|com)$/.test(host) &&
           /^\/\d+\/(?:statuses\/(?:[^/]*timeline|container_timeline_hot|friends\/timeline|unread_friends\/timeline|container_detail|extend)|groups\/timeline|cardlist|searchall|page|0flowpage|search\/(?:container_timeline|container_discover|finder))$/.test(path)) {
           weiboContainers(root, 0);
-          // 2026-09-13 HAR: 详情广告位于 pageHeader.data.items，而正文位于 detailInfo。
-          // 只遍历这个已确认的页眉容器；移除整张广告项，保留正文、分享入口和分页。
+
           if (/\/statuses\/container_detail$/.test(path) && object(root.pageHeader)) {
             weiboContainers(root.pageHeader, 0);
           }
@@ -315,7 +329,10 @@
       case "coolapk":
         if (host === "api.coolapk.com" && /^\/v6\/(?:main\/(?:indexV8|dataList|init)|feed\/replyList|page\/dataList)$/.test(path)) {
           filter(root, "data", coolapkAd);
-          if (path === "/v6/main/init") filter(root, "data", function (x) { return object(x) && (x.entityId === 945 || x.entityId === "945"); });
+          if (path === "/v6/main/init") {
+            filter(root, "data", function (x) { return object(x) && (x.entityId === 945 || x.entityId === "945"); });
+            each(root, "data", coolapkSplashConfig);
+          }
         } else if (host === "api.coolapk.com" && path === "/v6/feed/detail") {
           setExisting(root, "data.detailSponsorCard", []);
           if (object(get(root, "data.detailSponsorCard"))) remove(root.data, "detailSponsorCard");
@@ -359,7 +376,7 @@
       case "jd":
         if (host !== "api.m.jd.com" || path !== "/client.action") break;
         var functionId = queryValue(query, "functionId");
-        // 某些客户端将 functionId 放在 POST 表单或 JSON；只处理已知功能名。
+
         if (!functionId && typeof $request.body === "string") {
           if (/^\s*\{/.test($request.body)) {
             var jdRequest = parsePreservingIntegers($request.body).value;
@@ -421,6 +438,12 @@
           } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.ads(?:\/|$)/.test(path)) {
             // 独立开屏广告 RPC：保留外层 api/ret/v，仅清空广告负载。
             Object.keys(data).forEach(function (key) { remove(data, key); });
+          } else if (host === "acs.m.goofish.com" && /^\/gw\/mtop\.taobao\.idle\.local\.flow\.plat\.section(?:\/|$)/.test(path)) {
+            filter(data, "data.components", function (x) { return object(x) && x.key === "fish_home_activity_enter_cardV1"; });
+          } else if (host === "acs.m.goofish.com" &&
+            (/^\/gw\/mtop\.taobao\.idle\.group\.myself\.banner(?:\/|$)/.test(path) ||
+             /^\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner\/1\.0$/.test(path))) {
+            setExisting(data, "bannerList", []);
           }
         });
         break;
@@ -471,7 +494,7 @@
         } else if (/^\/api\/sns\/v\d+\/system_service\/splash_config$/.test(path)) {
           setExisting(root, "data.ads_groups", []);
         } else if (/^\/api\/sns\/v\d+\/system_service\/config$/.test(path)) {
-          // 只删开屏配置，保留主题、商城及其他正常设置。
+
           remove(root.data, "splash");
         }
         break;
@@ -527,20 +550,20 @@
     var parsed = parsePreservingIntegers($response.body);
     if (!object(parsed.value)) { $done({}); return; }
     var responsePath = match[2] || "/";
-    // 只规范普通 JSON 接口的单个尾斜杠；腾讯/优酷播放分支保留原判断。
+
     if (label !== "tencent" && label !== "youku" && responsePath.length > 1 && !/\/$/.test(responsePath.slice(0, -1))) responsePath = responsePath.replace(/\/$/, "");
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V5.1.0-rc2] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V6.0.1] " + label + ": " + edits + " changes");
       $done({body: body});
     } else {
-      if (debug) console.log("[AdBlock V5.1.0-rc2] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V6.0.1] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V5.1.0-rc2] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V6.0.1] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();
