@@ -1,5 +1,5 @@
 /*
- * AdBlock AppClean V6.0.1 | Surge iOS
+ * AdBlock AppClean V6.1.0 | Surge iOS
  * Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -177,6 +177,35 @@
     });
     if (object(root.data)) weiboContainers(root.data, depth + 1);
   }
+  function weiboShellAd(x) {
+    function ad(value) {
+      return object(value) && (weiboAd(value) || flag(get(value, "ads_material_info.is_ads")));
+    }
+    return ad(x) || ad(get(x, "mblog")) || ad(get(x, "data")) || ad(get(x, "data.mblog"));
+  }
+  // 仅在已知卡片列表中删除完整广告项；原有空对象和普通菜单保持原样。
+  function weiboShellContainers(root, depth) {
+    if (!object(root) || depth > 8) return;
+    ["statuses", "cards", "items", "card_group"].forEach(function (key) {
+      filter(root, key, function (x) {
+        var knownGroup = !has(root, "card_type") || root.card_type === 11;
+        knownGroup = knownGroup && (root.card_type === 11 || ["card", "group", "wboxcard"].indexOf(root.category) !== -1);
+        if (weiboShellAd(x) || (key === "card_group" && knownGroup && object(x) && x.card_type === 118)) return true;
+        if (!object(x)) return false;
+        var childKeys = ["items", "cards", "card_group"];
+        var before = childKeys.map(function (name) { return Array.isArray(x[name]) ? x[name].length : 0; });
+        weiboShellContainers(x, depth + 1);
+        if (key === "statuses" || (has(x, "card_type") && x.card_type !== 11)) return false;
+        if (x.card_type !== 11 && ["card", "group", "wboxcard"].indexOf(x.category) === -1) return false;
+        var emptied = childKeys.some(function (name, i) { return before[i] > 0 && Array.isArray(x[name]) && x[name].length === 0; });
+        if (!emptied || childKeys.some(function (name) { return has(x, name) && (!Array.isArray(x[name]) || x[name].length > 0); })) return false;
+        return !["mblog", "data", "statuses", "menus", "menu_list", "buttons", "user", "page_info", "text", "content", "body", "pics", "pic_infos", "video", "videos", "cursor", "next_cursor", "since_id", "max_id", "since_id_str", "max_id_str", "page_token", "has_more", "paging", "moreInfo", "next", "next_page", "offset"].some(function (name) {
+          return has(x, name);
+        });
+      });
+    });
+    if (object(root.data)) weiboShellContainers(root.data, depth + 1);
+  }
   function coolapkAd(x) {
     return object(x) && (x.entityTemplate === "feedDetailReplySponsorCard" ||
       x.entityTemplate === "sponsorCard" ||
@@ -324,6 +353,12 @@
             weiboContainers(root.pageHeader, 0);
           }
           remove(root, "ad"); remove(root, "advertises");
+        }
+        break;
+      case "weibo-shell":
+        if (/^(?:m?api)\.weibo\.(?:cn|com)$/.test(host) &&
+          /^\/2\/(?:searchall|statuses\/container_timeline_topic|cardlist)$/.test(path)) {
+          weiboShellContainers(root, 0);
         }
         break;
       case "coolapk":
@@ -542,6 +577,7 @@
       if (statusMatch) status = Number(statusMatch[1]);
     }
     if (typeof status === "number" && (status < 200 || status >= 300)) { $done({}); return; }
+    if (label === "weibo-shell" && !(typeof status === "number" && status >= 200 && status < 300)) { $done({}); return; }
     if (label === "youku" && match[1] === "pl-ali.youku.com" && match[2] === "/playlist/m3u8") {
       var hls = cleanPlaylist($response.body, "youku", $request.url);
       $done(hls !== $response.body ? {body: hls} : {});
@@ -555,15 +591,15 @@
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V6.0.1] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V6.1.0] " + label + ": " + edits + " changes");
       $done({body: body});
     } else {
-      if (debug) console.log("[AdBlock V6.0.1] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V6.1.0] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V6.0.1] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V6.1.0] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();
