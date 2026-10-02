@@ -1,5 +1,4 @@
-/*
- * AdBlock AppClean V6.1.0 | Surge iOS
+* AdBlock AppClean V6.2.0 | Surge iOS
  * Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -7,7 +6,7 @@
  * 仅处理指定接口中的明确广告结构；不修改会员状态、权限、正文或分页游标。
  * 无网络请求、无持久化、无通知。异常、未知结构与非预期响应原样放行。
  * 字段来源：blackmatrix7/ios_rule_script、ddgksf2013/Scripts、
- * ishowshu/qx、fmz200/wool_scripts。保留大整数原值及正常内容。
+ * ishowshu/qx、fmz200/wool_scripts、可莉。保留大整数原值及正常内容。
  */
 (function () {
   "use strict";
@@ -98,13 +97,91 @@
     return typeof value === "string" && /^(?:ad|ads|advertisement|mamaad)$/i.test(value);
   }
   function goofishSectionAd(section) {
-    return goofishAdType(get(section, "data.bizType")) || flag(get(section, "data.isAd"));
+    return object(section) && (goofishAdType(section.bizType) || flag(section.isAd) ||
+      goofishAdType(get(section, "template.cardEnum")) ||
+      goofishAdType(get(section, "data.template.cardEnum")) ||
+      goofishAdType(get(section, "data.bizType")) || flag(get(section, "data.isAd")) ||
+      goofishAdType(get(section, "data.clickParam.args.cardType")) ||
+      goofishAdType(get(section, "cardData.bizType")) || flag(get(section, "cardData.isAd")) ||
+      goofishSearchAd(section));
   }
   function goofishSearchAd(item) {
     var main = get(item, "data.item.main");
     return flag(get(main, "exContent.isAliMaMaAD")) ||
       goofishAdType(get(main, "clickParam.args.item_type")) ||
-      goofishAdType(get(main, "clickParam.args.biz_type"));
+      goofishAdType(get(main, "clickParam.args.biz_type")) ||
+      goofishAdType(get(main, "exContent.dislikeFeedback.clickParam.args.bizType"));
+  }
+
+  var goofishLists = {
+    "mtop.taobao.idlehome.home.nextfresh": ["sections", "homeTopList"],
+    "mtop.taobao.idlehome.widget.refresh.get": ["homeTopList"],
+    "mtop.taobao.idle.home.whale.modulet": ["container.sections"],
+    "mtop.taobao.idle.fun.follow.feed.list": ["sections"],
+    "mtop.taobao.idlehome.home.community": ["feedsList"],
+    "mtop.taobao.idlehome.home.newitem.page": ["sections"],
+    "mtop.taobao.idle.local.home": ["sections"],
+    "mtop.taobao.idle.local.home.top": ["data.components"],
+    "mtop.taobao.idle.local.flow.plat.section": ["data.components"],
+    "mtop.idle.user.page.my.adapter": ["container.sections"],
+    "mtop.taobao.idlehome.home.circle.list": ["next.headList", "headList", "circleList"],
+    "mtop.taobao.idlehome.magic.home.page.list": ["topList", "sections"],
+    "mtop.taobao.idlemtopsearch.search": ["resultList"],
+    "mtop.taobao.idlemtopsearch.search.discover": ["resultList"],
+    "mtop.taobao.idlemtopsearch.item.search.activate": ["cardList"],
+    "mtop.taobao.idle.item.recommend": ["cardList"],
+    "mtop.taobao.idle.item.recommend.list": ["cardList"],
+    "mtop.taobao.idle.user.strategy.list": ["sections", "items"],
+    "mtop.taobao.idle.local.near.by.corner.info": ["sections", "items"],
+    "mtop.taobao.idle.item.buy.feeds": ["sections", "feedsList"],
+    "mtop.taobao.idlemtopsearch.search.shade": ["resultList"],
+    "mtop.taobao.idle.playboy.recommend": ["recommends", "items"]
+  };
+  // 上游正文仅在更新模块时转成有限数据，App 内不执行远程代码。
+  function goofishPolicy() {
+    if (label !== "goofish" || typeof $argument !== "string" || $argument.length > 16000) return null;
+    var match = /(?:^|&)policy=([^&]*)/.exec($argument);
+    if (!match) return null;
+    try {
+      var policy = JSON.parse(decodeURIComponent(match[1]));
+      var listPaths = ["sections", "resultList", "homeTopList", "feedsList", "container.sections", "data.components", "next.headList", "headList", "cardList", "topList", "components", "recommends", "items"];
+      var testPaths = ["data.clickParam.args.cardType", "template.cardEnum", "data.item.main.exContent.dislikeFeedback.clickParam.args.bizType"];
+      if (!object(policy) || policy.v !== 1 || !Array.isArray(policy.routes) || policy.routes.length > 16) return null;
+      for (var r = 0; r < policy.routes.length; r++) {
+        var route = policy.routes[r];
+        if (!object(route) || typeof route.api !== "string" || route.api.length > 160 ||
+            !/^mtop\.taobao\.idle[a-z0-9_.]*$/.test(route.api) || route.api === "mtop.taobao.idle.trade.full.info" ||
+            !Array.isArray(route.lists) || route.lists.length > 8) return null;
+        for (var l = 0; l < route.lists.length; l++) {
+          var list = route.lists[l];
+          if (!object(list) || listPaths.indexOf(list.path) < 0 || !Array.isArray(list.tests) || list.tests.length > 16) return null;
+          for (var t = 0; t < list.tests.length; t++) {
+            var test = list.tests[t];
+            if (!object(test) || testPaths.indexOf(test.path) < 0 || !Array.isArray(test.values) || !test.values.length || test.values.length > 8) return null;
+            for (var v = 0; v < test.values.length; v++) {
+              var value = test.values[v];
+              if (typeof value !== "string" || value.length > 64 ||
+                  !/^(?:ad|ads|advertisement|mamaAD|homeMultiBanner|banner|(?:[A-Za-z][A-Za-z0-9_]*[a-z0-9_])?(?:Ad(?=[A-Z0-9_]|$)|AD(?=[A-Z][a-z]|[0-9_]|$))[A-Za-z0-9_]*)$/.test(value)) return null;
+              if (value === "banner" && (route.api !== "mtop.taobao.idlehome.home.newitem.page" || test.path !== "data.clickParam.args.cardType")) return null;
+              if (value === "homeMultiBanner" && (route.api !== "mtop.taobao.idlehome.home.nextfresh" || test.path !== "data.clickParam.args.cardType")) return null;
+            }
+          }
+        }
+      }
+      return policy;
+    } catch (e) { return null; }
+  }
+  function goofishApplyPolicy(data, api, policy) {
+    if (!policy) return;
+    policy.routes.forEach(function (route) {
+      if (route.api !== api) return;
+      route.lists.forEach(function (list) {
+        filter(data, list.path, function (item) {
+          if (!object(item)) return false;
+          return list.tests.some(function (test) { return test.values.indexOf(get(item, test.path)) !== -1; });
+        });
+      });
+    });
   }
 
   // JSON.parse 会舍入大于 2^53-1 的整数。先保护这些数值，再恢复原始数字文本。
@@ -456,19 +533,30 @@
         break;
       case "goofish":
         if (!/^(?:g-)?acs\.m\.(?:goofish|taobao)\.com$/.test(host)) break;
+        if (Array.isArray(root.ret) && root.ret.some(function (value) { return typeof value === "string" && /^(?:FAIL|ERROR)(?:_|::)/.test(value); })) break;
+        var goofishAPI = /^\/gw\/(mtop\.[a-z0-9_.]+)(?:\/|$)/.exec(path);
+        if (!goofishAPI) break;
+        goofishAPI = goofishAPI[1];
+        var goofishSourcePolicy = goofishPolicy();
         embedded(root, "data", function (data) {
-          if (/^\/gw\/mtop\.taobao\.(?:idlehome\.home\.nextfresh|idle\.local\.home)(?:\/|$)/.test(path)) {
-            var count = Array.isArray(data.sections) ? data.sections.length : -1;
-            var removed = filter(data, "sections", goofishSectionAd);
-            // feedsCount 只有等于本批数组长度才同步；服务器总数/分页游标不猜测。
-            if (removed && Number(data.feedsCount) === count) {
-              setExisting(data, "feedsCount", typeof data.feedsCount === "string" ? String(data.sections.length) : data.sections.length);
-            }
-          } else if (/^\/gw\/mtop\.taobao\.idlemtopsearch\.search(?:\/|$)/.test(path)) {
-            filter(data, "resultList", goofishSearchAd);
-          } else if (/^\/gw\/mtop\.taobao\.idle\.item\.recommend(?:\.list)?(?:\/|$)/.test(path)) {
-            filter(data, "cardList", function (x) { return goofishAdType(get(x, "cardData.bizType")); });
-          } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads(?:\/|$)/.test(path)) {
+          var count = Array.isArray(data.sections) ? data.sections.length : -1;
+          var lists = has(goofishLists, goofishAPI) ? goofishLists[goofishAPI] : [];
+          lists.forEach(function (list) {
+            filter(data, list, function (card) {
+              if (goofishSectionAd(card)) return true;
+              if (list === "homeTopList" && goofishAdType(get(card, "sectionType"))) return true;
+              var type = get(card, "data.clickParam.args.cardType");
+              return !goofishSourcePolicy && list === "sections" &&
+                (goofishAPI === "mtop.taobao.idlehome.home.nextfresh" && type === "homeMultiBanner" ||
+                 goofishAPI === "mtop.taobao.idlehome.home.newitem.page" && type === "banner");
+            });
+          });
+          goofishApplyPolicy(data, goofishAPI, goofishSourcePolicy);
+          // 仅同步本批数量，服务器总数及游标保留。
+          if (count >= 0 && Array.isArray(data.sections) && data.sections.length !== count && Number(data.feedsCount) === count) {
+            setExisting(data, "feedsCount", typeof data.feedsCount === "string" ? String(data.sections.length) : data.sections.length);
+          }
+          if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads(?:\/|$)/.test(path)) {
             setExisting(data, "adMap", {});
           } else if (/^\/gw\/mtop\.taobao\.idlecommerce\.splash\.ads(?:\/|$)/.test(path)) {
             // 独立开屏广告 RPC：保留外层 api/ret/v，仅清空广告负载。
@@ -577,7 +665,7 @@
       if (statusMatch) status = Number(statusMatch[1]);
     }
     if (typeof status === "number" && (status < 200 || status >= 300)) { $done({}); return; }
-    if (label === "weibo-shell" && !(typeof status === "number" && status >= 200 && status < 300)) { $done({}); return; }
+    if ((label === "weibo-shell" || label === "goofish") && !(typeof status === "number" && status >= 200 && status < 300)) { $done({}); return; }
     if (label === "youku" && match[1] === "pl-ali.youku.com" && match[2] === "/playlist/m3u8") {
       var hls = cleanPlaylist($response.body, "youku", $request.url);
       $done(hls !== $response.body ? {body: hls} : {});
@@ -591,15 +679,15 @@
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V6.1.0] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V6.2.0] " + label + ": " + edits + " changes");
       $done({body: body});
     } else {
-      if (debug) console.log("[AdBlock V6.1.0] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V6.2.0] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V6.1.0] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V6.2.0] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();
