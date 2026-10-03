@@ -1,7 +1,7 @@
-/* TencentVideo PageTrace V1.0.0 | Surge http-request
+/* TencentVideo PageTrace V1.1.0 | Surge http-request
  * SPDX-License-Identifier: MIT
- * Reports only bounded page metadata to local script logs / Recent Events.
- * Does not read bodies or credentials; query values are never logged.
+ * Reports only bounded metadata to local script logs / Logbook.
+ * Does not read bodies or credentials. Paths and query values are never logged.
  * Always passes requests through unchanged.
  */
 (function () {
@@ -26,16 +26,22 @@
   }
   try {
     if (typeof $request === "undefined") return;
-    var match = /^(https?):\/\/(i\.video\.qq\.com|iacc\.qq\.com)\/(\?[^#]*)?$/i.exec($request.url || "");
-    if (!match || (match[2].toLowerCase() === "i.video.qq.com" && match[1].toLowerCase() !== "https")) return;
-    var host = match[2].toLowerCase();
-    var query = !!match[3];
+    var url = typeof $request.url === "string" ? $request.url : "";
+    var match = /^(https?):\/\/(i\.video\.qq\.com|iacc\.qq\.com)(?::(443|80))?(\/[^?#\s]*)(\?[^#\s]*)?$/.exec(url);
+    if (!match || (match[2] === "i.video.qq.com" && match[1] !== "https")) return;
+    if (match[3] && match[3] !== (match[1] === "https" ? "443" : "80")) return;
+    var scheme = match[1];
+    var host = match[2];
+    var pathClass = match[4] === "/" ? "root" : "non-root";
+    var query = !!match[5];
+    var oldURL = /^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$/.test(url);
     var method = typeof $request.method === "string" && /^(GET|POST|HEAD|PUT|PATCH|DELETE|OPTIONS)$/.test($request.method) ? $request.method : "other";
     var service = serviceHeader($request.headers);
     var serviceGuard = host === "iacc.qq.com" ? "not-applicable" : (service.category === "channel" || !service.present ? "accepted" : "not-covered");
-    var message = "[腾讯视频页面识别] host=" + host + " method=" + method +
-      " query=" + (query ? "yes" : "no") + " servicetag=" + service.text +
-      " old-url=" + (query ? "not-covered" : "accepted") + " old-service=" + serviceGuard;
+    var message = "[腾讯视频页面识别] trace=1.1.0 scheme=" + scheme + " host=" + host +
+      " path=" + pathClass + " port=" + (match[3] ? "explicit-default" : "implicit-default") +
+      " method=" + method + " query=" + (query ? "yes" : "no") + " servicetag=" + service.text +
+      " old-url=" + (oldURL ? "accepted" : "not-covered") + " old-service=" + serviceGuard;
     try { console.log(message); } catch (_) {}
     try {
       if (typeof $surge !== "undefined" && typeof $surge.logbook === "function") $surge.logbook(message);
