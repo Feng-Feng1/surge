@@ -1,8 +1,8 @@
-#!name=AdBlock AllInOne｜腾讯视频页面识别
-#!desc=延续当前完整去广告模块，仅在最近事件记录腾讯视频页面服务标记，用于定位播放器下方卡片；此版本尚未修复该卡片。
+#!name=AdBlock AllInOne｜腾讯视频扩展识别
+#!desc=保留现有完整规则，记录腾讯视频两个已配置域名的路径类别及服务标记，用于定位播放器下方卡片；此版本尚未修复该卡片。
 #!author=Night; fmz200; TG-Twilight; 可莉; original script authors
 #!category=广告拦截
-#!version=6.2.5-tencent-trace
+#!version=6.2.6-tencent-trace-paths
 #!system=ios
 #!date=2026-10-03
 
@@ -651,7 +651,7 @@ https://.+\.gamersky\.com/v1/statisticAd data-type=text data="{}" status-code=20
 ^https?:\/\/(?:g-)?acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.taobao\.idlecommerce\.splash\.async\.ads\/1\.0(?:[/?]|$) data-type=text data="{\"api\":\"mtop.taobao.idlecommerce.splash.async.ads\",\"data\":{\"adMap\":{}},\"ret\":[\"SUCCESS::调用成功\"],\"v\":\"1.0\"}" status-code=200 header="Content-Type:application/json"
 
 [Script]
-腾讯视频-页面服务识别 = type=http-request,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/(?:\?[^#]*)?$,requires-body=false,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/TencentVideo-PageTrace-V1.txt?v=1.0.0,timeout=3,script-update-interval=86400,engine=jsc
+腾讯视频-页面服务识别 = type=http-request,pattern=^(?:https:\/\/(?:i\.video\.qq\.com|iacc\.qq\.com)(?::443)?|http:\/\/iacc\.qq\.com(?::80)?)\/[^?#\s]*(?:\?[^#\s]*)?$,requires-body=false,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/TencentVideo-PageTrace-V1.txt?v=1.1.0,timeout=3,script-update-interval=86400,engine=jsc
 V5-哔哩哔哩信息流 = type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/v2\/feed\/index(?:\/story)?\/?(?:\?|$),requires-body=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=6.2.1-splashfix,argument=bili,timeout=5,script-update-interval=86400,engine=webview
 V5-哔哩哔哩番剧广告 = type=http-response,pattern=^https?:\/\/api\.bilibili\.com\/pgc\/page\/bangumi\/?(?:\?|$),requires-body=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=6.2.1-splashfix,argument=bili,timeout=5,script-update-interval=86400,engine=webview
 V5-知乎信息流 = type=http-response,pattern=^https?:\/\/(?:api|web-render)\.zhihu\.com\/(?:topstory\/recommend|next-render|(?:v4\/)?questions\/\d+(?:\/answers)?|search\/recommend_query)\/?(?:\?|$),requires-body=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=6.2.1-splashfix,argument=zhihu,timeout=5,script-update-interval=86400,engine=webview
