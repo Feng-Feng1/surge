@@ -1,0 +1,48 @@
+/* TencentVideo PageTrace V1.0.0 | Surge http-request
+ * SPDX-License-Identifier: MIT
+ * Reports only bounded page metadata to local script logs / Recent Events.
+ * Does not read bodies or credentials; query values are never logged.
+ * Always passes requests through unchanged.
+ */
+(function () {
+  "use strict";
+  function serviceHeader(headers) {
+    var values = [];
+    if (Array.isArray(headers)) {
+      headers.forEach(function (entry) {
+        if (entry && String(entry.field || "").toLowerCase() === "servicetag") values.push(entry.value);
+      });
+    } else {
+      Object.keys(headers || {}).forEach(function (key) {
+        if (key.toLowerCase() === "servicetag") values.push(headers[key]);
+      });
+    }
+    if (!values.length) return {present:false, category:"absent", text:"absent"};
+    if (values.length !== 1 || typeof values[0] !== "string") return {present:true, category:"other", text:"ambiguous"};
+    var value = values[0];
+    if (value === "channel$100101") return {present:true, category:"channel", text:value};
+    if (/^[A-Za-z][A-Za-z0-9_.-]{0,40}\$[0-9]{1,12}$/.test(value)) return {present:true, category:"other", text:value};
+    return {present:true, category:"other", text:value === "" ? "empty" : "unrecognized"};
+  }
+  try {
+    if (typeof $request === "undefined") return;
+    var match = /^(https?):\/\/(i\.video\.qq\.com|iacc\.qq\.com)\/(\?[^#]*)?$/i.exec($request.url || "");
+    if (!match || (match[2].toLowerCase() === "i.video.qq.com" && match[1].toLowerCase() !== "https")) return;
+    var host = match[2].toLowerCase();
+    var query = !!match[3];
+    var method = typeof $request.method === "string" && /^(GET|POST|HEAD|PUT|PATCH|DELETE|OPTIONS)$/.test($request.method) ? $request.method : "other";
+    var service = serviceHeader($request.headers);
+    var serviceGuard = host === "iacc.qq.com" ? "not-applicable" : (service.category === "channel" || !service.present ? "accepted" : "not-covered");
+    var message = "[腾讯视频页面识别] host=" + host + " method=" + method +
+      " query=" + (query ? "yes" : "no") + " servicetag=" + service.text +
+      " old-url=" + (query ? "not-covered" : "accepted") + " old-service=" + serviceGuard;
+    try { console.log(message); } catch (_) {}
+    try {
+      if (typeof $surge !== "undefined" && typeof $surge.logbook === "function") $surge.logbook(message);
+    } catch (_) {}
+  } catch (_) {
+    // A diagnostic failure must not change the request.
+  } finally {
+    $done({});
+  }
+})();
