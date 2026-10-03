@@ -1,8 +1,8 @@
-#!name=AdBlock AllInOne｜腾讯视频扩展识别
-#!desc=保留现有完整规则，记录腾讯视频两个已配置域名的路径类别及服务标记，用于定位播放器下方卡片；此版本尚未修复该卡片。
+#!name=AdBlock AllInOne｜腾讯视频连接临时对照
+#!desc=仅临时阻断抓包中出现的一条长连接主机，观察两处广告及普通页面请求；未确认为广告来源或永久修复。测试结束恢复原模块，页面异常立即回退。
 #!author=Night; fmz200; TG-Twilight; 可莉; original script authors
 #!category=广告拦截
-#!version=6.2.6-tencent-trace-paths
+#!version=6.2.7-ws-test
 #!system=ios
 #!date=2026-10-03
 
@@ -18,6 +18,7 @@
 
 # 百度地图兼容候选：延续 lc.map.baidu.com 例外，补齐官方 HTTPDNS 入口的精确 IP 例外。
 [Rule]
+DOMAIN,persist-conn.video.qq.com,REJECT
 DOMAIN,sdkapp.uve.weibo.com,DIRECT,extended-matching
 DOMAIN,wbapp.uve.weibo.com,DIRECT,extended-matching
 DOMAIN,bootpreload.uve.weibo.com,DIRECT,extended-matching
