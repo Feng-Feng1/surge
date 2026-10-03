@@ -1,4 +1,3 @@
-
 #!name=AdBlock AllInOne｜广告与容器优化
 #!desc=补充有源码依据的广告接口，修正B站误判并扩展B站、知乎、微博广告卡与父容器清理；保留地图兼容处理。已完成离线核验，手机效果待验证。
 #!author=Night; fmz200; TG-Twilight; 可莉; original script authors
