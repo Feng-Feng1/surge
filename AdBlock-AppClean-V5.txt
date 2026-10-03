@@ -1,4 +1,4 @@
-/* AdBlock AppClean V6.2.1-splashfix | Surge iOS
+/* AdBlock AppClean V6.3.0 | Surge iOS
  * Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -7,6 +7,9 @@
  * 无网络请求、无持久化、无通知。异常、未知结构与非预期响应原样放行。
  * 字段来源：blackmatrix7/ios_rule_script、ddgksf2013/Scripts、
  * ishowshu/qx、fmz200/wool_scripts、可莉。保留大整数原值及正常内容。
+ * V6.3.0 新逻辑独立实现；上游仅用于确认接口和字段事实，未复制其实现代码。
+ * Bili 横幅字段参照 Biliverse/ADBlock/src/process/Response.mjs。
+ * 知乎/微博接口与字段参照 fmz200/wool_scripts；新增归属见 appclean-source-notes.json。
  */
 (function () {
   "use strict";
@@ -66,6 +69,41 @@
   function each(root, path, fn) {
     var items = get(root, path);
     if (Array.isArray(items)) items.forEach(function (x) { if (object(x)) fn(x); });
+  }
+  // 仅实际更改响应体后移除已失效的表示校验值；保留 Cookie 和传输相关头。
+  function bodyResult(body) {
+    var result = { body: body }, headers = $response.headers;
+    function stale(name) {
+      return /^(?:etag|content-md5|digest|content-digest|repr-digest)$/i.test(name);
+    }
+    if (Array.isArray(headers)) {
+      var kept = headers.filter(function (entry) { return !stale(String(entry.field || entry.name || "")); });
+      if (kept.length !== headers.length) result.headers = kept;
+    } else if (object(headers)) {
+      var out = {}, removed = false;
+      Object.keys(headers).forEach(function (name) {
+        if (stale(name)) removed = true;
+        else out[name] = headers[name];
+      });
+      if (removed) result.headers = out;
+    }
+    return result;
+  }
+  function jsonMediaAllowed(headers) {
+    var values = [];
+    if (Array.isArray(headers)) {
+      headers.forEach(function (entry) {
+        if (object(entry) && String(entry.field || entry.name || "").toLowerCase() === "content-type") values.push(entry.value);
+      });
+    } else if (object(headers)) {
+      Object.keys(headers).forEach(function (name) { if (name.toLowerCase() === "content-type") values.push(headers[name]); });
+    }
+    // 部分旧接口不声明媒体类型；这时仍以 JSON 解析和精确路径为保护条件。
+    if (!values.length) return true;
+    return values.every(function (value) {
+      return typeof value === "string" &&
+        /^(?:application\/(?:json|x-json|[a-z0-9!#$&^_.+-]+\+json|javascript|x-javascript)|text\/(?:json|plain|javascript))(?:\s*;|$)/i.test(value.trim());
+    });
   }
 
   // MTOP 的 data 有对象和 JSON 字符串两种包装；仅在实际修改后重新编码。
@@ -219,9 +257,19 @@
   }
 
   function biliAd(x) {
-    return object(x) && (flag(x.is_ad) || active(x.ad_info) ||
+    // ad_info 在上游实测也出现在正常卡片中，不能单独作为删除条件。
+    return object(x) && (flag(x.is_ad) || x.card_type === "cm_v1" || x.card_type === "cm_v2" ||
       (typeof x.card_goto === "string" && /^ad(?:_|$)/.test(x.card_goto)) ||
       (typeof x.goto === "string" && /^ad(?:_|$)/.test(x.goto)));
+  }
+  function biliFeedAdOrEmptyBanner(card) {
+    if (biliAd(card)) return true;
+    if (!object(card) || card.card_goto !== "banner" ||
+        ["banner_v8", "banner_ipad_v8"].indexOf(card.card_type) === -1) return false;
+    var removed = filter(card, "banner_item", function (item) {
+      return object(item) && (item.type === "ad" || item.type === "ad_inline");
+    });
+    return removed > 0 && card.banner_item.length === 0;
   }
   function zhihuAd(x) {
     return object(x) && (x.type === "feed_advert" || x.type === "ad" ||
@@ -261,27 +309,31 @@
     return ad(x) || ad(get(x, "mblog")) || ad(get(x, "data")) || ad(get(x, "data.mblog"));
   }
   // 仅在已知卡片列表中删除完整广告项；原有空对象和普通菜单保持原样。
-  function weiboShellContainers(root, depth) {
+  function weiboShellContainers(root, depth, legacyFirstGroup) {
     if (!object(root) || depth > 8) return;
     ["statuses", "cards", "items", "card_group"].forEach(function (key) {
       filter(root, key, function (x) {
         var knownGroup = !has(root, "card_type") || root.card_type === 11;
         knownGroup = knownGroup && (root.card_type === 11 || ["card", "group", "wboxcard"].indexOf(root.category) !== -1);
-        if (weiboShellAd(x) || (key === "card_group" && knownGroup && object(x) && x.card_type === 118)) return true;
+        var legacyPromotion = root === legacyFirstGroup && key === "card_group" && object(x) &&
+          has(x, "promotion") && x.promotion !== null;
+        var pageBanner = label === "weibo-page" && key !== "statuses" && object(x) && x.card_type === 118;
+        if (legacyPromotion || pageBanner || weiboShellAd(x) || (key === "card_group" && knownGroup && object(x) && x.card_type === 118)) return true;
         if (!object(x)) return false;
         var childKeys = ["items", "cards", "card_group"];
         var before = childKeys.map(function (name) { return Array.isArray(x[name]) ? x[name].length : 0; });
-        weiboShellContainers(x, depth + 1);
+        weiboShellContainers(x, depth + 1, legacyFirstGroup);
         if (key === "statuses" || (has(x, "card_type") && x.card_type !== 11)) return false;
         if (x.card_type !== 11 && ["card", "group", "wboxcard"].indexOf(x.category) === -1) return false;
         var emptied = childKeys.some(function (name, i) { return before[i] > 0 && Array.isArray(x[name]) && x[name].length === 0; });
         if (!emptied || childKeys.some(function (name) { return has(x, name) && (!Array.isArray(x[name]) || x[name].length > 0); })) return false;
-        return !["mblog", "data", "statuses", "menus", "menu_list", "buttons", "user", "page_info", "text", "content", "body", "pics", "pic_infos", "video", "videos", "cursor", "next_cursor", "since_id", "max_id", "since_id_str", "max_id_str", "page_token", "has_more", "paging", "moreInfo", "next", "next_page", "offset"].some(function (name) {
-          return has(x, name);
+        // 只删除完全由已知布局字段组成的空壳；未知字段可能承载正文或翻页状态。
+        return Object.keys(x).every(function (name) {
+          return ["card_type", "category", "items", "cards", "card_group"].indexOf(name) !== -1;
         });
       });
     });
-    if (object(root.data)) weiboShellContainers(root.data, depth + 1);
+    if (object(root.data)) weiboShellContainers(root.data, depth + 1, legacyFirstGroup);
   }
   function coolapkAd(x) {
     return object(x) && (x.entityTemplate === "feedDetailReplySponsorCard" ||
@@ -399,7 +451,7 @@
 
       case "bili":
         if (host === "app.bilibili.com" && /^\/x\/v2\/feed\/index(?:\/story)?$/.test(path)) {
-          filter(root, "data.items", biliAd);
+          filter(root, "data.items", biliFeedAdOrEmptyBanner);
         } else if (host === "api.bilibili.com" && path === "/pgc/page/bangumi") {
           filter(root, "result.modules", function (module) {
             var removed = filter(module, "items", function (x) { return object(x) && active(get(x, "source_content.ad_content")); });
@@ -410,7 +462,7 @@
         break;
       case "zhihu":
         if ((host === "api.zhihu.com" || host === "web-render.zhihu.com") &&
-          /^\/(?:topstory\/recommend|next-render|(?:v4\/)?questions\/\d+(?:\/answers)?|search\/recommend_query)$/.test(path)) {
+          /^\/(?:topstory\/recommend|next-render|(?:v4\/)?questions\/\d+(?:\/(?:answers|feeds))?|search\/recommend_query)$/.test(path)) {
           filter(root, "data", zhihuAd);
           filter(root, "recommend_queries.queries", zhihuAd);
           if (/\/questions\//.test(path)) { remove(root, "ad_info"); remove(root.data, "ad_info"); }
@@ -419,6 +471,22 @@
           remove(root, "ad_info");
           // third_business 也承载普通相关问题，保留整个业务对象。
           remove(root.third_business, "ad_info");
+        } else if (host === "api.zhihu.com" && path === "/next-bff") {
+          filter(root, "data", function (item) {
+            var origin = get(item, "origin_data");
+            return zhihuAd(origin) || object(origin) &&
+              (origin.resource_type === "ad" || origin.resource_type === "feed_advert");
+          });
+        } else if (host === "api.zhihu.com" && path === "/next-data") {
+          filter(root, "data.data", zhihuAd);
+        } else if (host === "api.zhihu.com" && path === "/commercial_api/app_float_layer") {
+          remove(root, "feed_egg");
+        } else if (host === "api.zhihu.com" && path === "/topstory/hot-lists/total") {
+          filter(root, "data", zhihuAd);
+        } else if (host === "api.zhihu.com" && path === "/v2/topstory/hot-lists/everyone-seeing") {
+          filter(root, "data.data", function (item) {
+            return zhihuAd(item) || get(item, "target.metrics_area.text") === "合作推广";
+          });
         }
         break;
       case "weibo":
@@ -436,6 +504,12 @@
         if (/^(?:m?api)\.weibo\.(?:cn|com)$/.test(host) &&
           /^\/2\/(?:searchall|statuses\/container_timeline_topic|cardlist)$/.test(path)) {
           weiboShellContainers(root, 0);
+        }
+        break;
+      case "weibo-page":
+        if (/^(?:m?api)\.weibo\.(?:cn|com)$/.test(host) && path === "/2/page") {
+          // 保留旧 page 分支首组 promotion 判据，并在同一遍历中补全广告卡和空父组。
+          weiboShellContainers(root, 0, get(root, "cards.0"));
         }
         break;
       case "coolapk":
@@ -664,13 +738,13 @@
       var statusMatch = /^(?:HTTP\/\d(?:\.\d)?\s+)?(\d{3})(?:\s|$)/.exec(status);
       if (statusMatch) status = Number(statusMatch[1]);
     }
-    if (typeof status === "number" && (status < 200 || status >= 300)) { $done({}); return; }
-    if ((label === "weibo-shell" || label === "goofish") && !(typeof status === "number" && status >= 200 && status < 300)) { $done({}); return; }
+    if (!(typeof status === "number" && isFinite(status) && status >= 200 && status < 300)) { $done({}); return; }
     if (label === "youku" && match[1] === "pl-ali.youku.com" && match[2] === "/playlist/m3u8") {
       var hls = cleanPlaylist($response.body, "youku", $request.url);
-      $done(hls !== $response.body ? {body: hls} : {});
+      $done(hls !== $response.body ? bodyResult(hls) : {});
       return;
     }
+    if (!jsonMediaAllowed($response.headers)) { $done({}); return; }
     var parsed = parsePreservingIntegers($response.body);
     if (!object(parsed.value)) { $done({}); return; }
     var responsePath = match[2] || "/";
@@ -679,15 +753,15 @@
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V6.2.1-splashfix] " + label + ": " + edits + " changes");
-      $done({body: body});
+      console.log("[AdBlock V6.3.0] " + label + ": " + edits + " changes");
+      $done(bodyResult(body));
     } else {
-      if (debug) console.log("[AdBlock V6.2.1-splashfix] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V6.3.0] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V6.2.1-splashfix] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V6.3.0] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();
