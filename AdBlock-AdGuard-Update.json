@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "version": "6.4.0-manual.5f1cc4379e93",
-  "fingerprint": "5f1cc4379e93faf78336cda3fd7a38207882273f495167e4e5e05fe4eb785ad6",
+  "version": "6.4.0-manual.f7eeb19b3a28",
+  "fingerprint": "f7eeb19b3a28f34b9e3ae3b780105e13e3096aa233a176db9de88891902ef9d4",
   "builderSHA256": "e30b900a4596f46711a07805b428b2a0a2e150f39a3fe7cd4c37772dc9d4cc91",
   "preparedFrom": "6.3.1",
-  "moduleSHA256": "db2e00559a59bcd2e5b927be7c7f59298dd52ffe6290b48feea4019ce660bf94",
+  "moduleSHA256": "2270b2e4c9709a0ed83e9bcf7f459a6a6c3e40530c2cd7b9e6a9abbd0c2d96f2",
   "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
   "dnsSourceSHA256": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67",
@@ -101,8 +101,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/TencentVideo-PageClean-V1.txt",
-      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/TencentVideo-PageClean-V1.txt",
+      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
       "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
       "bytes": 66597,
       "rows": null
@@ -110,8 +110,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/Tieba-AdFilter-V3.txt",
-      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/Tieba-AdFilter-V3.txt",
+      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
       "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
       "bytes": 31336,
       "rows": null
@@ -119,8 +119,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/YouTube-AdFilter-V2.txt",
-      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/YouTube-AdFilter-V2.txt",
+      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
       "sha256": "bd66527a4db99093c1c5018677c4812d8ee0d548b917a9a170b0f3972db80ce3",
       "bytes": 133663,
       "rows": null
@@ -128,8 +128,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/Guazi-Clean-V5.txt",
-      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/Guazi-Clean-V5.txt",
+      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
       "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
       "bytes": 17557,
       "rows": null
@@ -137,8 +137,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/AdBlock-ExtraApps-V1.txt",
-      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/AdBlock-ExtraApps-V1.txt",
+      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
       "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
       "bytes": 6911,
       "rows": null
