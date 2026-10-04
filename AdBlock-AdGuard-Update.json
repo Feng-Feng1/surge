@@ -1,0 +1,312 @@
+{
+  "schema": 1,
+  "version": "6.4.0-manual.5f1cc4379e93",
+  "fingerprint": "5f1cc4379e93faf78336cda3fd7a38207882273f495167e4e5e05fe4eb785ad6",
+  "builderSHA256": "e30b900a4596f46711a07805b428b2a0a2e150f39a3fe7cd4c37772dc9d4cc91",
+  "preparedFrom": "6.3.1",
+  "moduleSHA256": "db2e00559a59bcd2e5b927be7c7f59298dd52ffe6290b48feea4019ce660bf94",
+  "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+  "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
+  "dnsSourceSHA256": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67",
+  "sourceLastModified": "2026-10-03T22:57:02.951Z",
+  "dnsConverted": {
+    "totalLines": 179719,
+    "blankLines": 0,
+    "commentLines": 1658,
+    "headerLines": 0,
+    "inputBlockRules": 177851,
+    "inputExceptionRules": 210,
+    "badfilterDirectives": 5,
+    "disabledRules": 1,
+    "disabledBlockRules": 1,
+    "disabledExceptionRules": 0,
+    "convertedBlockRules": 177098,
+    "convertedSuffixBlocks": 177098,
+    "convertedExactBlocks": 0,
+    "importantBlocksConverted": 3,
+    "skippedBlockRules": 747,
+    "activeExceptionRules": 210,
+    "convertedSuffixExceptions": 179,
+    "convertedExactExceptions": 19,
+    "convertedWildcardExceptions": 10,
+    "convertedFragmentExceptions": 1,
+    "ignoredNonDNSExceptions": 1,
+    "broadenedModifierExceptions": 0,
+    "blockEntryCount": 177096,
+    "exceptionRuleCount": 219
+  },
+  "convertedDomainEntries": 177096,
+  "exceptionRows": 219,
+  "protectionRows": 523,
+  "resources": [
+    {
+      "kind": "domains",
+      "name": "84eaebbc8003d25d208ae8ba442e843bc8a2510607b19e5801b70560df65213b.domain-set",
+      "sha256": "84eaebbc8003d25d208ae8ba442e843bc8a2510607b19e5801b70560df65213b",
+      "bytes": 3888245
+    },
+    {
+      "kind": "exceptions",
+      "name": "69c9f308245a4ef6219d3e8cf7765e15d9a55df484a08b87f388cd297e84acaa.list",
+      "sha256": "69c9f308245a4ef6219d3e8cf7765e15d9a55df484a08b87f388cd297e84acaa",
+      "bytes": 7838
+    },
+    {
+      "kind": "compatibility",
+      "name": "77d707ee64ac64596caca02192453e072e0b2e478cdcabebfe03840b3ae2e738.list",
+      "sha256": "77d707ee64ac64596caca02192453e072e0b2e478cdcabebfe03840b3ae2e738",
+      "bytes": 23464
+    },
+    {
+      "kind": "shared",
+      "name": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a.txt",
+      "sha256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+      "bytes": 41895
+    },
+    {
+      "kind": "adguard-input",
+      "name": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67.txt",
+      "sha256": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67",
+      "bytes": 4326522
+    }
+  ],
+  "sourceRecords": [
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/weibo/weibo_ads.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/weibo/weibo_ads.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "0f1f3eba5b2c96f4f089525ad033b578b6a18a2fd99eb95409e5b0816f4a4b34",
+      "bytes": 11082,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/weibo/weibo_main.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/weibo/weibo_main.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "b5e6312938588ccdc6fe50a77fd9db75c002a027dbfcebb4337d7353000a3b52",
+      "bytes": 31695,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/zmqcherish/proxy-script/main/weibo_launch.js",
+      "pinnedURL": "https://raw.githubusercontent.com/zmqcherish/proxy-script/1d9f51bc9a0077d81998bb503ee6158ca83faa73/weibo_launch.js",
+      "commit": "1d9f51bc9a0077d81998bb503ee6158ca83faa73",
+      "sha256": "1ebea73aa974503abf72371cd32bdda86975dbad9beaf4c6f648db6debb75fa6",
+      "bytes": 999,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.1-clean",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/TencentVideo-PageClean-V1.txt",
+      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
+      "bytes": 66597,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.1-clean",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/Tieba-AdFilter-V3.txt",
+      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
+      "bytes": 31336,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/YouTube-AdFilter-V2.txt",
+      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "sha256": "bd66527a4db99093c1c5018677c4812d8ee0d548b917a9a170b0f3972db80ce3",
+      "bytes": 133663,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/Guazi-Clean-V5.txt",
+      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
+      "bytes": 17557,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/7c8cdff815d6705405056807be395331c55ec0e7/AdBlock-ExtraApps-V1.txt",
+      "commit": "7c8cdff815d6705405056807be395331c55ec0e7",
+      "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
+      "bytes": 6911,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/myBlockAds.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/myBlockAds.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "4cf62100424886068a5470daecec319e93ccd034c647d79a9daaa72bbbc341bb",
+      "bytes": 7652,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/adrive/adrive.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/adrive/adrive.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "9d31582028a31ea605e69d09aa9e33949e57050006a8e0f3deb79b1c89933acd",
+      "bytes": 1105,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/cnftp.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/cnftp.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "4a95ce816c3e0bbaddf99e76c0f4b5ae3adb74318b9509e24ace40b675f11954",
+      "bytes": 31606,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/fenbi.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/fenbi.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "bc6eff20278e7244bb5d11fd8698aa4195471f0df3cc68a28c598b8f60c232d5",
+      "bytes": 826,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/ithome/ithome.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/ithome/ithome.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "afa7249bf854abe582d6c6b73e0297d24a8ee2221db0982c8cb4ce90bb0d4872",
+      "bytes": 1311,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/jingxiAd.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/jingxiAd.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "aa125c2689fba2cdd3ff1eb5aeb9e43bde2b1abab546cfcafdb67bd647d47b94",
+      "bytes": 285,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Scripts/AntiAd/mafengwo.js",
+      "pinnedURL": "https://raw.githubusercontent.com/zirawell/R-Store/dea5018c844e3486df872d6fb2207e3652e3d82b/Res/Scripts/AntiAd/mafengwo.js",
+      "commit": "dea5018c844e3486df872d6fb2207e3652e3d82b",
+      "sha256": "9944c174ff0270e9b4cb9a0b8ebf8b40d1a9232b633d7fbee57c171eda6397ea",
+      "bytes": 1044,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/maimai/maimai_ads.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/maimai/maimai_ads.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "cdd9424de68aa4aad03ba5fda672ccf5e3d3344ee3886e72848bfb7b30977c28",
+      "bytes": 861,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/mlxx/mlxx.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/mlxx/mlxx.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "7c22e8836f2e9247755180d094d2700e5bb6d10d70cfd042ebc463eb501e8416",
+      "bytes": 2295,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/zirawell/R-Store/main/Res/Scripts/AntiAd/51job.js",
+      "pinnedURL": "https://raw.githubusercontent.com/zirawell/R-Store/dea5018c844e3486df872d6fb2207e3652e3d82b/Res/Scripts/AntiAd/51job.js",
+      "commit": "dea5018c844e3486df872d6fb2207e3652e3d82b",
+      "sha256": "85e2b927da9a653691d954775adbab6160e24ca8e6117b779d27c1924bec1af0",
+      "bytes": 1169,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/xiaohongshu/xiaohongshu.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/xiaohongshu/xiaohongshu.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "318d89bce1117edb26a93b383804e195649ec4674a04efa9e3ddb4ef7f34b498",
+      "bytes": 28643,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/rrtv_json.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/rrtv_json.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "4202921945c0ba616133ca833b034954c3b3b5f328199c809065ce25d16446a7",
+      "bytes": 25962,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/smzdm_ads.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/smzdm/smzdm_ads.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "8e8b27474b277b334b1b37b14b412330485140b0df1cb77112f66fa043c550db",
+      "bytes": 1210,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/zhangshanggongjiao.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/zhangshanggongjiao.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "ee4e5a1ee5ce0817e0787578f7dd47874c65e9bd02bfda4b27527d4f6d59a44c",
+      "bytes": 688,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/cmschina/cmschina.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/cmschina/cmschina.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "0d65a79b61b6ef85c88110538e21ca4f5aafe9b7acc6c3272b17ef7361c2c8b6",
+      "bytes": 408,
+      "rows": null
+    },
+    {
+      "kind": "rule-set",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/rule/rejectAd.list",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Loon/rule/rejectAd.list",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "aa2578572186d4f48a062d2f6aeda0f0eba36c646533a435c8d390a566dcbd62",
+      "bytes": 103295,
+      "rows": 2748
+    },
+    {
+      "kind": "rule-set",
+      "sourceURL": "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list",
+      "pinnedURL": "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/99b020c21853cbed56b90456399dad6bde842309/Filters/AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list",
+      "commit": "99b020c21853cbed56b90456399dad6bde842309",
+      "sha256": "af3e26e761094e7bc6eec52548c8fb558eafcb836dd10480ca36dadbf01c7670",
+      "bytes": 18505,
+      "rows": 655
+    }
+  ],
+  "manualApplication": true,
+  "ruleUpdateInterval": -1,
+  "scriptRefreshBehavior": "Fixed commit or content-hash URL; periodic downloads do not select new upstream code.",
+  "noGlobalDirectFromAdGuard": true,
+  "unknownExceptionsFailUpdate": true,
+  "deviceVerified": false,
+  "limitations": [
+    "Conservative AdGuard DNS hostname subset, not full AdGuard engine or CNAME response filtering.",
+    "All supported exceptions prevail over important blocks to avoid stronger blocking.",
+    "Surge module update checks and first/new-resource downloads may still use network.",
+    "CSS, scriptlets and browser context rules cannot directly remove native App containers."
+  ]
+}

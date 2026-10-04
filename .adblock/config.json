@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "repository": "Feng-Feng1/surge",
+  "branch": "main",
+  "productVersion": "6.4.0",
+  "baselineVersion": "6.3.1",
+  "baselineModuleSHA256": "87e3b831b999323d9dfdead1c3282088e8eaac739d10b988a40516dc870ea0cb",
+  "baselineSharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+  "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
+  "dnsLicense": "https://github.com/AdguardTeam/AdGuardSDNSFilter/blob/master/LICENSE",
+  "minimumConvertedEntries": 100000,
+  "maximumConvertedEntries": 700000
+}

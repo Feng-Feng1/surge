@@ -1,0 +1,198 @@
+{
+  "reviewedAt": "2026-10-03T13:15:28.543Z",
+  "candidate": "AdBlock-AppClean-V5.txt",
+  "candidateSha256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+  "bindingChangeListSha256": "1d38b4e5d066d93732a7908a4f034ab97aed80e616f1503a4a28bcbb2ee9a5cb",
+  "implementationLicense": "GPL-2.0-only retained from existing shared script",
+  "attribution": "Existing Night & ChatGPT notice retained. New source field facts and independent implementation are listed per source; license files are separate.",
+  "sources": [
+    {
+      "id": "existing-shared",
+      "url": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=6.2.1-splashfix",
+      "file": "current-appclean.txt",
+      "sha256": "eb8a84a7ce67cb8da9729780d12d2a6a71b73394ca182d025a2f75e342377f9d",
+      "localSnapshotModifiedAt": "2026-10-03T13:01:57.424Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-2.0-only (existing file SPDX)",
+      "use": "Copied existing authorized implementation as candidate base; original notice retained",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "bili-banner-field-facts",
+      "url": "https://raw.githubusercontent.com/Biliverse/ADBlock/main/src/process/Response.mjs",
+      "file": "Biliverse-Response.mjs",
+      "sha256": "ccbbffc18efc9df56aa121cb04717867b44c9010a8320c06026b8fbcb1666784",
+      "localSnapshotModifiedAt": "2026-10-03T13:06:14.804Z",
+      "upstreamCommitDateVerified": false,
+      "license": "Apache-2.0 (repository LICENSE)",
+      "use": "Confirmed banner_v8/banner_ipad_v8, card_goto=banner and banner_item type=ad/ad_inline; independent implementation only",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "bili-ad-info-correction",
+      "url": "https://raw.githubusercontent.com/Biliverse/ADBlock/main/src/class/ADBlock.mjs",
+      "file": "Biliverse-ADBlock.mjs",
+      "sha256": "bb8b87f0735c556aea868ba664959401d9f1007bdd0743473a1cc2fbf96bbb7f",
+      "localSnapshotModifiedAt": "2026-10-03T13:06:44.669Z",
+      "upstreamCommitDateVerified": false,
+      "license": "Apache-2.0 (repository LICENSE)",
+      "use": "isFeedAd states ad_info occurs on normal cards; removed this broad fallback; independent implementation only",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "zhihu-field-facts",
+      "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/zhihu/zhihu.js",
+      "file": "21-zhihu.js",
+      "sha256": "544fd88207b9d7005bb5cf427a1994028f91a95a65fde3db72a501983bff99f4",
+      "localSnapshotModifiedAt": "2026-10-03T13:04:37.770Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-3.0 (repository LICENSE)",
+      "use": "Confirmed next-bff origin_data, next-data data.data, feed_egg and exact promotion label location; did not copy code or remove paid/normal recommendations",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "zhihu-route-facts",
+      "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Surge/module/split/partZ/Zhihu.sgmodule",
+      "file": "fmz-zhihu.txt",
+      "sha256": "4f064915d1efc056df784f24a2f50baaa94f59be4d698597f561fef818b77964",
+      "localSnapshotModifiedAt": "2026-10-03T13:05:05.659Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-3.0 (repository LICENSE)",
+      "use": "Confirmed api.zhihu.com next-bff/next-data and questions/id/feeds; existing hot/float handlers rebound without duplicate additions",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "weibo-page-existing-behavior",
+      "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/weibo/weibo_ads.js",
+      "file": "02-weibo_ads.js",
+      "sha256": "0f1f3eba5b2c96f4f089525ad033b578b6a18a2fd99eb95409e5b0816f4a4b34",
+      "localSnapshotModifiedAt": "2026-10-03T13:04:36.335Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-3.0 (repository LICENSE)",
+      "use": "Confirmed prior page first cards[0].card_group promotion handling; independent implementation preserves this behavior",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "weibo-page-ad-facts",
+      "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/weibo/weibo_main.js",
+      "file": "03-weibo_main.js",
+      "sha256": "b5e6312938588ccdc6fe50a77fd9db75c002a027dbfcebb4337d7353000a3b52",
+      "localSnapshotModifiedAt": "2026-10-03T13:04:36.604Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-3.0 (repository LICENSE)",
+      "use": "Confirmed card_type 118 and explicit mblog ad classification; did not import framework, remote code, persistence, notifications or unrelated UI customization",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "jd-reference",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/startup/startup.js",
+      "file": "blackmatrix-startup.js",
+      "sha256": "431801d369b495d34b7a1c1d6cc43abdb1d159dd0d82491ee756c0ae834b625c",
+      "localSnapshotModifiedAt": "2026-10-03T13:04:01.537Z",
+      "upstreamCommitDateVerified": false,
+      "license": "GPL-2.0 (repository LICENSE)",
+      "use": "Confirmed start images/showTimesDaily field context; no new JD handler or membership mutation",
+      "copiedUpstreamImplementation": false
+    },
+    {
+      "id": "ddgksf-jd-reference",
+      "url": "https://raw.githubusercontent.com/ddgksf2013/Scripts/master/jd_json.js",
+      "file": "ddgksf-jd_json.js",
+      "sha256": "07973f97d8ae97beac1b106e858e9ebfdbc973127d7badd73912cf9ec41ddd55",
+      "localSnapshotModifiedAt": "2026-10-03T13:02:21.648Z",
+      "upstreamCommitDateVerified": false,
+      "license": "No LICENSE retrieved for Scripts repository",
+      "use": "Current file is search hot-word UI customization; not adopted as an ad-removal increment",
+      "copiedUpstreamImplementation": false
+    }
+  ],
+  "licenses": [
+    {
+      "file": "Biliverse-LICENSE.txt",
+      "type": "Apache-2.0"
+    },
+    {
+      "file": "fmz-LICENSE.txt",
+      "type": "GPL-3.0"
+    },
+    {
+      "file": "blackmatrix-LICENSE.txt",
+      "type": "GPL-2.0"
+    }
+  ],
+  "excludedUnavailableSources": [
+    {
+      "url": "https://raw.githubusercontent.com/ddgksf2013/Scripts/master/bilibili_json.js",
+      "result": "Current retrieval failed; not used for code or field additions"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ddgksf2013/Scripts/master/zhihu_json.js",
+      "result": "Current retrieval failed; not used for code or field additions"
+    },
+    {
+      "url": "https://github.com/chxm1023/Rewrite",
+      "result": "Current default ddm1023 branch was README-only in retrieved view; linked entitlement-unlock content was excluded from this ad-only work"
+    }
+  ],
+  "surgePrimaryDocs": [
+    {
+      "url": "https://manual.nssurge.com/scripting/http-response.html",
+      "facts": [
+        "At most one matching response script runs; first enabled pattern wins",
+        "requires-body supplies decompressed body",
+        "full-header-mode supplies header array preserving duplicate Set-Cookie",
+        "done({}) keeps response untouched"
+      ]
+    },
+    {
+      "url": "https://manual.nssurge.com/scripting/http-request.html",
+      "facts": [
+        "Request body is exposed only in request script with requires-body",
+        "Request id is stable between request/response stages",
+        "No POST-body-only JD implementation was added"
+      ]
+    },
+    {
+      "url": "https://manual.nssurge.com/http/body-rewrite.html",
+      "facts": [
+        "Static body rewrites run before matching HTTP script",
+        "Surge body rewriting normalizes body framing; candidate does not set string-length Content-Length or change Content-Encoding"
+      ]
+    }
+  ],
+  "licenseBoundary": "The only copied implementation is the existing authorized GPL-2.0-only shared script. New routines were written independently using confirmed API/schema facts. No fmz GPL-3.0 or Biliverse Apache-2.0 implementation is pasted into this candidate. Existing separately referenced external scripts retain their upstream license; this file does not relicense them.",
+  "priorReview": {
+    "candidate": "AdBlock-AppClean-V6.3.0.txt",
+    "candidateSha256": "fbad0925ff6832572a2b613f321a4a97c060ed8ad5fce0fe353945d891aa651d",
+    "reviewedAt": "2026-10-03T13:15:28.543Z"
+  },
+  "currentVersion": "6.3.1",
+  "currentReviewDate": "2026-10-04",
+  "currentAdditions": [
+    {
+      "endpoint": "/twirp/comic.vN.Home/HomeFeed",
+      "host": "manga.bilibili.com",
+      "field": "data.feeds[].type",
+      "predicate": "numeric42",
+      "effect": "Remove matching entire promotional card",
+      "source": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/refs/heads/master/AdBlock/BiliBiliComicsAds.conf"
+    },
+    {
+      "endpoint": "/twirp/user.vN.User/GetMarketingCenterInfo",
+      "host": "manga.bilibili.com",
+      "field": "data.show_popup",
+      "predicate": "existing boolean",
+      "effect": "false; all other data retained",
+      "source": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/refs/heads/master/AdBlock/BiliBiliComicsAds.conf"
+    },
+    {
+      "endpoint": "/user/vip/ajax_get_banner",
+      "host": "zhiyou.m.smzdm.com",
+      "field": "data.big_banner[].logo_title",
+      "predicate": "exact广告",
+      "effect": "Remove matching entire advertisement card only",
+      "source": "https://raw.githubusercontent.com/ddgksf2013/Scripts/refs/heads/master/smzdm_json.js"
+    }
+  ],
+  "currentAdditionReport": "维护资料/脚本字段来源与排除.json"
+}

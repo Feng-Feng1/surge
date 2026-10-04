@@ -1,0 +1,55 @@
+name: Prepare Surge ad-block update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 20 * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.adblock/**'
+      - '.github/workflows/adblock-prepare.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adblock-prepare-main
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Read current repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+      - name: Use Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify conversion safeguards
+        run: node .adblock/tests.cjs
+      - name: Prepare fixed upstream resources
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .adblock/build-update.cjs
+      - name: Validate generated delivery
+        run: node .adblock/validate-delivery.cjs
+      - name: Publish verified update files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- AdBlock-AllInOne.sgmodule AdBlock-AppClean-V5.txt AdBlock-AdGuard-Update.json Resources/AdBlock Rollback/6.3.1
+          if git diff --cached --quiet; then
+            echo 'The verified update is already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Prepare verified Surge ad-block snapshot'
+          git push origin HEAD:main

@@ -1,0 +1,9 @@
+Independent conversion/build tools: GPL-3.0-only, except build-protection.cjs (MIT).
+The copied GPL-3.0 license applies to convert-adguard.cjs, build-update.cjs, validate-delivery.cjs and tests.cjs.
+AdGuard DNS input and derived domain/exception lists: GPL-3.0, original AdguardTeam and filter contributors.
+Source: https://github.com/AdguardTeam/AdGuardSDNSFilter
+The complete immutable source input is included as Resources/AdBlock/<sourceSHA256>.txt.
+The manifest maps that file, the generated native files and original source SHA256.
+AppClean core is a separate GPL-2.0-only script; its source headers and original attribution are preserved.
+Third-party scripts are referenced at original Git commit URLs and are not redistributed in this package.
+Existing module source/license notices are preserved. See Licenses/AdBlock and appclean-source-notes.json.
