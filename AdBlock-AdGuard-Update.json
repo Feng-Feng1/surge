@@ -1,27 +1,27 @@
 {
   "schema": 1,
-  "version": "6.4.0-manual.f7eeb19b3a28",
-  "fingerprint": "f7eeb19b3a28f34b9e3ae3b780105e13e3096aa233a176db9de88891902ef9d4",
+  "version": "6.4.0-manual.fb6b29b7f444",
+  "fingerprint": "fb6b29b7f4445835d574b3a30f0a700b82761f1af00cc8adf17704c9a62e17eb",
   "builderSHA256": "e30b900a4596f46711a07805b428b2a0a2e150f39a3fe7cd4c37772dc9d4cc91",
   "preparedFrom": "6.3.1",
-  "moduleSHA256": "2270b2e4c9709a0ed83e9bcf7f459a6a6c3e40530c2cd7b9e6a9abbd0c2d96f2",
+  "moduleSHA256": "8fb48578a565fc63ecaff3292495141cb6a411b6472d47ccaca76dcd0be42d40",
   "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
-  "dnsSourceSHA256": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67",
-  "sourceLastModified": "2026-10-03T22:57:02.951Z",
+  "dnsSourceSHA256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
+  "sourceLastModified": "2026-10-04T22:13:49.783Z",
   "dnsConverted": {
-    "totalLines": 179719,
+    "totalLines": 180023,
     "blankLines": 0,
     "commentLines": 1658,
     "headerLines": 0,
-    "inputBlockRules": 177851,
+    "inputBlockRules": 178155,
     "inputExceptionRules": 210,
     "badfilterDirectives": 5,
     "disabledRules": 1,
     "disabledBlockRules": 1,
     "disabledExceptionRules": 0,
-    "convertedBlockRules": 177098,
-    "convertedSuffixBlocks": 177098,
+    "convertedBlockRules": 177402,
+    "convertedSuffixBlocks": 177402,
     "convertedExactBlocks": 0,
     "importantBlocksConverted": 3,
     "skippedBlockRules": 747,
@@ -32,23 +32,23 @@
     "convertedFragmentExceptions": 1,
     "ignoredNonDNSExceptions": 1,
     "broadenedModifierExceptions": 0,
-    "blockEntryCount": 177096,
+    "blockEntryCount": 177400,
     "exceptionRuleCount": 219
   },
-  "convertedDomainEntries": 177096,
+  "convertedDomainEntries": 177400,
   "exceptionRows": 219,
   "protectionRows": 523,
   "resources": [
     {
       "kind": "domains",
-      "name": "84eaebbc8003d25d208ae8ba442e843bc8a2510607b19e5801b70560df65213b.domain-set",
-      "sha256": "84eaebbc8003d25d208ae8ba442e843bc8a2510607b19e5801b70560df65213b",
-      "bytes": 3888245
+      "name": "d50ce757c09d66d192c347b9b11f4a650c66e1b66cb1ba0eb793d6c48ad9d6c5.domain-set",
+      "sha256": "d50ce757c09d66d192c347b9b11f4a650c66e1b66cb1ba0eb793d6c48ad9d6c5",
+      "bytes": 3894367
     },
     {
       "kind": "exceptions",
-      "name": "69c9f308245a4ef6219d3e8cf7765e15d9a55df484a08b87f388cd297e84acaa.list",
-      "sha256": "69c9f308245a4ef6219d3e8cf7765e15d9a55df484a08b87f388cd297e84acaa",
+      "name": "4ce6f0ed3bb6cf281abc739e4d9a14461f2a42ada410a212c7838adf15537ace.list",
+      "sha256": "4ce6f0ed3bb6cf281abc739e4d9a14461f2a42ada410a212c7838adf15537ace",
       "bytes": 7838
     },
     {
@@ -65,9 +65,9 @@
     },
     {
       "kind": "adguard-input",
-      "name": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67.txt",
-      "sha256": "13fea58565f40d551d7d838c58ec455bf32855a953354dc3e704a2ba0a02ee67",
-      "bytes": 4326522
+      "name": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97.txt",
+      "sha256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
+      "bytes": 4333252
     }
   ],
   "sourceRecords": [
@@ -101,8 +101,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/TencentVideo-PageClean-V1.txt",
-      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/TencentVideo-PageClean-V1.txt",
+      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
       "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
       "bytes": 66597,
       "rows": null
@@ -110,8 +110,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/Tieba-AdFilter-V3.txt",
-      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/Tieba-AdFilter-V3.txt",
+      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
       "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
       "bytes": 31336,
       "rows": null
@@ -119,8 +119,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/YouTube-AdFilter-V2.txt",
-      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/YouTube-AdFilter-V2.txt",
+      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
       "sha256": "bd66527a4db99093c1c5018677c4812d8ee0d548b917a9a170b0f3972db80ce3",
       "bytes": 133663,
       "rows": null
@@ -128,8 +128,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/Guazi-Clean-V5.txt",
-      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/Guazi-Clean-V5.txt",
+      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
       "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
       "bytes": 17557,
       "rows": null
@@ -137,8 +137,8 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/62cfab406d508bbc5b1964143f11f75cda2c660f/AdBlock-ExtraApps-V1.txt",
-      "commit": "62cfab406d508bbc5b1964143f11f75cda2c660f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/AdBlock-ExtraApps-V1.txt",
+      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
       "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
       "bytes": 6911,
       "rows": null
