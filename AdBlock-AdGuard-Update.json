@@ -1,27 +1,27 @@
 {
   "schema": 2,
-  "version": "6.5.0-manual.df6d4cad713a",
-  "fingerprint": "df6d4cad713adb4a2c378676799d3f1d76ebbfe9e1883d1bf291f1f9e34c34e1",
+  "version": "6.5.0-manual.e73579a47e93",
+  "fingerprint": "e73579a47e938dc77fd419d7e22f2de43caf0bf47f76ece073370d28c84b2507",
   "builderSHA256": "98b3d2284efea33d8d32b2a85690beb883168b6bbf49ebbdf4b469e13805c1e7",
   "preparedFrom": "6.5.0",
-  "moduleSHA256": "580561fe477fcf8b89e0df8dc103801b9c46a64b48e8c259236dcb014eff2c11",
+  "moduleSHA256": "75c30fbfdbb60c3fffb5fc2ce25f5222283cb35000425bdd74a4f2d392fb2d14",
   "sharedSHA256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
-  "dnsSourceSHA256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
-  "sourceLastModified": "2026-10-04T22:13:49.783Z",
+  "dnsSourceSHA256": "03aa08742b5bdeba59954ff23191ffff2093d6e758f7d2d756e714c023dade9b",
+  "sourceLastModified": "2026-10-05T14:19:19.730Z",
   "dnsConverted": {
-    "totalLines": 180023,
+    "totalLines": 180239,
     "blankLines": 0,
     "commentLines": 1658,
     "headerLines": 0,
-    "inputBlockRules": 178155,
+    "inputBlockRules": 178371,
     "inputExceptionRules": 210,
     "badfilterDirectives": 5,
     "disabledRules": 1,
     "disabledBlockRules": 1,
     "disabledExceptionRules": 0,
-    "convertedBlockRules": 177402,
-    "convertedSuffixBlocks": 177402,
+    "convertedBlockRules": 177618,
+    "convertedSuffixBlocks": 177618,
     "convertedExactBlocks": 0,
     "importantBlocksConverted": 3,
     "skippedBlockRules": 747,
@@ -32,23 +32,23 @@
     "convertedFragmentExceptions": 1,
     "ignoredNonDNSExceptions": 1,
     "broadenedModifierExceptions": 0,
-    "blockEntryCount": 177400,
+    "blockEntryCount": 177616,
     "exceptionRuleCount": 219
   },
-  "convertedDomainEntries": 177400,
+  "convertedDomainEntries": 177616,
   "exceptionRows": 219,
   "protectionRows": 526,
   "resources": [
     {
       "kind": "domains",
-      "name": "d50ce757c09d66d192c347b9b11f4a650c66e1b66cb1ba0eb793d6c48ad9d6c5.domain-set",
-      "sha256": "d50ce757c09d66d192c347b9b11f4a650c66e1b66cb1ba0eb793d6c48ad9d6c5",
-      "bytes": 3894367
+      "name": "1dea550ad66255655da0befc29041c5be42484ffa471631278cf353539585b79.domain-set",
+      "sha256": "1dea550ad66255655da0befc29041c5be42484ffa471631278cf353539585b79",
+      "bytes": 3898704
     },
     {
       "kind": "exceptions",
-      "name": "4ce6f0ed3bb6cf281abc739e4d9a14461f2a42ada410a212c7838adf15537ace.list",
-      "sha256": "4ce6f0ed3bb6cf281abc739e4d9a14461f2a42ada410a212c7838adf15537ace",
+      "name": "490b42f22917a9ef00429d8118cb49b345b6acc4ac752f60add5db4b7a3192f3.list",
+      "sha256": "490b42f22917a9ef00429d8118cb49b345b6acc4ac752f60add5db4b7a3192f3",
       "bytes": 7838
     },
     {
@@ -65,9 +65,9 @@
     },
     {
       "kind": "adguard-input",
-      "name": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97.txt",
-      "sha256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
-      "bytes": 4333252
+      "name": "03aa08742b5bdeba59954ff23191ffff2093d6e758f7d2d756e714c023dade9b.txt",
+      "sha256": "03aa08742b5bdeba59954ff23191ffff2093d6e758f7d2d756e714c023dade9b",
+      "bytes": 4338021
     },
     {
       "kind": "script",
@@ -503,47 +503,47 @@
   "moduleSnapshots": [
     {
       "name": "AMap-Splash-AdFilter-Test.sgmodule",
-      "sha256": "417af1991ab217d42b33670a04e0d0a91445b2e2e02ec73967135e632135fcb6"
+      "sha256": "ede5d2665f3a9553fc87d3968b0da29772e2d16a0c3a4425393035cd11ec6715"
     },
     {
       "name": "AdBlock-Tencent-Guazi.sgmodule",
-      "sha256": "0ba5adab1b9a03e5ded9ccc420b79afee840743e41e13560d9aeba48a8196b00"
+      "sha256": "59b6cd9b00b8d5acd914af0ae746ff61655c86a23ceaf0395f0ded046b1c9524"
     },
     {
       "name": "Appleweatherpro.sgmodule",
-      "sha256": "970d6e358967b8a3f923512c842dcc9ff8dedda641574ae2b537aa3c30632c2f"
+      "sha256": "fa1154b8692870375c0fd88c3d084c493f707765fbda41198e9a8ea74e3580a0"
     },
     {
       "name": "ChinaMobile-Splash-AdFilter-Test-V1.sgmodule",
-      "sha256": "b91454b851d46b5596d592cea2b1c82d9a510f4f67497932c25a1d99fc2818e5"
+      "sha256": "8de3f5bd5c62dbc75fafaf88bf0537a6b2abbefcc422e790ada2133d2eda970e"
     },
     {
       "name": "ChinaUnicom-LaunchCountdown-Test-V2.sgmodule",
-      "sha256": "ed8bc4a6ebf3f5ef89df48927ffb352c6003f1e3d066263b921b98ad24282d98"
+      "sha256": "c511dcfefd5442a52820c22a82425b70569f052cd22e970aab9f85f2deb0c4ed"
     },
     {
       "name": "Ctrip-Splash-AdFilter-Test.sgmodule",
-      "sha256": "503b3f25acea426242e3cf3f74c3b3b872d39ac4172ead3b7287e427e4854b81"
+      "sha256": "46b0b295bb26ae2da8ae7faba24356c15e4f86ab76e57c743ed12fc6ce5f7611"
     },
     {
       "name": "GuaziManhua.sgmodule",
-      "sha256": "d5bc55b99617e0e8b05c63660ef6684f634c8736840556fb92c40ee3acc329c4"
+      "sha256": "4bfc92b5cc4f3569f75f7c94ea15a0275e6b8abc3918bbf9ebcbbb432594116a"
     },
     {
       "name": "Tieba-AdFilter-Test.sgmodule",
-      "sha256": "a1d13f868bee148ebbffd3459522dfa0eca94a4872a8a85cb80b95c51a87cd21"
+      "sha256": "7bd8baa70a5b36011b0bb7b0649e3990d2684fd95e06474603ae158677158b65"
     },
     {
       "name": "YouTube-AdFilter.sgmodule",
-      "sha256": "607723663c10662c8e71320fc62fba4fb4a1f35607513f7096d5629a4636eec0"
+      "sha256": "9a9e9fad5ba22f4f8fee7932738a362aeb5736802b962bea774f2024d26295fb"
     },
     {
       "name": "Youku-Video-AdFilter-Test.sgmodule",
-      "sha256": "0ad62582a50ff56bb62cc9adccd712eb2ff8c062f64180a052671f1ad1c895bc"
+      "sha256": "a0ea2a51a4ed38c81650fa14cd46949cd8fe02acc0ec8bf9ddffbb141864fa7e"
     },
     {
       "name": "zymkvip2.js",
-      "sha256": "e4ce2090ad11a84b957ad4ca07da778d1ecf086f903e311a612d25ba8762185a"
+      "sha256": "1745a02b55311c23e3fb2bd8c25661d0c23f4e1b56ab096168f585d4d5a91521"
     }
   ],
   "rollbackSnapshots": [
