@@ -1,9 +1,12 @@
 Independent conversion/build tools: GPL-3.0-only, except build-protection.cjs (MIT).
-The copied GPL-3.0 license applies to convert-adguard.cjs, build-update.cjs, validate-delivery.cjs and tests.cjs.
+The copied GPL-3.0 license applies to the conversion/build/validation/test tools except build-protection.cjs (MIT).
 AdGuard DNS input and derived domain/exception lists: GPL-3.0, original AdguardTeam and filter contributors.
 Source: https://github.com/AdguardTeam/AdGuardSDNSFilter
 The complete immutable source input is included as Resources/AdBlock/<sourceSHA256>.txt.
 The manifest maps that file, the generated native files and original source SHA256.
 AppClean core is a separate GPL-2.0-only script; its source headers and original attribution are preserved.
-Third-party scripts are referenced at original Git commit URLs and are not redistributed in this package.
+External third-party scripts are referenced at original Git commit URLs, or the existing WeatherKit versioned release URLs.
+Scripts already hosted in this repository are also copied without license/header changes to content-hash resource paths.
+Bilibili-Splash-AdClean.js is a new independently written MIT implementation; its complete MIT notice and primary endpoint/field references are in the source.
+Existing YouTube and other source notices and license files remain applicable to their identical content-hash copies.
 Existing module source/license notices are preserved. See Licenses/AdBlock and appclean-source-notes.json.

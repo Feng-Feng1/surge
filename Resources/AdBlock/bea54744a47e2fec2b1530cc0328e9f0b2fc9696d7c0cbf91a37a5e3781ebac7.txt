@@ -1,0 +1,160 @@
+/*
+ * AdBlock ExtraApps V1.0.0 — Surge response-only ad cleanup.
+ * Endpoint/field references: https://github.com/app2smile/rules
+ *   js/qq-news.js, js/qidian.js, js/vgtime.js
+ * Keep normal widgets, recommendations, navigation and account state.
+ * Unknown routes, methods, response shapes and invalid JSON pass unchanged.
+ * Numeric literals above Number.MAX_SAFE_INTEGER retain their exact text.
+ *
+ * MIT License
+ * Copyright (c) 2023 app2smile
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+(function () {
+  "use strict";
+  var result = {};
+
+  function object(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function nonemptyContainer(value) {
+    return Array.isArray(value) ? value.length > 0 : object(value) && Object.keys(value).length > 0;
+  }
+
+  // Protect large numeric tokens without relying on BigInt support in Surge.
+  // Decoded strings are checked too: Unicode escapes must not forge a marker.
+  function parsePreservingNumbers(text) {
+    var strings = [];
+    text.replace(/"(?:\\.|[^"\\])*"/g, function (token) {
+      strings.push(JSON.parse(token));
+      return token;
+    });
+    var prefix = "__EXTRA_AD_NUMBER_";
+    while (text.indexOf(prefix) !== -1 || strings.some(function (value) {
+      return value.indexOf(prefix) !== -1;
+    })) prefix += "X";
+    var numbers = [];
+    var protectedText = text.replace(/"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (token) {
+      if (token.charAt(0) === '"') return token;
+      if (Math.abs(Number(token)) > 9007199254740991) {
+        var index = numbers.push(token) - 1;
+        return '"' + prefix + index + '__"';
+      }
+      return token;
+    });
+    return {
+      value: JSON.parse(protectedText),
+      stringify: function (value) {
+        var output = JSON.stringify(value);
+        return output.replace(new RegExp('"' + prefix + '(\\d+)__"', "g"), function (whole, index) {
+          return numbers[Number(index)];
+        });
+      }
+    };
+  }
+
+  function queryValue(url, name) {
+    var start = url.indexOf("?");
+    if (start < 0) return null;
+    var entries = url.slice(start + 1).split("#")[0].split("&");
+    var found = null;
+    for (var i = 0; i < entries.length; i++) {
+      var at = entries[i].indexOf("=");
+      var key = at < 0 ? entries[i] : entries[i].slice(0, at);
+      if (decodeURIComponent(key.replace(/\+/g, " ")) !== name) continue;
+      // Duplicate position parameters are ambiguous; leave the response alone.
+      if (found !== null) return null;
+      found = decodeURIComponent((at < 0 ? "" : entries[i].slice(at + 1)).replace(/\+/g, " "));
+    }
+    return found;
+  }
+
+  function clean() {
+    if (typeof $request === "undefined" || typeof $response === "undefined") return {};
+    if (!$request || !$response || typeof $response.body !== "string" || !$response.body.length) return {};
+    var url = typeof $request.url === "string" ? $request.url : "";
+    var method = typeof $request.method === "string" ? $request.method.toUpperCase() : "";
+    if ($response.status !== undefined && !(Number($response.status) >= 200 && Number($response.status) < 300)) return {};
+
+    var qidian = /^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/(v4\/client\/getsplashscreen|v1\/bookshelf\/getHoverAdv|v1\/adv\/getadvlistbatch)(?:\?|$)/.exec(url);
+    var news = /^https:\/\/(?:news\.ssp\.qq\.com\/app|r\.inews\.qq\.com\/(?:getQQNewsUnreadList|getTagFeedList|gw\/page\/(?:channel_feed|event_detail)|news_feed\/hot_module_list))(?:\?|$)/.test(url);
+    var vgtime = /^https?:\/\/app02\.vgtime\.com:8080\/vgtime-app\/api\/v2\/init\/ad\.json(?:\?|$)/.test(url);
+    if (!(qidian && method === "GET") && !(news && method === "POST") && !(vgtime && method === "GET")) return {};
+    if (qidian && qidian[1] === "v1/adv/getadvlistbatch" && queryValue(url, "positions") !== "iOS_tab") return {};
+
+    var parsed = parsePreservingNumbers($response.body);
+    var body = parsed.value;
+    if (!object(body)) return {};
+    var changed = 0;
+
+    if (qidian && object(body.Data)) {
+      if (qidian[1] === "v4/client/getsplashscreen") {
+        if (Array.isArray(body.Data.List) && body.Data.List.length) {
+          body.Data.List = null;
+          changed++;
+        }
+        if (body.Data.EnableGDT === 1) {
+          body.Data.EnableGDT = 0;
+          changed++;
+        }
+      } else if (qidian[1] === "v1/bookshelf/getHoverAdv") {
+        if (Array.isArray(body.Data.ItemList) && body.Data.ItemList.length) {
+          body.Data.ItemList = [];
+          changed++;
+        }
+      } else if (Array.isArray(body.Data.iOS_tab) && body.Data.iOS_tab.length) {
+        body.Data.iOS_tab = [];
+        changed++;
+      }
+    } else if (news) {
+      if (/^https:\/\/r\.inews\.qq\.com\/gw\/page\/(?:channel_feed|event_detail)(?:\?|$)/.test(url) &&
+          object(body.data) && Array.isArray(body.data.widget_list)) {
+        var before = body.data.widget_list;
+        var after = before.filter(function (widget) {
+          return !(object(widget) && widget.widget_type === "ad_list");
+        });
+        if (after.length !== before.length) {
+          body.data.widget_list = after;
+          changed += before.length - after.length;
+        }
+      }
+      if (nonemptyContainer(body.adList)) {
+        body.adList = null;
+        changed++;
+      }
+    } else if (vgtime && object(body.data) && nonemptyContainer(body.data.ad)) {
+      body.data.ad = null;
+      changed++;
+    }
+
+    if (!changed) return {};
+    console.log("ExtraApps V1.0.0 " + (qidian ? "qidian" : news ? "qqnews" : "vgtime") + ": removed=" + changed);
+    return { body: parsed.stringify(body) };
+  }
+
+  try {
+    result = clean();
+  } catch (error) {
+    // Never log response payloads, tokens or personal account data.
+    console.log("ExtraApps V1.0.0: unchanged after parse/shape error");
+  }
+  $done(result);
+})();

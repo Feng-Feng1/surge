@@ -1,4 +1,4 @@
-/* AdBlock AppClean V6.5.0 | Surge iOS
+/* AdBlock AppClean V6.3.1 | Surge iOS
  * Night & ChatGPT
  * SPDX-License-Identifier: GPL-2.0-only
  *
@@ -71,11 +71,11 @@
     var items = get(root, path);
     if (Array.isArray(items)) items.forEach(function (x) { if (object(x)) fn(x); });
   }
-  // 仅实际更改正文后移除旧长度及失效校验值；保留重复 Cookie 和其余响应头。
+  // 仅实际更改响应体后移除已失效的表示校验值；保留 Cookie 和传输相关头。
   function bodyResult(body) {
     var result = { body: body }, headers = $response.headers;
     function stale(name) {
-      return /^(?:content-length|etag|content-md5|digest|content-digest|repr-digest)$/i.test(name);
+      return /^(?:etag|content-md5|digest|content-digest|repr-digest)$/i.test(name);
     }
     if (Array.isArray(headers)) {
       var kept = headers.filter(function (entry) { return !stale(String(entry.field || entry.name || "")); });
@@ -765,15 +765,15 @@
     processBody(parsed.value, match[1].toLowerCase(), responsePath, match[3] || "");
     if (changed) {
       var body = parsed.stringify(parsed.value);
-      console.log("[AdBlock V6.5.0] " + label + ": " + edits + " changes");
+      console.log("[AdBlock V6.3.1] " + label + ": " + edits + " changes");
       $done(bodyResult(body));
     } else {
-      if (debug) console.log("[AdBlock V6.5.0] " + label + ": unchanged");
+      if (debug) console.log("[AdBlock V6.3.1] " + label + ": unchanged");
       $done({});
     }
   } catch (e) {
     // 不输出响应、URL 参数或异常中的输入片段。
-    console.log("[AdBlock V6.5.0] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
+    console.log("[AdBlock V6.3.1] " + label + ": passthrough (" + (e && e.name || "Error") + ")");
     $done({});
   }
 })();

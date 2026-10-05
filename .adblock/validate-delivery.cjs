@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),vm=require('node:vm');
 const {parseNode}=require('./build-protection.cjs');
 const {sourceURLs,parseRaw}=require('./build-update.cjs');
+const {readTemplates,renderTemplates,verifyRollbacks}=require('./module-snapshots.cjs');
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 function rows(text,section) {
   const match=text.match(new RegExp('\\['+section.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\]\\r?\\n([\\s\\S]*?)(?=\\n\\[|$)'));
@@ -19,19 +20,30 @@ function validate(root=path.resolve(__dirname,'..')) {
   assert.equal(sha(fs.readFileSync(path.join(root,'AdBlock-AppClean-V5.txt'))),cfg.baselineSharedSHA256);
   new vm.Script(fs.readFileSync(path.join(root,'AdBlock-AppClean-V5.txt'),'utf8'));
   for(const name of ['URL Rewrite','Body Rewrite','Map Local','MITM'])assert.deepEqual(rows(moduleText,name),rows(baseline,name),name);
-  let restored=moduleText;
-  for(const record of manifest.sourceRecords){assert.match(parseRaw(record.pinnedURL).ref,/^[a-f0-9]{40}$/);restored=restored.replaceAll(record.pinnedURL,record.sourceURL);}
+  const replacements=new Map();
+  for(const record of manifest.sourceRecords){
+    if(record.pinType==='content-hash'){
+      assert.match(record.localSourcePath,/^[A-Za-z0-9_.-]+\.(?:js|txt)$/);
+      const bytes=fs.readFileSync(path.join(root,record.localSourcePath));
+      assert.equal(sha(bytes),record.sha256);assert.equal(bytes.length,record.bytes);
+      assert.ok(record.pinnedURL.endsWith('/Resources/AdBlock/'+record.sha256+'.txt'));
+    } else assert.match(parseRaw(record.pinnedURL).ref,/^[a-f0-9]{40}$/);
+    replacements.set(record.sourceURL,record.pinnedURL);
+  }
+  for(const record of manifest.releaseReferences||[]){assert.match(record.url,/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/releases\/download\/v\d+\.\d+\.\d+[\w.-]*\/[^/]+\.js$/);replacements.set(record.url,record.url);}
   const shared=manifest.resources.find(x=>x.kind==='shared');
   const sharedRuntime=sourceURLs(moduleText).scripts.find(x=>x.endsWith('/'+shared.name));
   assert.ok(sharedRuntime);
-  const oldShared=sourceURLs(baseline).scripts.find(x=>parseRaw(x).file==='AdBlock-AppClean-V5.txt');
-  restored=restored.replaceAll(sharedRuntime,oldShared);
-  assert.deepEqual(rows(restored,'Script'),rows(baseline,'Script'));
+  const templates=readTemplates(root);
+  for(const text of [baseline,...templates.map(x=>x.text)])for(const url of sourceURLs(text).scripts){if(new URL(url).hostname==='raw.githubusercontent.com'&&parseRaw(url).file==='AdBlock-AppClean-V5.txt')replacements.set(url,sharedRuntime);}
+  let expected=baseline;
+  for(const [source,pinned] of replacements)expected=expected.replaceAll(source,pinned);
+  expected=expected.replace(/update-interval=86400/g,'update-interval=-1').replace(/script-update-interval=-1/g,'script-update-interval=86400');
+  assert.deepEqual(rows(moduleText,'Script'),rows(expected,'Script'));
   const ruleRows=rows(moduleText,'Rule'),adguard=ruleRows.filter(x=>x.includes('/Resources/AdBlock/')&&x.startsWith('AND,'));
   assert.equal(adguard.length,1);
   assert.equal(ruleRows.length,rows(baseline,'Rule').length+1);
-  const originalRules=rows(restored,'Rule').filter(x=>x!==adguard[0]).map(x=>x.replaceAll('update-interval=-1','update-interval=86400'));
-  assert.deepEqual(originalRules,rows(baseline,'Rule'));
+  assert.deepEqual(ruleRows.filter(x=>x!==adguard[0]),rows(expected,'Rule'));
   const tree=parseNode(adguard[0].slice(0,-',REJECT'.length));
   assert.equal(tree.type,'AND');assert.equal(tree.children.length,3);
   assert.equal(tree.children[0].type,'DOMAIN-SET');
@@ -49,9 +61,14 @@ function validate(root=path.resolve(__dirname,'..')) {
   assert.equal(domainEntries.length,manifest.convertedDomainEntries);
   const exceptionRows=fs.readFileSync(path.join(root,'Resources','AdBlock',exceptionFile.name),'utf8').split('\n').filter(x=>x&&!x.startsWith('#'));
   assert.equal(exceptionRows.length,manifest.exceptionRows);assert.ok(exceptionRows.every(x=>/^(?:DOMAIN|DOMAIN-SUFFIX|DOMAIN-WILDCARD),/.test(x)&&!x.includes(',DIRECT')));
-  assert.equal(sha(fs.readFileSync(path.join(root,'Rollback','6.3.1','AdBlock-AllInOne.sgmodule'))),cfg.baselineModuleSHA256);
-  assert.equal(sha(fs.readFileSync(path.join(root,'Rollback','6.3.1','AdBlock-AppClean-V5.txt'))),cfg.baselineSharedSHA256);
-  return {passed:true,version:manifest.version,domains:manifest.convertedDomainEntries,exceptions:manifest.exceptionRows,protected:manifest.protectionRows,pinnedSources:manifest.sourceRecords.length,scriptBindings:rows(moduleText,'Script').length,mainRules:ruleRows.length,sourceFreezing:true,coreUnchanged:true,noGlobalDirectFromAdGuard:true,rollbackExact:true};
+  const standalone=renderTemplates(templates,replacements,manifest.version);
+  const rootModules=fs.readdirSync(root).filter(name=>name.endsWith('.sgmodule')||(name.endsWith('.js')&&/^#!name\s*=/m.test(fs.readFileSync(path.join(root,name),'utf8')))).filter(name=>name!=='AdBlock-AllInOne.sgmodule').sort();
+  assert.deepEqual(rootModules,standalone.map(x=>x.name).sort());
+  assert.deepEqual(manifest.moduleSnapshots,standalone.map(({name,sha256})=>({name,sha256})));
+  for(const item of standalone)assert.equal(fs.readFileSync(path.join(root,item.name),'utf8'),item.text);
+  verifyRollbacks(root,cfg.rollbackSnapshots);assert.deepEqual(manifest.rollbackSnapshots,cfg.rollbackSnapshots);
+  assert.equal(manifest.preparedFrom,cfg.baselineVersion);
+  return {passed:true,version:manifest.version,domains:manifest.convertedDomainEntries,exceptions:manifest.exceptionRows,protected:manifest.protectionRows,pinnedSources:manifest.sourceRecords.length,standaloneModules:standalone.length,scriptBindings:rows(moduleText,'Script').length,mainRules:ruleRows.length,sourceFreezing:true,baselinePreserved:true,noGlobalDirectFromAdGuard:true,rollbackExact:true};
 }
 module.exports={validate,rows};
 if(require.main===module) {try{console.log(JSON.stringify(validate(process.argv[2]&&path.resolve(process.argv[2]))));}catch(e){console.error('Delivery validation failed: '+e.message);process.exitCode=1;}}

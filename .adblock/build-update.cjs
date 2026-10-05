@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const vm = require('node:vm');
 const { convert } = require('./convert-adguard.cjs');
 const { buildProtection, parseNode } = require('./build-protection.cjs');
+const { readTemplates, renderTemplates, verifyRollbacks } = require('./module-snapshots.cjs');
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const readJson = file => JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
 function sourceURLs(moduleText) {
@@ -25,7 +26,7 @@ function parseRaw(url) {
   return {owner,repo,ref,file,key:owner+'/'+repo+'/'+ref};
 }
 async function download(url, maxBytes, token) {
-  const headers = {'User-Agent':'Surge-AdGuard-Manual-Updater/6.4','Accept':'*/*'};
+  const headers = {'User-Agent':'Surge-AdGuard-Manual-Updater/6.5','Accept':'*/*'};
   if (token) headers.Authorization = 'Bearer '+token;
   const response = await fetch(url,{headers,signal:AbortSignal.timeout(60000)});
   if (!response.ok) throw Error('Source download failed: HTTP '+response.status+' '+url);
@@ -65,7 +66,9 @@ async function build(options={}) {
   const baselineBytes = fs.readFileSync(path.join(root,'.adblock','baseline','AdBlock-AllInOne.sgmodule'));
   const sharedBytes = fs.readFileSync(path.join(root,'.adblock','baseline','AdBlock-AppClean-V5.txt'));
   if (sha(baselineBytes)!==cfg.baselineModuleSHA256 || sha(sharedBytes)!==cfg.baselineSharedSHA256) throw Error('Baseline verification failed');
+  verifyRollbacks(root, cfg.rollbackSnapshots);
   const baseline = baselineBytes.toString('utf8').replace(/\r\n/g,'\n');
+  const templates = readTemplates(root);
   const repo = options.repository || process.env.GITHUB_REPOSITORY || cfg.repository;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw Error('Invalid destination repository');
   const snapshot = options.snapshot ? readJson(options.snapshot) : null;
@@ -98,15 +101,41 @@ async function build(options={}) {
     }
     return 'https://raw.githubusercontent.com/'+parsed.owner+'/'+parsed.repo+'/'+commit+'/'+parsed.file;
   }
-  const urls=sourceURLs(baseline);
-  const sharedURLs=urls.scripts.filter(url=>parseRaw(url).file==='AdBlock-AppClean-V5.txt');
-  if (sharedURLs.length!==1) throw Error('Unexpected shared source references');
+  const allURLs = [sourceURLs(baseline), ...templates.map(x => sourceURLs(x.text))];
+  const urls = {scripts:[...new Set(allURLs.flatMap(x => x.scripts))], rules:[...new Set(allURLs.flatMap(x => x.rules))]};
+  const sharedURLs=urls.scripts.filter(url=>new URL(url).hostname==='raw.githubusercontent.com' && parseRaw(url).file==='AdBlock-AppClean-V5.txt');
+  if (!sharedURLs.length) throw Error('Missing shared source references');
   const replacements=new Map();
+  const localScripts = new Map();
+  const releaseReferences = [];
   for (const sourceURL of [...urls.scripts.filter(x=>!sharedURLs.includes(x)),...urls.rules]) {
+    const releaseURL = new URL(sourceURL);
+    if (releaseURL.protocol === 'https:' && releaseURL.hostname === 'github.com' && /^\/[\w.-]+\/[\w.-]+\/releases\/download\/v\d+\.\d+\.\d+(?:[\w.-]*)?\/[^/]+\.js$/.test(releaseURL.pathname) && urls.scripts.includes(sourceURL)) {
+      // Preserve the existing versioned WeatherKit release and its arguments.
+      // It is not a downloaded/hashed source and is reported separately.
+      replacements.set(sourceURL, sourceURL);
+      releaseReferences.push({url:sourceURL, pinType:'release-version', deviceVerified:false});
+      continue;
+    }
+    const parsed = parseRaw(sourceURL);
+    const kind = urls.scripts.includes(sourceURL) ? 'script' : 'rule-set';
+    if (kind === 'script' && parsed.owner+'/'+parsed.repo === repo && parsed.ref === cfg.branch) {
+      // Read the reviewed checkout, not the previous remote commit. This also
+      // avoids self-referential commits changing the snapshot every build.
+      if (!/^[A-Za-z0-9_.-]+\.(?:js|txt)$/.test(parsed.file)) throw Error('Invalid local runtime script path');
+      const bytes = fs.readFileSync(path.join(root, parsed.file));
+      if (!bytes.length || bytes.length > 10000000) throw Error('Invalid local script size');
+      new vm.Script(bytes.toString('utf8'), {filename:parsed.file});
+      const digest = sha(bytes), name = digest + '.txt';
+      const pinnedURL = 'https://raw.githubusercontent.com/'+repo+'/'+cfg.branch+'/Resources/AdBlock/'+name;
+      localScripts.set(name, {kind:'script', extension:'txt', bytes, sha256:digest, name});
+      replacements.set(sourceURL, pinnedURL);
+      sourceRecords.push({kind, sourceURL, pinnedURL, pinType:'content-hash', localSourcePath:parsed.file, sha256:digest, bytes:bytes.length, rows:null});
+      continue;
+    }
     const pinnedURL=await pin(sourceURL);
     const record=await getBytes(pinnedURL,10000000);
     const text=requireText(record,pinnedURL);
-    const kind=urls.scripts.includes(sourceURL)?'script':'rule-set';
     const rules=kind==='rule-set'?validateRuleSet(text):null;
     if (kind==='script') new vm.Script(text,{filename:parseRaw(sourceURL).file});
     replacements.set(sourceURL,pinnedURL);
@@ -121,15 +150,18 @@ async function build(options={}) {
   const protectionRows=protection.rows || protection.sortedRows;
   if (!Array.isArray(protectionRows)||!protectionRows.length) throw Error('Missing compatibility protection');
   const lastModified=dnsText.match(/^! Last modified:\s*(.+)$/m)?.[1] || 'not declared';
+  const sourceDate=new Date(lastModified==='not declared'?Date.now():lastModified).toISOString().slice(0,10);
+  const baselineDate=baseline.match(/^#!date=(\d{4}-\d{2}-\d{2})$/m)?.[1]||sourceDate;
+  const deliveryDate=baselineDate>sourceDate?baselineDate:sourceDate;
   const common=['# Surge AdGuard DNS conservative subset','# Source: '+cfg.dnsSource,'# Source SHA256: '+dnsRecord.sha256,'# Author-declared modified: '+lastModified,'# Derived data license: GPL-3.0-only','# Cosmetic/scriptlet/HTTP context rules are not converted.'];
   const block=Buffer.from([...common,...converted.blockEntries].join('\n')+'\n');
   const exceptions=Buffer.from([...common,'# Exceptions apply only within the AdGuard layer. No DIRECT policy.',...converted.exceptionRules].join('\n')+'\n');
   const protect=Buffer.from(['# Compatibility exclusions apply only within the AdGuard layer.',...protectionRows].join('\n')+'\n');
-  const resources=[{kind:'domains',extension:'domain-set',bytes:block},{kind:'exceptions',extension:'list',bytes:exceptions},{kind:'compatibility',extension:'list',bytes:protect},{kind:'shared',extension:'txt',bytes:sharedBytes},{kind:'adguard-input',extension:'txt',bytes:dnsRecord.buffer}].map(x=>({...x,sha256:sha(x.bytes),name:sha(x.bytes)+'.'+x.extension}));
+  const resources=[{kind:'domains',extension:'domain-set',bytes:block},{kind:'exceptions',extension:'list',bytes:exceptions},{kind:'compatibility',extension:'list',bytes:protect},{kind:'shared',extension:'txt',bytes:sharedBytes},{kind:'adguard-input',extension:'txt',bytes:dnsRecord.buffer}].map(x=>({...x,sha256:sha(x.bytes),name:sha(x.bytes)+'.'+x.extension})).concat([...localScripts.values()]);
   const resourceURL=kind=>'https://raw.githubusercontent.com/'+repo+'/'+cfg.branch+'/Resources/AdBlock/'+resources.find(x=>x.kind===kind).name;
-  replacements.set(sharedURLs[0],resourceURL('shared'));
+  for (const url of sharedURLs) replacements.set(url,resourceURL('shared'));
   const builderSHA256=sha(fs.readFileSync(path.join(root,'.adblock','build-update.cjs')));
-  const fingerprint=sha(JSON.stringify({config:cfg,builder:builderSHA256,converter:sha(fs.readFileSync(path.join(root,'.adblock','convert-adguard.cjs'))),protection:sha(fs.readFileSync(path.join(root,'.adblock','build-protection.cjs'))),dns:dnsRecord.sha256,sources:sourceRecords,resources:resources.map(({kind,name})=>({kind,name})),repo}));
+  const fingerprint=sha(JSON.stringify({config:cfg,builder:builderSHA256,converter:sha(fs.readFileSync(path.join(root,'.adblock','convert-adguard.cjs'))),protection:sha(fs.readFileSync(path.join(root,'.adblock','build-protection.cjs'))),modules:sha(fs.readFileSync(path.join(root,'.adblock','module-snapshots.cjs'))),templates:templates.map(x=>({name:x.name,sha256:sha(x.text)})),dns:dnsRecord.sha256,sources:sourceRecords,resources:resources.map(({kind,name})=>({kind,name})),repo}));
   const version=cfg.productVersion+'-manual.'+fingerprint.slice(0,12);
   let moduleText=baseline;
   for(const [source,pinned] of replacements) moduleText=moduleText.replaceAll(source,pinned);
@@ -142,27 +174,30 @@ async function build(options={}) {
   moduleText=moduleText.slice(0,ruleEnd)+'\n# AdGuard DNS广告与追踪域名安全子集；例外只排除此层，不改变代理策略。\n'+adguardRule+'\n'+moduleText.slice(ruleEnd);
   moduleText=moduleText.replace(/^#!version=.*$/m,'#!version='+version)
     .replace(/^#!name=.*$/m,'#!name=AdBlock AllInOne｜AdGuard手动更新版')
-    .replace(/^#!date=.*$/m,'#!date='+new Date(lastModified==='not declared'?Date.now():lastModified).toISOString().slice(0,10))
+    .replace(/^#!date=.*$/m,'#!date='+deliveryDate)
     .replace(/^#!desc=.*$/m,'#!desc=原App清理与AdGuard DNS安全子集；GitHub准备更新，Surge手动应用新版后切换固定资源。保留地图兼容，网页CSS和原生未知容器不作转换。')
     .replace(/^# 先将配套 AdBlock-AppClean-V5\.txt 同名上传，.*$/m,'# 首次需上传本包全部仓库配套文件（含Resources、.adblock与.github）；后续在Surge更新此模块。')
     .replace(/^# 合并订阅通过 Script Hub 更新；.*$/m,'# 本版由仓库工作流准备固定资源；在Surge更新本模块后应用新版本。')
-    .replace(/^# 此文件为稳定核心，合并订阅.*$/m,'# 核心来自已核验6.3.1；外部脚本/规则固定原仓Git commit，AdGuard及共享资源使用内容哈希。');
+    .replace(/^# 此文件为稳定核心，合并订阅.*$/m,'# 核心基线'+cfg.baselineVersion+'；外部脚本/规则固定原仓Git commit，自有脚本与AdGuard资源使用内容哈希。');
   if (/RULE-SET,[^\n]*update-interval=86400/.test(moduleText)) throw Error('Automatic rule interval remains');
   const after=sourceURLs(moduleText);
   if (after.scripts.some(x=>!/\/([a-f0-9]{40}|Resources\/AdBlock\/)/.test(new URL(x).pathname))) throw Error('Mutable script reference remains');
-  const allNames=resources.map(x=>x.name);
+  const standalone = renderTemplates(templates,replacements,version);
+  for (const item of standalone) {
+    const paths = sourceURLs(item.text).scripts;
+    if (paths.some(url => url.startsWith('https://raw.githubusercontent.com/') && !/\/([a-f0-9]{40}|Resources\/AdBlock\/)/.test(new URL(url).pathname))) throw Error('Mutable standalone script reference remains: '+item.name);
+  }
   for (const resource of resources) {
     const existing=path.join(root,'Resources','AdBlock',resource.name);
     if (fs.existsSync(existing)&&!fs.readFileSync(existing).equals(resource.bytes)) throw Error('Immutable resource integrity failed');
   }
-  const manifest={schema:1,version,fingerprint,builderSHA256,preparedFrom:'6.3.1',moduleSHA256:sha(moduleText),sharedSHA256:sha(sharedBytes),dnsSource:cfg.dnsSource,dnsSourceSHA256:dnsRecord.sha256,sourceLastModified:lastModified,dnsConverted:converted.stats,convertedDomainEntries:converted.blockEntries.length,exceptionRows:converted.exceptionRules.length,protectionRows:protectionRows.length,resources:resources.map(({kind,name,sha256,bytes})=>({kind,name,sha256,bytes:bytes.length})),sourceRecords,manualApplication:true,ruleUpdateInterval:-1,scriptRefreshBehavior:'Fixed commit or content-hash URL; periodic downloads do not select new upstream code.',noGlobalDirectFromAdGuard:true,unknownExceptionsFailUpdate:true,deviceVerified:false,limitations:['Conservative AdGuard DNS hostname subset, not full AdGuard engine or CNAME response filtering.','All supported exceptions prevail over important blocks to avoid stronger blocking.','Surge module update checks and first/new-resource downloads may still use network.','CSS, scriptlets and browser context rules cannot directly remove native App containers.']};
+  const manifest={schema:2,version,fingerprint,builderSHA256,preparedFrom:cfg.baselineVersion,moduleSHA256:sha(moduleText),sharedSHA256:sha(sharedBytes),dnsSource:cfg.dnsSource,dnsSourceSHA256:dnsRecord.sha256,sourceLastModified:lastModified,dnsConverted:converted.stats,convertedDomainEntries:converted.blockEntries.length,exceptionRows:converted.exceptionRules.length,protectionRows:protectionRows.length,resources:resources.map(({kind,name,sha256,bytes})=>({kind,name,sha256,bytes:bytes.length})),sourceRecords,releaseReferences,moduleSnapshots:standalone.map(({name,sha256})=>({name,sha256})),rollbackSnapshots:cfg.rollbackSnapshots,manualApplication:true,ruleUpdateInterval:-1,scriptRefreshBehavior:'Fixed commit or content-hash URL; periodic downloads do not select new upstream code.',noGlobalDirectFromAdGuard:true,unknownExceptionsFailUpdate:true,deviceVerified:false,limitations:['Conservative AdGuard DNS hostname subset, not full AdGuard engine or CNAME response filtering.','All supported exceptions prevail over important blocks to avoid stronger blocking.','Surge module update checks and first/new-resource downloads may still use network.','CSS, scriptlets and browser context rules cannot directly remove native App containers.','WeatherKit keeps its existing versioned v3.3.2 release URLs; those release assets are not content-hash verified by this builder.']};
   // Every source and immutable destination is checked before any published file is written.
   for (const resource of resources) immutableWrite(root,resource.name,resource.bytes);
   fs.writeFileSync(path.join(root,'AdBlock-AllInOne.sgmodule'),moduleText,'utf8');
   fs.writeFileSync(path.join(root,'AdBlock-AppClean-V5.txt'),sharedBytes);
   fs.writeFileSync(path.join(root,'AdBlock-AdGuard-Update.json'),JSON.stringify(manifest,null,2)+'\n');
-  const rollback=path.join(root,'Rollback','6.3.1');fs.mkdirSync(rollback,{recursive:true});
-  fs.writeFileSync(path.join(rollback,'AdBlock-AllInOne.sgmodule'),baselineBytes);fs.writeFileSync(path.join(rollback,'AdBlock-AppClean-V5.txt'),sharedBytes);
+  for (const {name,text} of standalone) fs.writeFileSync(path.join(root,name),text,'utf8');
   return manifest;
 }
 module.exports={build,parseRaw,sourceURLs,validateRuleSet,immutableWrite,requireText};

@@ -1,13 +1,25 @@
 {
-  "schema": 1,
+  "schema": 2,
   "repository": "Feng-Feng1/surge",
   "branch": "main",
-  "productVersion": "6.4.0",
-  "baselineVersion": "6.3.1",
-  "baselineModuleSHA256": "87e3b831b999323d9dfdead1c3282088e8eaac739d10b988a40516dc870ea0cb",
-  "baselineSharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+  "productVersion": "6.5.0",
+  "baselineVersion": "6.5.0",
+  "baselineModuleSHA256": "c4ead4df6fa8c9ea10c97af72a6be5b50b4bbae9e84baee2f33141999b0bd8b7",
+  "baselineSharedSHA256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
   "dnsLicense": "https://github.com/AdguardTeam/AdGuardSDNSFilter/blob/master/LICENSE",
   "minimumConvertedEntries": 100000,
-  "maximumConvertedEntries": 700000
+  "maximumConvertedEntries": 700000,
+  "rollbackSnapshots": [
+    {
+      "version": "6.3.1",
+      "moduleSHA256": "87e3b831b999323d9dfdead1c3282088e8eaac739d10b988a40516dc870ea0cb",
+      "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a"
+    },
+    {
+      "version": "6.4.0",
+      "moduleSHA256": "8fb48578a565fc63ecaff3292495141cb6a411b6472d47ccaca76dcd0be42d40",
+      "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a"
+    }
+  ]
 }

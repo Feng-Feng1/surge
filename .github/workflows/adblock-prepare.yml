@@ -9,6 +9,22 @@ on:
     paths:
       - '.adblock/**'
       - '.github/workflows/adblock-prepare.yml'
+      - 'Bilibili-Splash-AdClean.js'
+      - 'TenVideo-MVL-AdFilter-Test.js'
+      - 'Tieba-AdFilter-Test.js'
+      - 'YouTube-AdFilter.js'
+      - 'guazi-clean.js'
+      - 'zymk_surge.js'
+      - 'AdBlock-ExtraApps-V1.txt'
+      - 'Bilibili-View-AdClean-V1.txt'
+      - 'ChinaUnicom-LaunchCountdown-Test-V2.txt'
+      - 'Guazi-Clean-V5.txt'
+      - 'TencentVideo-PageClean-V1.txt'
+      - 'TencentVideo-PageTrace-V1.txt'
+      - 'Tieba-AdFilter-V3.txt'
+      - 'YouTube-AdFilter-V2.txt'
+      - 'Youku-Video-AdFilter-Test.txt'
+      - 'AdBlock-LiveMerge.txt'
 
 permissions:
   contents: write
@@ -34,17 +50,23 @@ jobs:
           package-manager-cache: false
       - name: Verify conversion safeguards
         run: node .adblock/tests.cjs
+      - name: Verify runtime regressions
+        run: |
+          node .adblock/runtime-tests.cjs
+          node .adblock/bilibili-tests.cjs
       - name: Prepare fixed upstream resources
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node .adblock/build-update.cjs
       - name: Validate generated delivery
-        run: node .adblock/validate-delivery.cjs
+        run: |
+          node .adblock/validate-delivery.cjs
+          node .adblock/validate-repository.cjs
       - name: Publish verified update files
         shell: bash
         run: |
           set -euo pipefail
-          git add -- AdBlock-AllInOne.sgmodule AdBlock-AppClean-V5.txt AdBlock-AdGuard-Update.json Resources/AdBlock Rollback/6.3.1
+          git add -- '*.sgmodule' zymkvip2.js AdBlock-AppClean-V5.txt AdBlock-AdGuard-Update.json Resources/AdBlock
           if git diff --cached --quiet; then
             echo 'The verified update is already current.'
             exit 0

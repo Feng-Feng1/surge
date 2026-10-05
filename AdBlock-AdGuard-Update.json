@@ -1,11 +1,11 @@
 {
-  "schema": 1,
-  "version": "6.4.0-manual.fb6b29b7f444",
-  "fingerprint": "fb6b29b7f4445835d574b3a30f0a700b82761f1af00cc8adf17704c9a62e17eb",
-  "builderSHA256": "e30b900a4596f46711a07805b428b2a0a2e150f39a3fe7cd4c37772dc9d4cc91",
-  "preparedFrom": "6.3.1",
-  "moduleSHA256": "8fb48578a565fc63ecaff3292495141cb6a411b6472d47ccaca76dcd0be42d40",
-  "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
+  "schema": 2,
+  "version": "6.5.0-manual.df6d4cad713a",
+  "fingerprint": "df6d4cad713adb4a2c378676799d3f1d76ebbfe9e1883d1bf291f1f9e34c34e1",
+  "builderSHA256": "98b3d2284efea33d8d32b2a85690beb883168b6bbf49ebbdf4b469e13805c1e7",
+  "preparedFrom": "6.5.0",
+  "moduleSHA256": "580561fe477fcf8b89e0df8dc103801b9c46a64b48e8c259236dcb014eff2c11",
+  "sharedSHA256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
   "dnsSourceSHA256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
   "sourceLastModified": "2026-10-04T22:13:49.783Z",
@@ -37,7 +37,7 @@
   },
   "convertedDomainEntries": 177400,
   "exceptionRows": 219,
-  "protectionRows": 523,
+  "protectionRows": 526,
   "resources": [
     {
       "kind": "domains",
@@ -53,24 +53,112 @@
     },
     {
       "kind": "compatibility",
-      "name": "77d707ee64ac64596caca02192453e072e0b2e478cdcabebfe03840b3ae2e738.list",
-      "sha256": "77d707ee64ac64596caca02192453e072e0b2e478cdcabebfe03840b3ae2e738",
-      "bytes": 23464
+      "name": "ba97d573e5f19b43bdc925c3aa005519df384d38d86cbea03535b753322e243e.list",
+      "sha256": "ba97d573e5f19b43bdc925c3aa005519df384d38d86cbea03535b753322e243e",
+      "bytes": 23597
     },
     {
       "kind": "shared",
-      "name": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a.txt",
-      "sha256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a",
-      "bytes": 41895
+      "name": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f.txt",
+      "sha256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
+      "bytes": 41913
     },
     {
       "kind": "adguard-input",
       "name": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97.txt",
       "sha256": "043d33f79f08af38715b73b91d36544fb7925e9d73b757d436fee0e1b5b6ba97",
       "bytes": 4333252
+    },
+    {
+      "kind": "script",
+      "name": "2278878a51f18bf8b3408754d82d1a6fe8d75edd4b750cf96f7df9def3f00d34.txt",
+      "sha256": "2278878a51f18bf8b3408754d82d1a6fe8d75edd4b750cf96f7df9def3f00d34",
+      "bytes": 7594
+    },
+    {
+      "kind": "script",
+      "name": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5.txt",
+      "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
+      "bytes": 66597
+    },
+    {
+      "kind": "script",
+      "name": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d.txt",
+      "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
+      "bytes": 31336
+    },
+    {
+      "kind": "script",
+      "name": "019a5aa9650e8c205c4516900e5c3fd4fb922d83662d228492c6b56c745525a3.txt",
+      "sha256": "019a5aa9650e8c205c4516900e5c3fd4fb922d83662d228492c6b56c745525a3",
+      "bytes": 133673
+    },
+    {
+      "kind": "script",
+      "name": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b.txt",
+      "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
+      "bytes": 17557
+    },
+    {
+      "kind": "script",
+      "name": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7.txt",
+      "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
+      "bytes": 6911
+    },
+    {
+      "kind": "script",
+      "name": "9c5cd2f6f3e65f4629fc27658fd042813dcf4c90b95693ecd867a1f95ef342cd.txt",
+      "sha256": "9c5cd2f6f3e65f4629fc27658fd042813dcf4c90b95693ecd867a1f95ef342cd",
+      "bytes": 42813
+    },
+    {
+      "kind": "script",
+      "name": "a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3.txt",
+      "sha256": "a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3",
+      "bytes": 15037
+    },
+    {
+      "kind": "script",
+      "name": "e372dcfd4de06e1bdcf909b65b5c4e1052807c411fc601147de89c484fb6b3fa.txt",
+      "sha256": "e372dcfd4de06e1bdcf909b65b5c4e1052807c411fc601147de89c484fb6b3fa",
+      "bytes": 15477
+    },
+    {
+      "kind": "script",
+      "name": "7022808de31803b5072679cc465e88a5e2523d48cea192bc9cd9473d79bf413b.txt",
+      "sha256": "7022808de31803b5072679cc465e88a5e2523d48cea192bc9cd9473d79bf413b",
+      "bytes": 7514
+    },
+    {
+      "kind": "script",
+      "name": "607aa70003864976309eb854d4f8d22013fb792216e5312e2a3a1e713f4e63fd.txt",
+      "sha256": "607aa70003864976309eb854d4f8d22013fb792216e5312e2a3a1e713f4e63fd",
+      "bytes": 133416
+    },
+    {
+      "kind": "script",
+      "name": "49bd67c9246b5cd7b545d9fbe179ef4ef410ab7ad77394bb6dbfcdb9e3934a67.txt",
+      "sha256": "49bd67c9246b5cd7b545d9fbe179ef4ef410ab7ad77394bb6dbfcdb9e3934a67",
+      "bytes": 7299
+    },
+    {
+      "kind": "script",
+      "name": "fb1f4d1bdc15d026f85da5228644fb979afbc0eee531523347b6690959815820.txt",
+      "sha256": "fb1f4d1bdc15d026f85da5228644fb979afbc0eee531523347b6690959815820",
+      "bytes": 1302
     }
   ],
   "sourceRecords": [
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Bilibili-Splash-AdClean.js",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/2278878a51f18bf8b3408754d82d1a6fe8d75edd4b750cf96f7df9def3f00d34.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "Bilibili-Splash-AdClean.js",
+      "sha256": "2278878a51f18bf8b3408754d82d1a6fe8d75edd4b750cf96f7df9def3f00d34",
+      "bytes": 7594,
+      "rows": null
+    },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/weibo/weibo_ads.js",
@@ -101,8 +189,9 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/TencentVideo-PageClean-V1.txt",
-      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "TencentVideo-PageClean-V1.txt",
       "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
       "bytes": 66597,
       "rows": null
@@ -110,8 +199,9 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/Tieba-AdFilter-V3.txt",
-      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "Tieba-AdFilter-V3.txt",
       "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
       "bytes": 31336,
       "rows": null
@@ -119,17 +209,19 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/YouTube-AdFilter-V2.txt",
-      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
-      "sha256": "bd66527a4db99093c1c5018677c4812d8ee0d548b917a9a170b0f3972db80ce3",
-      "bytes": 133663,
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/019a5aa9650e8c205c4516900e5c3fd4fb922d83662d228492c6b56c745525a3.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "YouTube-AdFilter-V2.txt",
+      "sha256": "019a5aa9650e8c205c4516900e5c3fd4fb922d83662d228492c6b56c745525a3",
+      "bytes": 133673,
       "rows": null
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/Guazi-Clean-V5.txt",
-      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "Guazi-Clean-V5.txt",
       "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
       "bytes": 17557,
       "rows": null
@@ -137,8 +229,9 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/946cd1fcf81df011bb0b953dc10af919a250b11f/AdBlock-ExtraApps-V1.txt",
-      "commit": "946cd1fcf81df011bb0b953dc10af919a250b11f",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "AdBlock-ExtraApps-V1.txt",
       "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
       "bytes": 6911,
       "rows": null
@@ -279,6 +372,104 @@
       "rows": null
     },
     {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.2.1-rc1",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "TencentVideo-PageClean-V1.txt",
+      "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
+      "bytes": 66597,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/9c5cd2f6f3e65f4629fc27658fd042813dcf4c90b95693ecd867a1f95ef342cd.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "TenVideo-MVL-AdFilter-Test.js",
+      "sha256": "9c5cd2f6f3e65f4629fc27658fd042813dcf4c90b95693ecd867a1f95ef342cd",
+      "bytes": 42813,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/jingdong/jingdong.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/jingdong/jingdong.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "3e7cc975f8985a4d2dbdbdefc405d0e3e6c9c07bf3c5361da1ecae206b6c04a1",
+      "bytes": 10303,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Scripts/smzdm/Smzdm.js",
+      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/smzdm/Smzdm.js",
+      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
+      "sha256": "611b9fa8cb1022622d1df9a2952b0f0fa1a001069b5666cce7e09b87dbec8dff",
+      "bytes": 3220,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "ChinaUnicom-LaunchCountdown-Test-V2.txt",
+      "sha256": "a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3",
+      "bytes": 15037,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/guazi-clean.js",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/e372dcfd4de06e1bdcf909b65b5c4e1052807c411fc601147de89c484fb6b3fa.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "guazi-clean.js",
+      "sha256": "e372dcfd4de06e1bdcf909b65b5c4e1052807c411fc601147de89c484fb6b3fa",
+      "bytes": 15477,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/7022808de31803b5072679cc465e88a5e2523d48cea192bc9cd9473d79bf413b.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "Tieba-AdFilter-Test.js",
+      "sha256": "7022808de31803b5072679cc465e88a5e2523d48cea192bc9cd9473d79bf413b",
+      "bytes": 7514,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/YouTube-AdFilter.js?v=1",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/607aa70003864976309eb854d4f8d22013fb792216e5312e2a3a1e713f4e63fd.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "YouTube-AdFilter.js",
+      "sha256": "607aa70003864976309eb854d4f8d22013fb792216e5312e2a3a1e713f4e63fd",
+      "bytes": 133416,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/49bd67c9246b5cd7b545d9fbe179ef4ef410ab7ad77394bb6dbfcdb9e3934a67.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "Youku-Video-AdFilter-Test.txt",
+      "sha256": "49bd67c9246b5cd7b545d9fbe179ef4ef410ab7ad77394bb6dbfcdb9e3934a67",
+      "bytes": 7299,
+      "rows": null
+    },
+    {
+      "kind": "script",
+      "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/zymk_surge.js",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/fb1f4d1bdc15d026f85da5228644fb979afbc0eee531523347b6690959815820.txt",
+      "pinType": "content-hash",
+      "localSourcePath": "zymk_surge.js",
+      "sha256": "fb1f4d1bdc15d026f85da5228644fb979afbc0eee531523347b6690959815820",
+      "bytes": 1302,
+      "rows": null
+    },
+    {
       "kind": "rule-set",
       "sourceURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/rule/rejectAd.list",
       "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Loon/rule/rejectAd.list",
@@ -297,6 +488,76 @@
       "rows": 655
     }
   ],
+  "releaseReferences": [
+    {
+      "url": "https://github.com/NSRingo/WeatherKit/releases/download/v3.3.2/response.bundle.js",
+      "pinType": "release-version",
+      "deviceVerified": false
+    },
+    {
+      "url": "https://github.com/NSRingo/WeatherKit/releases/download/v3.3.2/request.bundle.js",
+      "pinType": "release-version",
+      "deviceVerified": false
+    }
+  ],
+  "moduleSnapshots": [
+    {
+      "name": "AMap-Splash-AdFilter-Test.sgmodule",
+      "sha256": "417af1991ab217d42b33670a04e0d0a91445b2e2e02ec73967135e632135fcb6"
+    },
+    {
+      "name": "AdBlock-Tencent-Guazi.sgmodule",
+      "sha256": "0ba5adab1b9a03e5ded9ccc420b79afee840743e41e13560d9aeba48a8196b00"
+    },
+    {
+      "name": "Appleweatherpro.sgmodule",
+      "sha256": "970d6e358967b8a3f923512c842dcc9ff8dedda641574ae2b537aa3c30632c2f"
+    },
+    {
+      "name": "ChinaMobile-Splash-AdFilter-Test-V1.sgmodule",
+      "sha256": "b91454b851d46b5596d592cea2b1c82d9a510f4f67497932c25a1d99fc2818e5"
+    },
+    {
+      "name": "ChinaUnicom-LaunchCountdown-Test-V2.sgmodule",
+      "sha256": "ed8bc4a6ebf3f5ef89df48927ffb352c6003f1e3d066263b921b98ad24282d98"
+    },
+    {
+      "name": "Ctrip-Splash-AdFilter-Test.sgmodule",
+      "sha256": "503b3f25acea426242e3cf3f74c3b3b872d39ac4172ead3b7287e427e4854b81"
+    },
+    {
+      "name": "GuaziManhua.sgmodule",
+      "sha256": "d5bc55b99617e0e8b05c63660ef6684f634c8736840556fb92c40ee3acc329c4"
+    },
+    {
+      "name": "Tieba-AdFilter-Test.sgmodule",
+      "sha256": "a1d13f868bee148ebbffd3459522dfa0eca94a4872a8a85cb80b95c51a87cd21"
+    },
+    {
+      "name": "YouTube-AdFilter.sgmodule",
+      "sha256": "607723663c10662c8e71320fc62fba4fb4a1f35607513f7096d5629a4636eec0"
+    },
+    {
+      "name": "Youku-Video-AdFilter-Test.sgmodule",
+      "sha256": "0ad62582a50ff56bb62cc9adccd712eb2ff8c062f64180a052671f1ad1c895bc"
+    },
+    {
+      "name": "zymkvip2.js",
+      "sha256": "e4ce2090ad11a84b957ad4ca07da778d1ecf086f903e311a612d25ba8762185a"
+    }
+  ],
+  "rollbackSnapshots": [
+    {
+      "version": "6.3.1",
+      "moduleSHA256": "87e3b831b999323d9dfdead1c3282088e8eaac739d10b988a40516dc870ea0cb",
+      "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a"
+    },
+    {
+      "version": "6.4.0",
+      "moduleSHA256": "8fb48578a565fc63ecaff3292495141cb6a411b6472d47ccaca76dcd0be42d40",
+      "sharedSHA256": "acafee4a0c9ebac8c6482c67b839a270f8e7ae7c951bd123aaafa45e9124411a"
+    }
+  ],
   "manualApplication": true,
   "ruleUpdateInterval": -1,
   "scriptRefreshBehavior": "Fixed commit or content-hash URL; periodic downloads do not select new upstream code.",
@@ -307,6 +568,7 @@
     "Conservative AdGuard DNS hostname subset, not full AdGuard engine or CNAME response filtering.",
     "All supported exceptions prevail over important blocks to avoid stronger blocking.",
     "Surge module update checks and first/new-resource downloads may still use network.",
-    "CSS, scriptlets and browser context rules cannot directly remove native App containers."
+    "CSS, scriptlets and browser context rules cannot directly remove native App containers.",
+    "WeatherKit keeps its existing versioned v3.3.2 release URLs; those release assets are not content-hash verified by this builder."
   ]
 }

@@ -1,4 +1,4 @@
-/* Bilibili View AdClean V1.0.0 RC1. Only viewunite.v1.View/View. */
+/* Bilibili View AdClean V1.0.1. Only viewunite.v1.View/View. */
 /* App2smile schema reference: https://github.com/app2smile/rules/tree/df6366a7024e0b3f0aa3510c5b791eea6f3cba89
  * Scope: named advertisement fields only. Unknown fields keep their raw bytes.
  * Offline schema/negative-case tests passed; current phone UI is not verified.
@@ -137,7 +137,13 @@ function nested(field, transform, removeEmpty) {
     if (bytes.length > 8388608) { $done({}); return; }
     const headers = $response.headers || {};
     let encoding = "identity";
-    for (const key of Object.keys(headers)) if (key.toLowerCase() === "grpc-encoding") encoding = String(headers[key]).toLowerCase();
+    // Surge full-header-mode supplies {field,value} records; normal mode uses
+    // an object. Reading both forms preserves gzip handling in either binding.
+    if (Array.isArray(headers)) {
+      for (const header of headers) if (header && String(header.field).toLowerCase() === "grpc-encoding") encoding = String(header.value).trim().toLowerCase();
+    } else {
+      for (const key of Object.keys(headers)) if (key.toLowerCase() === "grpc-encoding") encoding = String(headers[key]).trim().toLowerCase();
+    }
     function validAny(bytes) {
       const fields = wireFields(bytes), names = fields.filter(f => f.no === 1 && f.wire === 2);
       return names.length === 1 && /^(?:type\.googleapis\.com\/)?[A-Za-z_][A-Za-z0-9_.\/]+$/.test(ascii(names[0].data));
