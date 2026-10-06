@@ -2,7 +2,7 @@
 #!desc=原App清理与AdGuard DNS安全子集；GitHub准备更新，Surge手动应用新版后切换固定资源。保留地图兼容，网页CSS和原生未知容器不作转换。
 #!author=Night; fmz200; TG-Twilight; 可莉; ddgksf2013; original script authors
 #!category=广告拦截
-#!version=6.5.0-manual.3d09cb86c2f6
+#!version=6.5.0-manual.a6312790aa40
 #!system=ios
 #!date=2026-10-06
 
@@ -236,7 +236,7 @@ AND,((RULE-SET,https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98
 AND,((RULE-SET,https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/99b020c21853cbed56b90456399dad6bde842309/Filters/AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list,no-resolve,extended-matching,update-interval=-1),(NOT,((OR,((DOMAIN,ad.12306.cn,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao-b.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao1.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao2.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao3.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao4.com,extended-matching),(DOMAIN,api-access.pangolin-sdk-toutiao5.com,extended-matching),(DOMAIN,baichuan-sdk.alicdn.com,extended-matching),(DOMAIN,baichuan-sdk.taobao.com,extended-matching),(DOMAIN,bootpreload.uve.weibo.com,extended-matching),(DOMAIN,conf.hpplay.cn,extended-matching),(DOMAIN,ggx01.miguvideo.com,extended-matching),(DOMAIN,ggx03.miguvideo.com,extended-matching),(DOMAIN,gromore.pangolin-sdk-toutiao.com,extended-matching),(DOMAIN,gslb.hpplay.cn,extended-matching),(DOMAIN,hybrid.miniapp.taobao.com,extended-matching),(DOMAIN,log-api.pangolin-sdk-toutiao-b.com,extended-matching),(DOMAIN,log-api.pangolin-sdk-toutiao.com,extended-matching),(DOMAIN,mapi.m.jd.com,extended-matching),(DOMAIN,masdkv6.3g.qq.com,extended-matching),(DOMAIN,mi.gdt.qq.com,extended-matching),(DOMAIN,pgdt.gtimg.cn,extended-matching),(DOMAIN,sdk.e.qq.com,extended-matching),(DOMAIN,sdkapp.uve.weibo.com,extended-matching),(DOMAIN,sdkreport.e.qq.com,extended-matching),(DOMAIN,syh.zybang.com,extended-matching),(DOMAIN,tangram.e.qq.com,extended-matching),(DOMAIN,v2mi.gdt.qq.com,extended-matching),(DOMAIN,vipauth.hpplay.cn,extended-matching),(DOMAIN,vipgslb.hpplay.cn,extended-matching)))))),REJECT
 
 # AdGuard DNS广告与追踪域名安全子集；例外只排除此层，不改变代理策略。
-AND,((DOMAIN-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/29d7239b10c4d04bda597a67aa8f73105dcdf4dcd058a5493ce1df9db3d99b1e.domain-set,update-interval=-1),(NOT,((RULE-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/0c707d196749ee7b162a334b6a2e899fc31deb80de7da35377b613bcf9c82d11.list,no-resolve,update-interval=-1))),(NOT,((RULE-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/ba97d573e5f19b43bdc925c3aa005519df384d38d86cbea03535b753322e243e.list,no-resolve,update-interval=-1)))),REJECT
+AND,((DOMAIN-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/89be246d50087c5232ff4b01c04df560c5936b4fabffda156f211878c3053a19.domain-set,update-interval=-1),(NOT,((RULE-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/09b7d8605e22bae8cfb2d478a9485de903f0559e933afa5c5bf168c4dac07e98.list,no-resolve,update-interval=-1))),(NOT,((RULE-SET,https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/ba97d573e5f19b43bdc925c3aa005519df384d38d86cbea03535b753322e243e.list,no-resolve,update-interval=-1)))),REJECT
 
 [URL Rewrite]
 # V6.3.1 喜马拉雅 / moyu-ximalaya-ad-realtime | 墨鱼 ddgksf2013 | https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Ximalaya.conf
