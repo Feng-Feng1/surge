@@ -19,7 +19,7 @@
 
 # 使用 Maasea 的 Apache-2.0 Protobuf 净化核心，由自己的仓库固定托管。
 # 显式关闭与去广告无关的按钮隐藏和字幕增强功能。
-YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/YouTube-AdFilter.js?v=1,argument="{\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false}",timeout=60
+YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/YouTube-AdFilter.js?v=1,argument="{\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false}",timeout=60
 
 
 [MITM]

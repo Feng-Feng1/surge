@@ -5,7 +5,7 @@
   "productVersion": "6.5.0",
   "baselineVersion": "6.5.0",
   "baselineModuleSHA256": "c4ead4df6fa8c9ea10c97af72a6be5b50b4bbae9e84baee2f33141999b0bd8b7",
-  "baselineSharedSHA256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
+  "baselineSharedSHA256": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
   "dnsLicense": "https://github.com/AdguardTeam/AdGuardSDNSFilter/blob/master/LICENSE",
   "minimumConvertedEntries": 100000,

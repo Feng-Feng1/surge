@@ -177,6 +177,16 @@ async function runRuntimeTests(root = path.resolve(__dirname, '..')) {
     equal(result.headers, headers.slice(4));
     equal(result.body, '{"data":{"items":[{"card_goto":"av","id":9223372036854775807,"ad_info":{"normal":true}}]}}');
   });
+  await check('Shared cleanup: ordinary strings and integers use the no-placeholder path unchanged', () => {
+    const input = '{"data":{"items":[{"is_ad":true},{"card_goto":"av","id":42,"literal":"__ABV5_INTEGER_0__","escaped":"\\u005f\\u005fABV5_INTEGER_0__"}]}}';
+    const result = replay('AdBlock-AppClean-V5.txt', feedURL, input, { argument: 'bili' });
+    equal(result.body, '{"data":{"items":[{"card_goto":"av","id":42,"literal":"__ABV5_INTEGER_0__","escaped":"__ABV5_INTEGER_0__"}]}}');
+  });
+  await check('Shared cleanup: unsafe integers survive literal and escaped placeholder collisions', () => {
+    const input = '{"data":{"items":[{"is_ad":true},{"card_goto":"av","id":9223372036854775807,"literal":"__ABV5_INTEGER_0__","escaped":"\\u005f\\u005fABV5_INTEGER_0__"}]}}';
+    const result = replay('AdBlock-AppClean-V5.txt', feedURL, input, { argument: 'bili' });
+    equal(result.body, '{"data":{"items":[{"card_goto":"av","id":9223372036854775807,"literal":"__ABV5_INTEGER_0__","escaped":"__ABV5_INTEGER_0__"}]}}');
+  });
   await check('Shared cleanup: object header case variations preserve ordinary headers', () => {
     const headers = { 'cOnTeNt-LeNgTh': '9999', 'Content-MD5': 'synthetic', 'Content-Type': 'application/json', 'Set-Cookie': 'synthetic', 'X-Normal': 'keep' };
     const result = replay('AdBlock-AppClean-V5.txt', feedURL, '{"data":{"items":[{"is_ad":true},{"card_goto":"av"}]}}', { argument: 'bili', responseHeaders: headers });

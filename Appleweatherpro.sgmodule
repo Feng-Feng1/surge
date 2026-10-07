@@ -6,7 +6,7 @@
 #!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
 #!category =  iRingo
 #!date = 2026-09-05
-#!version=6.5.0-manual.a6312790aa40
+#!version=6.5.0-manual.3691c60ba8ed
 #!arguments = DataSets:"airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,weatherAlerts",Weather_Provider:"ColorfulClouds",WeatherAlerts_Provider:"QWeatherWeb",NextHour_Provider:"ColorfulClouds",AirQuality_Pollutants_Provider:"ColorfulClouds",AirQuality_Algorithm:"EU_EAQI",ColorfulClouds_Token:"",QWeather_Host:"devapi.qweather.com",QWeather_Token:"",WAQI_Token:"",Storage:"Argument",LogLevel:"WARN"
 #!arguments-desc = 稳定默认值已预设，通常无需修改。空白令牌会回退到脚本内置默认值。\n\nDataSets：airQuality,currentWeather,forecastDaily,forecastHourly,forecastNextHour,weatherAlerts\nWeather_Provider：WeatherKit / ColorfulClouds / QWeather\nWeatherAlerts_Provider：WeatherKit / QWeatherWeb / QWeather / ColorfulClouds\nNextHour_Provider：WeatherKit / ColorfulClouds / QWeather\nAirQuality_Pollutants_Provider：ColorfulClouds / QWeather\nAirQuality_Algorithm：None / UBA / EU_EAQI / WAQI_InstantCast_US / WAQI_InstantCast_CN / WAQI_InstantCast_CN_25_DRAFT / CA_AQHI / HK_AQHI / AQHI_Multi_CN / AQHI_Multi_CN_HK / CN_DEATH_AQHI / CN_DEATH_HK_AQHI\nStorage：Argument / PersistentStore / database\nLogLevel：OFF / ERROR / WARN / INFO / DEBUG / ALL
 

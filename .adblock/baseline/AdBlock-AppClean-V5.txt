@@ -227,24 +227,37 @@
   // 不匹配字符串内的数字；占位前缀在原响应中不得出现，防止误替换普通文本。
   function parsePreservingIntegers(text) {
     var prefix = "__ABV5_INTEGER_";
-    var stringValues = [];
-    text.replace(/"(?:\\.|[^"\\])*"/g, function (token) {
-      stringValues.push(JSON.parse(token));
-      return token;
-    });
-    // 检查解码后的字符串，防止 \u0049 等转义拼出占位符而误恢复成数字。
-    while (text.indexOf(prefix) !== -1 || stringValues.some(function (value) { return value.indexOf(prefix) !== -1; })) prefix += "X";
     var numbers = [];
-    var protectedText = text.replace(/"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (token) {
-      if (token.charAt(0) === '"') return token;
-      var n = Number(token);
-      if (!isFinite(n)) throw new Error("non-finite numeric value");
-      if (Math.abs(n) > 9007199254740991) {
-        var index = numbers.push(token) - 1;
-        return '"' + prefix + index + '__"';
-      }
-      return token;
-    });
+    var protectedText;
+    function protectNumbers() {
+      numbers = [];
+      return text.replace(/"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g, function (token) {
+        if (token.charAt(0) === '"') return token;
+        var n = Number(token);
+        if (!isFinite(n)) throw new Error("non-finite numeric value");
+        if (Math.abs(n) > 9007199254740991) {
+          var index = numbers.push(token) - 1;
+          return '"' + prefix + index + '__"';
+        }
+        return token;
+      });
+    }
+    function hasStringCollision() {
+      var collision = false;
+      text.replace(/"(?:\\.|[^"\\])*"/g, function (token) {
+        if (!collision && JSON.parse(token).indexOf(prefix) !== -1) collision = true;
+        return token;
+      });
+      return collision;
+    }
+    // Most API responses contain no unsafe integers, so avoid decoding and retaining every string.
+    // If large integers do need placeholders, check decoded strings (including \u escapes) before parsing.
+    while (true) {
+      while (text.indexOf(prefix) !== -1) prefix += "X";
+      protectedText = protectNumbers();
+      if (!numbers.length || !hasStringCollision()) break;
+      prefix += "X";
+    }
     return {
       value: JSON.parse(protectedText),
       stringify: function (value) {

@@ -24,7 +24,7 @@
 中国联通-开屏配置立即返回 = type=http-request,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt,timeout=10,debug=true
 
 # 响应阶段：未来或其他版本仍使用服务器实时配置，只改两个已验证字段。
-中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt,timeout=30,debug=true
+中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=1048576,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt,timeout=30,debug=true
 
 # 使用教程：
 # 1. 将本模块和 ChinaUnicom-LaunchCountdown-Test-V2.txt 一起上传到 GitHub 仓库根目录。

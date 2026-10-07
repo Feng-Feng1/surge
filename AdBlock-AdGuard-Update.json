@@ -1,27 +1,27 @@
 {
   "schema": 2,
-  "version": "6.5.0-manual.a6312790aa40",
-  "fingerprint": "a6312790aa405c6a9f57968904cc9a0bff8e71aa557e827a7e4ef30d17bd4b1b",
+  "version": "6.5.0-manual.3691c60ba8ed",
+  "fingerprint": "3691c60ba8ed3f1ed0a7dfb5faf23a484af574e06c799de104096dd694546604",
   "builderSHA256": "98b3d2284efea33d8d32b2a85690beb883168b6bbf49ebbdf4b469e13805c1e7",
   "preparedFrom": "6.5.0",
-  "moduleSHA256": "ab8bbcd85b31df006138f0eacd35f836577c60a5c2efca8edba4cc83d298314c",
-  "sharedSHA256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
+  "moduleSHA256": "edcea1b31e629e2f4a8ff02b03db09bed1676813ae4bd4902cf327df9aab1528",
+  "sharedSHA256": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619",
   "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
-  "dnsSourceSHA256": "00d87af2672423992670b789fb6f9f38699e1d78c8d4412ffde49f5f9e694afc",
-  "sourceLastModified": "2026-10-06T22:15:01.953Z",
+  "dnsSourceSHA256": "2b223f57d86da00fe0377d00c4c5218de5599d7c4b38edb627b706977e48a639",
+  "sourceLastModified": "2026-10-07T14:15:43.698Z",
   "dnsConverted": {
-    "totalLines": 180641,
+    "totalLines": 180843,
     "blankLines": 0,
     "commentLines": 1658,
     "headerLines": 0,
-    "inputBlockRules": 178773,
+    "inputBlockRules": 178975,
     "inputExceptionRules": 210,
     "badfilterDirectives": 5,
     "disabledRules": 1,
     "disabledBlockRules": 1,
     "disabledExceptionRules": 0,
-    "convertedBlockRules": 178020,
-    "convertedSuffixBlocks": 178020,
+    "convertedBlockRules": 178222,
+    "convertedSuffixBlocks": 178222,
     "convertedExactBlocks": 0,
     "importantBlocksConverted": 3,
     "skippedBlockRules": 747,
@@ -32,23 +32,23 @@
     "convertedFragmentExceptions": 1,
     "ignoredNonDNSExceptions": 1,
     "broadenedModifierExceptions": 0,
-    "blockEntryCount": 178018,
+    "blockEntryCount": 178220,
     "exceptionRuleCount": 219
   },
-  "convertedDomainEntries": 178018,
+  "convertedDomainEntries": 178220,
   "exceptionRows": 219,
   "protectionRows": 526,
   "resources": [
     {
       "kind": "domains",
-      "name": "89be246d50087c5232ff4b01c04df560c5936b4fabffda156f211878c3053a19.domain-set",
-      "sha256": "89be246d50087c5232ff4b01c04df560c5936b4fabffda156f211878c3053a19",
-      "bytes": 3906930
+      "name": "abb0128bba105e6661a151e7292e0914ffe050726c470255cbe79fb6548821ab.domain-set",
+      "sha256": "abb0128bba105e6661a151e7292e0914ffe050726c470255cbe79fb6548821ab",
+      "bytes": 3910940
     },
     {
       "kind": "exceptions",
-      "name": "09b7d8605e22bae8cfb2d478a9485de903f0559e933afa5c5bf168c4dac07e98.list",
-      "sha256": "09b7d8605e22bae8cfb2d478a9485de903f0559e933afa5c5bf168c4dac07e98",
+      "name": "b32d0d036ee63690124c513f3d53b3370ff4f0c9a240cbf69087c5e7c1c91616.list",
+      "sha256": "b32d0d036ee63690124c513f3d53b3370ff4f0c9a240cbf69087c5e7c1c91616",
       "bytes": 7838
     },
     {
@@ -59,15 +59,15 @@
     },
     {
       "kind": "shared",
-      "name": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f.txt",
-      "sha256": "3fedb62d8399d440612032daffc1200950c60c3e1473a5849c00c083b9c8db3f",
-      "bytes": 41913
+      "name": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619.txt",
+      "sha256": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619",
+      "bytes": 42292
     },
     {
       "kind": "adguard-input",
-      "name": "00d87af2672423992670b789fb6f9f38699e1d78c8d4412ffde49f5f9e694afc.txt",
-      "sha256": "00d87af2672423992670b789fb6f9f38699e1d78c8d4412ffde49f5f9e694afc",
-      "bytes": 4347051
+      "name": "2b223f57d86da00fe0377d00c4c5218de5599d7c4b38edb627b706977e48a639.txt",
+      "sha256": "2b223f57d86da00fe0377d00c4c5218de5599d7c4b38edb627b706977e48a639",
+      "bytes": 4351465
     },
     {
       "kind": "script",
@@ -503,47 +503,47 @@
   "moduleSnapshots": [
     {
       "name": "AMap-Splash-AdFilter-Test.sgmodule",
-      "sha256": "89783055327b82ac23d3ba7e19a954e2d44c6e487f06085a75ba354281e41c05"
+      "sha256": "2e475ea89ad8778732366f6c44e056f9880169388306d1c17f595ed343839631"
     },
     {
       "name": "AdBlock-Tencent-Guazi.sgmodule",
-      "sha256": "f961d11faa02d31872b83991752ad53d97b9b32c91e14641303b8cdaac8eb556"
+      "sha256": "56ee00118ad7ab898cb3e1165441ac2ece52335b9185b3f64db225f9d1240ea0"
     },
     {
       "name": "Appleweatherpro.sgmodule",
-      "sha256": "c971355e142314e55a5f3b12daad489cd58ca5f4d08a279fa32044ab0435d7a7"
+      "sha256": "51d4ce310831b46739a00cc40b63704b5739d9cea48830c72383db6e7bab1e55"
     },
     {
       "name": "ChinaMobile-Splash-AdFilter-Test-V1.sgmodule",
-      "sha256": "ab64ac1e23caf2f5e15a45982f576a8711b9de8f9b8c318840259c460264b113"
+      "sha256": "aaa90cdb40a83816e8685b868da2fa4ef02c0cdbfa36c712ce9abc7c93451b43"
     },
     {
       "name": "ChinaUnicom-LaunchCountdown-Test-V2.sgmodule",
-      "sha256": "c7d45344078d50fa4a7f51a5a17407ecce49dd1a89c643b3022051aa3ea911c5"
+      "sha256": "5a423f321f5e32fd0aa5b751ab84818fef830294d99b5065516667f4e081d8d9"
     },
     {
       "name": "Ctrip-Splash-AdFilter-Test.sgmodule",
-      "sha256": "76809f03c1dbf6b4485a7ccfe751281cbc36c6c88c3beaa6705fdc1a7e829fe2"
+      "sha256": "9c765200aa63ff318c91e4f0063f9e48b9695035e7fa1dff24bb9d1d51d792f0"
     },
     {
       "name": "GuaziManhua.sgmodule",
-      "sha256": "d4e060a2543da775cee728316279703a141f315716afa7df0eedb04c253e496f"
+      "sha256": "1fb9248483a06d2ed08eb46272f2a7414d67e8547099993b88cbcd70d4ee21db"
     },
     {
       "name": "Tieba-AdFilter-Test.sgmodule",
-      "sha256": "a5ef4d9d731e90bfedb21941af9bf8e43af23cf66f9dc81e1e1160cab392bbb8"
+      "sha256": "aee0694a1c63c3b8f2c8574ba707f35949aaaf471c75fa4dfdfb6c7b3ce521f4"
     },
     {
       "name": "YouTube-AdFilter.sgmodule",
-      "sha256": "50a5523ea6484fcfbcb285f266381e96696d8a10103eb8095f32b8b5d55bf40d"
+      "sha256": "8a45d3a49deda62a4b835740e4ec2a4e4fa04131894fafa010cbd5992840a016"
     },
     {
       "name": "Youku-Video-AdFilter-Test.sgmodule",
-      "sha256": "dcd78b9ba9a4191350d3ba69fd5bcf8020a4f9b07895c0206dbaa3f839fd0ac9"
+      "sha256": "4a9f685a9601da57f90295b56b0dc72a046397a4223c14aaef02b35af56764bc"
     },
     {
       "name": "zymkvip2.js",
-      "sha256": "97bb36c9accdbc3eed54d39c5ed022b0ee9d843cdb2a9a4ab68a95fac41084fd"
+      "sha256": "dba058377c557a440a516d083f1e0bc3ca01d4a5600595ebaa7c59e2bb0a17ac"
     }
   ],
   "rollbackSnapshots": [

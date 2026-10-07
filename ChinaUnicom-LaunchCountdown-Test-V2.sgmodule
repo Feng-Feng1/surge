@@ -3,7 +3,7 @@
 #!category=广告拦截测试
 #!author=Night & ChatGPT
 #!date=2026-09-04
-#!version=6.5.0-manual.a6312790aa40
+#!version=6.5.0-manual.3691c60ba8ed
 #!system=ios
 
 
@@ -24,7 +24,7 @@
 中国联通-开屏配置立即返回 = type=http-request,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3.txt,timeout=10,debug=true
 
 # 响应阶段：未来或其他版本仍使用服务器实时配置，只改两个已验证字段。
-中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=-1,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3.txt,timeout=30,debug=true
+中国联通-开屏配置响应兜底 = type=http-response,pattern=^https?:\/\/m\.client\.10010\.com\/mobileService\/customer\/getclientconfig\.htm(?:\?|$),requires-body=true,max-size=1048576,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Resources/AdBlock/a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3.txt,timeout=30,debug=true
 
 # 使用教程：
 # 1. 将本模块和 ChinaUnicom-LaunchCountdown-Test-V2.txt 一起上传到 GitHub 仓库根目录。
