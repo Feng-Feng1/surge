@@ -61,7 +61,7 @@ function parseRuleRow(raw,defaultPolicy,location='upstream rule') {
   return {policy,node:parsed,line:renderNode(parsed),key:canonicalNode(parsed),source:raw};
 }
 
-function collectRules({awaRows,naisiModuleRows,naisiListRows,staticRows}) {
+function collectRules({awaRows,naisiModuleRows,staticRows}) {
   const staticKeys=new Set();
   for(const raw of staticRows) {
     const fields=splitTopLevel(raw);
@@ -72,7 +72,7 @@ function collectRules({awaRows,naisiModuleRows,naisiListRows,staticRows}) {
       throw error;
     }
   }
-  const awa=new Map(),normal=new Map(),drop=new Map(),dedup={static:0,awa:0,naisiModule:0,naisiList:0,crossSource:0};
+  const awa=new Map(),normal=new Map(),drop=new Map(),dedup={static:0,awa:0,naisiModule:0,naisiModuleDrop:0,crossSource:0};
   for(const raw of awaRows) {
     const rule=parseRuleRow(raw,'REJECT','AWAvenue [Rule]');
     if(rule.policy!=='REJECT')throw Error('AWAvenue entry is not a reject rule');
@@ -91,16 +91,8 @@ function collectRules({awaRows,naisiModuleRows,naisiListRows,staticRows}) {
     if(target.has(rule.key)){dedup[source]++;continue;}
     target.set(rule.key,rule);
   }
-  for(const raw of naisiListRows) {
-    const rule=parseRuleRow(raw,'REJECT','Naisi rejectAd.list');
-    if(staticKeys.has(rule.key)){dedup.static++;continue;}
-    if(awaKeys.has(rule.key)){dedup.crossSource++;continue;}
-    if(normal.has(rule.key)){dedup.naisiList++;continue;}
-    if(drop.has(rule.key))throw Error('Conflicting Naisi REJECT and REJECT-DROP rules for '+rule.line);
-    normal.set(rule.key,rule);
-  }
   for(const [key] of drop)if(normal.has(key))throw Error('Conflicting Naisi REJECT and REJECT-DROP rules for '+normal.get(key).line);
-  return {awa:[...awa.values()],naisi:[...normal.values()],naisiDrop:[...drop.values()],dedup,staticRuleCount:staticKeys.size,sourceCounts:{awa:awaRows.length,naisiModule:naisiModuleRows.length,naisiList:naisiListRows.length}};
+  return {awa:[...awa.values()],naisi:[...normal.values()],naisiDrop:[...drop.values()],dedup,staticRuleCount:staticKeys.size,sourceCounts:{awa:awaRows.length,naisiModule:naisiModuleRows.length}};
 }
 
 function parseScriptRow(raw,location='upstream script') {

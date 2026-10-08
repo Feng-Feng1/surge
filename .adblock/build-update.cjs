@@ -85,12 +85,6 @@ function replaceSection(text,name,rows,nextName) {
   return text.slice(0,contentStart)+rows.join('\n')+'\n'+text.slice(stop);
 }
 
-function parseList(text,label) {
-  const rows=text.replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(line=>line&&!/^(?:#|;|\/\/)/.test(line));
-  if(rows.length<500)throw Error(label+': unexpectedly short source list ('+rows.length+')');
-  return rows;
-}
-
 function immutableWrite(root,name,bytes) {
   const file=path.join(root,'Resources','AdBlock',name);
   if(fs.existsSync(file)&&!fs.readFileSync(file).equals(bytes))throw Error('Immutable resource name already contains different bytes');
@@ -144,24 +138,22 @@ async function build(options={}) {
 
   const awaSource=await getUpstream(cfg.sources.awa.url,2000000,'AWAvenue Surge module');
   const naisiModuleSource=await getUpstream(cfg.sources.naisi.module,12000000,'Naisi Surge module');
-  const naisiListSource=await getUpstream(cfg.sources.naisi.ruleList,5000000,'Naisi rejectAd list');
   const awaSections=sourceSections(awaSource.text,'AWAvenue',cfg.sources.awa.allowedSections);
   const naisiSections=sourceSections(naisiModuleSource.text,'Naisi',cfg.sources.naisi.allowedSections);
   const awaRows=awaSections.Rule;if(awaRows.length<100)throw Error('AWAvenue [Rule] section is unexpectedly short');
   for(const name of ['Rule','URL Rewrite','Script'])if(naisiSections[name].length<cfg.sources.naisi.minimumRows[name])throw Error('Naisi ['+name+'] section is unexpectedly short');
-  const naisiListRows=parseList(naisiListSource.text,'Naisi rejectAd.list');
 
   const baseRuleRows=getSectionRows(baseline,'Rule');
-  const naisiWrapper=baseRuleRows.find(row=>row.includes('/Loon/rule/rejectAd.list'));
+  const naisiWrapper=baseRuleRows.find(row=>row.includes('/Surge/module/blockAds.module'));
   const awaWrapper=baseRuleRows.find(row=>row.includes('AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list'));
   if(!naisiWrapper||!awaWrapper)throw Error('Maintenance baseline lost an upstream compatibility wrapper');
   const staticRuleRows=baseRuleRows.filter(row=>row!==naisiWrapper&&row!==awaWrapper);
-  const mergedRules=collectRules({awaRows,naisiModuleRows:naisiSections.Rule,naisiListRows,staticRows:staticRuleRows});
+  const mergedRules=collectRules({awaRows,naisiModuleRows:naisiSections.Rule,staticRows:staticRuleRows});
   if(!mergedRules.awa.length||!mergedRules.naisi.length)throw Error('Merged upstream block sets are unexpectedly empty');
-  const exceptions=unionExceptions(exceptionTree(naisiWrapper,'/Loon/rule/rejectAd.list'),exceptionTree(awaWrapper,'AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list'));
+  const exceptions=unionExceptions(exceptionTree(naisiWrapper,'/Surge/module/blockAds.module'),exceptionTree(awaWrapper,'AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list'));
 
   const awaBytes=renderRuleFile(awaSource.source.pinnedURL,mergedRules.awa);
-  const naisiBytes=renderRuleFile(naisiModuleSource.source.pinnedURL+' + '+naisiListSource.source.pinnedURL,mergedRules.naisi);
+  const naisiBytes=renderRuleFile(naisiModuleSource.source.pinnedURL,mergedRules.naisi);
   const dropBytes=mergedRules.naisiDrop.length?renderRuleFile(naisiModuleSource.source.pinnedURL,mergedRules.naisiDrop):null;
   for(const item of [
     {kind:'awa-rules',bytes:awaBytes,extension:'list'},
@@ -243,14 +235,14 @@ async function build(options={}) {
   const manifest={
     schema:3,version,fingerprint,builderSHA256,mergerSHA256,parserSHA256,preparedFrom:cfg.baselineVersion,
     moduleSHA256:sha(moduleText),sharedSHA256:sha(sharedBytes),sourceRecords,releaseReferences,
-    upstreamRows:{awaRules:awaRows.length,naisiModuleRules:naisiSections.Rule.length,naisiListRules:naisiListRows.length,naisiURLRewrites:naisiSections['URL Rewrite'].length,naisiScripts:naisiSections.Script.length},
+    upstreamRows:{awaRules:awaRows.length,naisiModuleRules:naisiSections.Rule.length,naisiURLRewrites:naisiSections['URL Rewrite'].length,naisiScripts:naisiSections.Script.length},
     mergedRows:{awaRules:mergedRules.awa.length,naisiRules:mergedRules.naisi.length,naisiDropRules:mergedRules.naisiDrop.length,urlRewrites:rewrites.rows.length,scripts:scripts.rows.length},
     deduplicated:{...mergedRules.dedup,urlRewrites:rewrites.deduplicated.length,scripts:scripts.deduplicated.length,compatibilityExceptions:exceptions.length},
     imported:{urlRewrites:rewrites.importedCount,scripts:scripts.importedCount},
     resources:resources.map(({kind,name,sha256,bytes})=>({kind,name,sha256,bytes:bytes.length})),
     moduleSnapshots:standalone.map(({name,sha256})=>({name,sha256})),rollbackSnapshots:cfg.rollbackSnapshots,
     manualApplication:true,ruleUpdateInterval:-1,scriptRefreshBehavior:'Pinned Git commit; new upstream content is applied only after the next generated module is manually updated in Surge.',
-    sourcePolicy:'All rows from AWAvenue [Rule] and Naisi [Rule], [URL Rewrite], and [Script] are imported; unsupported source changes fail the build. Exact and first-match duplicates are removed; self-maintained matching scripts keep priority.',
+    sourcePolicy:'All rows from AWAvenue [Rule] and Naisi [Rule], [URL Rewrite], and [Script] are imported; Naisi rules come only from the Surge module, without a separate list source. Unsupported source changes fail the build. Exact and first-match duplicates are removed; self-maintained matching scripts keep priority.',
     deviceVerified:false,preparedDate:sourceDate,
     limitations:['Only the upstream sections requested for the combined module are imported; Naisi Body Rewrite, Map Local, Header Rewrite, and MITM sections remain excluded.','Surge applies a script at most once per request; duplicate matching patterns preserve the first active rule.','New rules/resources and the updated module require network access when first downloaded.']
   };

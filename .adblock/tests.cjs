@@ -26,16 +26,15 @@ check('Naisi logical rules and reject-drop policy are preserved',()=>{
   assert.equal(a.policy,'REJECT-DROP');assert.equal(parseNode(a.line).type,'AND');
 });
 check('New upstream domain entries flow through without an allowlist',()=>{
-  const merged=collectRules({awaRows:['DOMAIN-SUFFIX,new-awa.example,REJECT'],naisiModuleRows:['DOMAIN,new-naisi.example,REJECT'],naisiListRows:['DOMAIN-SUFFIX,new-list.example'],staticRows:['DOMAIN,own.example,DIRECT']});
+  const merged=collectRules({awaRows:['DOMAIN-SUFFIX,new-awa.example,REJECT'],naisiModuleRows:['DOMAIN,new-naisi.example,REJECT'],staticRows:['DOMAIN,own.example,DIRECT']});
   assert.ok(merged.awa.some(x=>x.line==='DOMAIN-SUFFIX,new-awa.example'));
   assert.ok(merged.naisi.some(x=>x.line==='DOMAIN,new-naisi.example'));
-  assert.ok(merged.naisi.some(x=>x.line==='DOMAIN-SUFFIX,new-list.example'));
 });
 check('Static rules take priority and exact source duplicates are counted once',()=>{
-  const merged=collectRules({awaRows:['DOMAIN,own.example,REJECT','DOMAIN,awa.example,REJECT'],naisiModuleRows:['DOMAIN,awa.example,REJECT','DOMAIN,nai.example,REJECT'],naisiListRows:['DOMAIN,nai.example'],staticRows:['DOMAIN,own.example,DIRECT']});
+  const merged=collectRules({awaRows:['DOMAIN,own.example,REJECT','DOMAIN,awa.example,REJECT'],naisiModuleRows:['DOMAIN,awa.example,REJECT','DOMAIN,nai.example,REJECT'],staticRows:['DOMAIN,own.example,DIRECT']});
   assert.equal(merged.awa.length,1);assert.equal(merged.naisi.length,1);assert.equal(merged.dedup.static,1);assert.equal(merged.dedup.crossSource,1);
 });
-check('Conflicting reject and reject-drop rules fail closed',()=>assert.throws(()=>collectRules({awaRows:[],naisiModuleRows:['DOMAIN,collision.example,REJECT','DOMAIN,collision.example,REJECT-DROP'],naisiListRows:[],staticRows:[]}),/Conflicting Naisi REJECT and REJECT-DROP/));
+check('Conflicting reject and reject-drop rules fail closed',()=>assert.throws(()=>collectRules({awaRows:[],naisiModuleRows:['DOMAIN,collision.example,REJECT','DOMAIN,collision.example,REJECT-DROP'],staticRows:[]}),/Conflicting Naisi REJECT and REJECT-DROP/));
 check('Surge reject placeholders normalize for rewrite deduplication',()=>{
   assert.equal(mergeRewrites(['^https://ad.example/ _ reject'],['^https://ad.example/ - reject']).rows.length,1);
 });
@@ -58,11 +57,13 @@ check('Duplicate upstream script match patterns keep the first executable row',(
 });
 check('Compatibility wrappers carry the exact exception union and manual update interval',()=>{
   const baseline=fs.readFileSync(path.join(__dirname,'baseline','AdBlock-AllInOne.sgmodule'),'utf8');
-  const nai=baseline.split(/\r?\n/).find(row=>row.includes('/Loon/rule/rejectAd.list'));
+  const nai=baseline.split(/\r?\n/).find(row=>row.includes('/Surge/module/blockAds.module'));
   const awa=baseline.split(/\r?\n/).find(row=>row.includes('AWAvenue-Ads-Rule-Surge-RULE-SET-Only.Ads.list'));
-  const exceptions=unionExceptions(exceptionTree(nai,'rejectAd.list'),exceptionTree(awa,'AWAvenue-Ads-Rule'));
+  const exceptions=unionExceptions(exceptionTree(nai,'/Surge/module/blockAds.module'),exceptionTree(awa,'AWAvenue-Ads-Rule'));
   const output=renderGuardedRuleSet('https://example.com/resources.list',exceptions,'REJECT');
   assert.equal(parseNode(output.slice(0,output.lastIndexOf(',REJECT'))).type,'AND');assert.ok(output.includes('update-interval=-1'));assert.ok(output.includes('DOMAIN,api-access.pangolin-sdk-toutiao.com'));assert.ok(output.includes('DOMAIN,ad.12306.cn'));assert.ok(exceptions.length>100);
+  assert.doesNotMatch(baseline,/Loon\/rule\/rejectAd\.list/);
+  assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8')).sources.naisi,'ruleList'),false);
 });
 check('GitHub branch, refs/heads and github.com raw paths normalize to Git repositories',()=>{
   assert.deepEqual(parseRaw('https://raw.githubusercontent.com/owner/repo/refs/heads/main/a.js'),parseRaw('https://raw.githubusercontent.com/owner/repo/main/a.js'));

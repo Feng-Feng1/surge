@@ -7,14 +7,14 @@ HTTPS 解密、证书信任、重写和脚本功能需按原配置启用。
 
 更新方式
 GitHub 工作流每天北京时间约 04:17 获取上游并准备快照；上游规则或脚本新增后，进入下一次已验证快照。你只需在 Surge 手动更新总模块。
-工作流完整合并秋风 Surge 模块的 [Rule] 区段，以及奶思 Surge 模块的 [Rule]、[URL Rewrite]、[Script] 区段，并补充奶思 rejectAd.list。规则、重写和脚本都会去重；没有按具体广告条目维护的静态白名单。
+工作流完整合并秋风 Surge 模块的 [Rule] 区段，以及奶思 Surge 模块的 [Rule]、[URL Rewrite]、[Script] 区段。奶思规则仅取自 blockAds.module，不再调用单独的 rejectAd.list。规则、重写和脚本都会去重；没有按具体广告条目维护的静态白名单。
 奶思的 [Body Rewrite]、[Map Local]、[Header Rewrite] 和 [MITM] 区段不导入。自维护功能及兼容规则保留在总模块内，优先于普通拦截规则；秋风纯广告规则按 Surge 的 pre-matching 优先级处理。
 外部脚本固定到已校验的上游 Git commit；规则文件使用内容哈希。Surge 周期获取同一固定地址不会自动换到未来代码。WeatherKit 继续使用原 v3.3.2 发布附件。
 遇到上游格式变化、未知规则参数或冲突时，工作流会失败并保留当前已发布模块，不会静默漏掉新内容。
 
 本轮调整
 • 移除活动总模块中的 AdGuard DNS 规则层及旧 LiveMerge/可莉合并逻辑。
-• 将秋风完整规则与奶思规则、URL Rewrite、Script 接入每日构建，不再用逐条白名单筛选奶思新增内容。
+• 将秋风完整规则与奶思 blockAds.module 中的规则、URL Rewrite、Script 接入每日构建，不再调用奶思分散规则列表或用逐条白名单筛选新增内容。
 • 合并重复规则和重写；同一请求命中的重复脚本保留先匹配的自维护规则，避免执行两次。
 • 保留已有的 Bilibili、腾讯视频、闲鱼、地图及其他自维护规则和脚本。
 

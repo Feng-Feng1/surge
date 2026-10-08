@@ -31,12 +31,15 @@ function validate(root=path.resolve(__dirname,'..')) {
   assert.equal(sha(fs.readFileSync(path.join(root,'AdBlock-AppClean-V5.txt'))),cfg.baselineSharedSHA256);
   assert.doesNotMatch(moduleText,/AdGuard|Adguard|可莉|kelee\.one|LiveMerge/i);
 
-  const expectedLabels=['AWAvenue Surge module','Naisi Surge module','Naisi rejectAd list'];
+  const expectedLabels=['AWAvenue Surge module','Naisi Surge module'];
   for(const label of expectedLabels) {
     const source=manifest.sourceRecords.find(row=>row.label===label);
     assert.ok(source,'Missing upstream source '+label);assert.match(parseRaw(source.pinnedURL).ref,/^[a-f0-9]{40}$/);
     assert.match(source.sha256,/^[a-f0-9]{64}$/);assert.ok(source.bytes>1000);
   }
+  assert.equal(manifest.sourceRecords.filter(row=>row.label?.startsWith('Naisi')).length,1);
+  assert.ok(manifest.sourceRecords.some(row=>row.label==='Naisi Surge module'&&row.pinnedURL.includes('/Surge/module/blockAds.module')));
+  assert.doesNotMatch(JSON.stringify(manifest),/rejectAd\.list|Loon\/rule/);
   assert.ok(manifest.sourcePolicy.includes('All rows'));
   assert.equal(manifest.manualApplication,true);assert.equal(manifest.ruleUpdateInterval,-1);
   assert.equal(manifest.upstreamRows.awaRules>0,true);assert.equal(manifest.upstreamRows.naisiURLRewrites>0,true);assert.equal(manifest.upstreamRows.naisiScripts>0,true);

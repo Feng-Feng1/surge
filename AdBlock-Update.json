@@ -1,12 +1,12 @@
 {
   "schema": 3,
-  "version": "6.6.0-manual.4c1a71c87dec",
-  "fingerprint": "4c1a71c87decba3ed905101076a0c5c263b2e0a2b7fe1a458d1d3bd2de182298",
-  "builderSHA256": "9253b8ce4d06605d0ef97ec98a2c049504ea614556723358ef816c8fd92ceb7f",
-  "mergerSHA256": "7e1390b9ac609bf6b323b513c8df2967a4617af0a1ff63d441f138d4a1d65fe8",
+  "version": "6.6.0-manual.c6dc481d3db4",
+  "fingerprint": "c6dc481d3db460438d792e8e7320a7bba378618d0df58515c96dfac773653b1a",
+  "builderSHA256": "1c093e4e1a82397e159a505e9b59f17959daf0e586e5d4ed3d5e6077639dca72",
+  "mergerSHA256": "0e5bae08901926a64664f74597204be0883f8c0b718246128534077844c68c88",
   "parserSHA256": "1081ac7a18d72cc25633552948bf0270ee13c7e3da169dc3f2d8c8e0cff982c3",
   "preparedFrom": "6.6.0",
-  "moduleSHA256": "286c5785814137a7e901126aceb65213384a3007715409568364f0216a90405c",
+  "moduleSHA256": "eafa5a9bc5bf6247d7ca858cd2e1571f613020782224ab0c9f492f671cb092e9",
   "sharedSHA256": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619",
   "sourceRecords": [
     {
@@ -818,14 +818,6 @@
       "bytes": 86443
     },
     {
-      "label": "Naisi rejectAd list",
-      "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Loon/rule/rejectAd.list",
-      "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Loon/rule/rejectAd.list",
-      "commit": "5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97",
-      "sha256": "aa2578572186d4f48a062d2f6aeda0f0eba36c646533a435c8d390a566dcbd62",
-      "bytes": 103295
-    },
-    {
       "label": "Naisi Surge module",
       "url": "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Surge/module/blockAds.module",
       "pinnedURL": "https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Surge/module/blockAds.module",
@@ -849,23 +841,22 @@
   "upstreamRows": {
     "awaRules": 965,
     "naisiModuleRules": 2993,
-    "naisiListRules": 2748,
     "naisiURLRewrites": 528,
     "naisiScripts": 255
   },
   "mergedRows": {
     "awaRules": 931,
-    "naisiRules": 2687,
+    "naisiRules": 2657,
     "naisiDropRules": 13,
     "urlRewrites": 726,
     "scripts": 276
   },
   "deduplicated": {
-    "static": 66,
+    "static": 62,
     "awa": 0,
     "naisiModule": 153,
-    "naisiList": 2615,
-    "crossSource": 241,
+    "naisiModuleDrop": 0,
+    "crossSource": 142,
     "urlRewrites": 20,
     "scripts": 38,
     "compatibilityExceptions": 118
@@ -883,9 +874,9 @@
     },
     {
       "kind": "naisi-rules",
-      "name": "0e1f5a27c755ba00bb7b4b2dda037a26528293f2350b0bd767e552a15a2d56d0.list",
-      "sha256": "0e1f5a27c755ba00bb7b4b2dda037a26528293f2350b0bd767e552a15a2d56d0",
-      "bytes": 85545
+      "name": "862c6562faa526e1334caa261ca8936387031c348796ff03f3c189b7d1ca5259.list",
+      "sha256": "862c6562faa526e1334caa261ca8936387031c348796ff03f3c189b7d1ca5259",
+      "bytes": 84650
     },
     {
       "kind": "naisi-drop-rules",
@@ -903,47 +894,47 @@
   "moduleSnapshots": [
     {
       "name": "AMap-Splash-AdFilter-Test.sgmodule",
-      "sha256": "47b592dcb255cad8b8ea07bc1e5742613740609c739b26aadd30e50cf2ba0044"
+      "sha256": "686615b04ed34b758823283410285feaa2ea2c74e5f28cc757db7623ea0dcc78"
     },
     {
       "name": "AdBlock-Tencent-Guazi.sgmodule",
-      "sha256": "84555f9774f5d0293bc79e7a0c181bf52ef28fe7141c4284b39535f0ab662cbe"
+      "sha256": "7647fb090ae1baac415807bdc2ed91e3ef8e1b402fcdcaff2908575258b1e07e"
     },
     {
       "name": "Appleweatherpro.sgmodule",
-      "sha256": "f1ba525a185313b3ea5d0576be10542f02428162b4982119edc22e586d7ee6bd"
+      "sha256": "0f4219114ce9ec1916c5ed9ada8d35c3d888757bd98d462d0ad9a3881ec28da2"
     },
     {
       "name": "ChinaMobile-Splash-AdFilter-Test-V1.sgmodule",
-      "sha256": "a74537d8293b6dc228c695b49cb6c0d5daf712ababef70df0d9dc3c251732de0"
+      "sha256": "df3b8fe839e791d2491fb41187f2b068005a4607ee65bdd9b0bb9556ec5ced08"
     },
     {
       "name": "ChinaUnicom-LaunchCountdown-Test-V2.sgmodule",
-      "sha256": "01b4c30f0b8006e437229123cc3424c84bef3eef5a85f48b44d2ac98edb011ec"
+      "sha256": "8f8708993be6236df06af974370fd3b78f85d7cbd8af6c6202790a054f848e07"
     },
     {
       "name": "Ctrip-Splash-AdFilter-Test.sgmodule",
-      "sha256": "327b6497bf9d19198167e7328343e478315abca40d10fa1f86c7c042e5152da7"
+      "sha256": "8d02617c82b0e326c45ce6273edef9c9eeb55645cad5a9391d5bf312a6129dc0"
     },
     {
       "name": "GuaziManhua.sgmodule",
-      "sha256": "f9efc07001ecddc299efc7f4705257b08777218a1baff86d95086cdc63e3a376"
+      "sha256": "32daa494e5de3c9f9710b3c4e5b7a7bdfb3879b62a25ebb3fd7e059383bfda73"
     },
     {
       "name": "Tieba-AdFilter-Test.sgmodule",
-      "sha256": "bc8796d8c7979b091b1c34723e829ca880ad0cf1e6b59bae8506afb14ef7e456"
+      "sha256": "18597b7fffb0a11d42a77ec4536b8ba0ae653a4cf656a6b4ad9913f9f5077ec8"
     },
     {
       "name": "YouTube-AdFilter.sgmodule",
-      "sha256": "fd1cf11179162b6971326ca0bdaa4dd7e798b82b04bd64b53536800503f6aa5b"
+      "sha256": "9eb868b02ad46b141578d58b65070856027e2d38a68613a6d7c18855dc9caf52"
     },
     {
       "name": "Youku-Video-AdFilter-Test.sgmodule",
-      "sha256": "404c4f092f77a29ce7890f0a2d542e342a510ecf48b3462a1cf744defa3d37af"
+      "sha256": "41c3e1aab3d584ecade5e66b8b06ca0629fbb76f241c4632a832dc415ea7fa18"
     },
     {
       "name": "zymkvip2.js",
-      "sha256": "f3ad6398f9038af101c81c5184504b06a4e702483c0d9ed2249acecfa1711448"
+      "sha256": "5772ab1565436d21a32fe2374898043f7ecc06937a176607f2f6863aebbf7f93"
     }
   ],
   "rollbackSnapshots": [
@@ -961,7 +952,7 @@
   "manualApplication": true,
   "ruleUpdateInterval": -1,
   "scriptRefreshBehavior": "Pinned Git commit; new upstream content is applied only after the next generated module is manually updated in Surge.",
-  "sourcePolicy": "All rows from AWAvenue [Rule] and Naisi [Rule], [URL Rewrite], and [Script] are imported; unsupported source changes fail the build. Exact and first-match duplicates are removed; self-maintained matching scripts keep priority.",
+  "sourcePolicy": "All rows from AWAvenue [Rule] and Naisi [Rule], [URL Rewrite], and [Script] are imported; Naisi rules come only from the Surge module, without a separate list source. Unsupported source changes fail the build. Exact and first-match duplicates are removed; self-maintained matching scripts keep priority.",
   "deviceVerified": false,
   "preparedDate": "2026-10-08",
   "limitations": [

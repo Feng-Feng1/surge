@@ -1,4 +1,4 @@
-#!version=6.6.0-manual.4c1a71c87dec
+#!version=6.6.0-manual.c6dc481d3db4
 #!name=知音漫客VIP解锁
 #!desc=解锁会员与付费章节，兼容 Surge，移除混淆与不兼容语法
 #!author=改写自 @WeiGiegie
