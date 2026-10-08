@@ -84,112 +84,112 @@
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-ExtraApps-V1.txt?v=1.0.0",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/AdBlock-ExtraApps-V1.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/AdBlock-ExtraApps-V1.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "bea54744a47e2fec2b1530cc0328e9f0b2fc9696d7c0cbf91a37a5e3781ebac7",
       "bytes": 6911
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Bilibili-Splash-AdClean.js",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Bilibili-Splash-AdClean.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Bilibili-Splash-AdClean.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "2278878a51f18bf8b3408754d82d1a6fe8d75edd4b750cf96f7df9def3f00d34",
       "bytes": 7594
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Guazi-Clean-V5.txt?v=5.1.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Guazi-Clean-V5.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Guazi-Clean-V5.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "c5e70b8782e387d2a5a6ceaca1716dc95f2bf3b60831bdb7664f8ae879a17f6b",
       "bytes": 17557
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/guazi-clean.js",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/guazi-clean.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/guazi-clean.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "e372dcfd4de06e1bdcf909b65b5c4e1052807c411fc601147de89c484fb6b3fa",
       "bytes": 15477
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/Tieba-AdFilter-V3.txt?v=3.0.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-V3.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-V3.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "ecc1871ac23829ee6c40159b224638532bb2ccce4616c8e26fae164a3d5a709d",
       "bytes": 31336
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/main/YouTube-AdFilter-V2.txt?v=2.0.0-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/YouTube-AdFilter-V2.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/YouTube-AdFilter-V2.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "019a5aa9650e8c205c4516900e5c3fd4fb922d83662d228492c6b56c745525a3",
       "bytes": 133673
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/ChinaUnicom-LaunchCountdown-Test-V2.txt",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/ChinaUnicom-LaunchCountdown-Test-V2.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/ChinaUnicom-LaunchCountdown-Test-V2.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "a5168c504e150a699d3499e4f7e232b45efc10336e5d4c801d5a709543d402f3",
       "bytes": 15037
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.2.1-rc1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/TencentVideo-PageClean-V1.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/TencentVideo-PageClean-V1.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
       "bytes": 66597
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.3.1-clean",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/TencentVideo-PageClean-V1.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/TencentVideo-PageClean-V1.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "f5fb36649a2e7ff4065b9ea4e9f28173ef82e5ba63622f35f03b532ca26e0cd5",
       "bytes": 66597
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/TenVideo-MVL-AdFilter-Test.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/TenVideo-MVL-AdFilter-Test.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "9c5cd2f6f3e65f4629fc27658fd042813dcf4c90b95693ecd867a1f95ef342cd",
       "bytes": 42813
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Tieba-AdFilter-Test.js?v=2",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "7022808de31803b5072679cc465e88a5e2523d48cea192bc9cd9473d79bf413b",
       "bytes": 7514
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/Youku-Video-AdFilter-Test.txt",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Youku-Video-AdFilter-Test.txt",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Youku-Video-AdFilter-Test.txt",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "49bd67c9246b5cd7b545d9fbe179ef4ef410ab7ad77394bb6dbfcdb9e3934a67",
       "bytes": 7299
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/YouTube-AdFilter.js?v=1",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/YouTube-AdFilter.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/YouTube-AdFilter.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "607aa70003864976309eb854d4f8d22013fb792216e5312e2a3a1e713f4e63fd",
       "bytes": 133416
     },
     {
       "kind": "script",
       "sourceURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/zymk_surge.js",
-      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/zymk_surge.js",
-      "commit": "baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e",
+      "pinnedURL": "https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/zymk_surge.js",
+      "commit": "0dec6749e1083ed3220e090d5a982f544819afdf",
       "sha256": "fb1f4d1bdc15d026f85da5228644fb979afbc0eee531523347b6690959815820",
       "bytes": 1302
     },
