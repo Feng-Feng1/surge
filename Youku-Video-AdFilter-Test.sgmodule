@@ -3,7 +3,7 @@
 #!category=广告拦截测试
 #!author=Night & ChatGPT
 #!date=2026-09-04
-#!version=6.6.0-manual.c6dc481d3db4
+#!version=6.6.0-manual.ab35a90458d2
 #!system=ios
 
 
@@ -18,11 +18,11 @@
 [Script]
 
 # 第一层：删除 UPS 响应内的 ad 与 ykad 广告对象。
-优酷-播放广告响应净化 = type=http-response,pattern=^https:\/\/un-acs\.youku\.com\/gw\/mtop\.youku\.play\.ups\.appinfo\.get\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Youku-Video-AdFilter-Test.txt,timeout=30,debug=true
+优酷-播放广告响应净化 = type=http-response,pattern=^https:\/\/un-acs\.youku\.com\/gw\/mtop\.youku\.play\.ups\.appinfo\.get\/,requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/Youku-Video-AdFilter-Test.txt,timeout=30,debug=true
 
 # 第二层：HLS 中正片与广告共用媒体 CDN，但广告块可由
 # ccode=0902 + 非主 VID + DISCONTINUITY 三项联合识别并整块删除。
-优酷-HLS拼接广告净化 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$),requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Youku-Video-AdFilter-Test.txt,timeout=30,debug=true
+优酷-HLS拼接广告净化 = type=http-response,pattern=^https?:\/\/pl-ali\.youku\.com\/playlist\/m3u8(?:\?|$),requires-body=true,max-size=3145728,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/Youku-Video-AdFilter-Test.txt,timeout=30,debug=true
 
 
 # 使用教程：
