@@ -3,20 +3,20 @@
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-05
-#!version=6.6.0-manual.4c1a71c87dec
+#!version=6.6.0-manual.79a90b748e8a
 #!system=ios
 
 [Script]
 
-贴吧-信息流广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getFeedAd(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js,timeout=30
+贴吧-信息流广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getFeedAd(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js,timeout=30
 
-贴吧-开屏广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getSplashAd(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js,timeout=30
+贴吧-开屏广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/ad\/getSplashAd(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js,timeout=30
 
-贴吧-个性推荐内嵌广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/excellent\/personalized(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js,timeout=30
+贴吧-个性推荐内嵌广告净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/f\/excellent\/personalized(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js,timeout=30
 
-贴吧-广告竞价净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/b\/ad\/adBid(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js,timeout=30
+贴吧-广告竞价净化 = type=http-response,pattern=^https:\/\/tiebac\.baidu\.com\/c\/b\/ad\/adBid(?:\?|$),requires-body=true,max-size=4194304,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js,timeout=30
 
-贴吧-商城推广净化 = type=http-response,pattern=^https:\/\/tieba\.baidu\.com\/c\/f\/forum\/shopGoodsFeed(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/Tieba-AdFilter-Test.js,timeout=30
+贴吧-商城推广净化 = type=http-response,pattern=^https:\/\/tieba\.baidu\.com\/c\/f\/forum\/shopGoodsFeed(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/Tieba-AdFilter-Test.js,timeout=30
 
 [MITM]
 
