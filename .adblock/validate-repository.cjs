@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const vm=require('node:vm');
-const {parseNode}=require('./build-protection.cjs');
+const {parseNode}=require('./rule-parser.cjs');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const truth=v=>v==='true'||v==='1';
@@ -56,7 +56,13 @@ function sections(text,location){
 }
 function isModule(text){return /^#!\s*name\s*=/m.test(text)&&/^\[(?:Script|Rule|MITM|URL Rewrite|Map Local|Body Rewrite)\]\s*$/m.test(text);}
 function isRuntimeText(text){return /\$(?:done|request|response|script|httpClient|persistentStore)\b/.test(text)&&/^\s*(?:\/\*|\/\/|[;(]|['"]use strict|(?:const|let|var|function|if|try)\b)/.test(text.replace(/^\uFEFF/,''));}
-function compilePattern(value,location){try{return new RegExp(unquote(value));}catch{failure(location,'Invalid URL regular expression');}}
+function compilePattern(value,location){
+ // Surge accepts PCRE-style atomic groups; JavaScript's validator does not.
+ // Replacing only the atomic-group marker preserves group structure for the
+ // syntax/balance check without claiming that JS and Surge matching semantics
+ // are identical.
+ try{return new RegExp(unquote(value).replace(/\(\?>/g,'(?:'));}catch{failure(location,'Invalid URL regular expression');}
+}
 function within(root,file){const relative=path.relative(root,file);return relative!==''&&!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative);}
 function ownPath(value,owner,repo){
  const url=new URL(value);if(url.hostname!=='raw.githubusercontent.com')return null;

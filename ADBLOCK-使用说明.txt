@@ -1,47 +1,39 @@
-Surge 去广告手动更新版 6.5.0
+Surge 去广告总模块 6.6.0
 
-已经安装的用户
-在 Surge 点原模块的“更新模块”，确认版本以 6.5.0-manual 开头即可。订阅地址不变：
+已安装的用户
+在 Surge 中打开原去广告模块，点“更新模块”应用新版。模块地址保持不变：
 https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/AdBlock-AllInOne.sgmodule
-重写、脚本和 HTTPS 解密及证书信任需要保持启用。此轮按 Surge iOS 5.22.1 的能力核验，不引入要求 5.23 的模块内 Ruleset 功能。
+HTTPS 解密、证书信任、重写和脚本功能需按原配置启用。
 
 更新方式
-GitHub 每天北京时间 04:17 准备新快照（实际运行可能延迟），你在 Surge 更新模块后应用新资源；不用电脑生成文件。
-总模块及仓库独立模块的自有脚本固定到内容哈希路径，外部 raw 脚本固定原作者 Git commit。WeatherKit 保持现有 v3.3.2 发布版与参数，其发布附件未由本构建器重新下载及哈希核验。
-Surge 周期获取同一脚本地址不会改选较新的代码；规则集设置 update-interval=-1。是否自动应用模块取决于 Surge 自身设置，模块没有虚构禁用后台检查的参数。
-首次下载和新版本资源仍需要联网；资源下载失败时可在 Surge 外部资源页重试。
+GitHub 工作流每天北京时间约 04:17 获取上游并准备快照；上游规则或脚本新增后，进入下一次已验证快照。你只需在 Surge 手动更新总模块。
+工作流完整合并秋风 Surge 模块的 [Rule] 区段，以及奶思 Surge 模块的 [Rule]、[URL Rewrite]、[Script] 区段，并补充奶思 rejectAd.list。规则、重写和脚本都会去重；没有按具体广告条目维护的静态白名单。
+奶思的 [Body Rewrite]、[Map Local]、[Header Rewrite] 和 [MITM] 区段不导入。自维护功能及兼容规则保留在总模块内，优先于普通拦截规则；秋风纯广告规则按 Surge 的 pre-matching 优先级处理。
+外部脚本固定到已校验的上游 Git commit；规则文件使用内容哈希。Surge 周期获取同一固定地址不会自动换到未来代码。WeatherKit 继续使用原 v3.3.2 发布附件。
+遇到上游格式变化、未知规则参数或冲突时，工作流会失败并保留当前已发布模块，不会静默漏掉新内容。
 
-本轮修复与兼容
-• 哔哩哔哩新增品牌/活动开屏接口及两个已知 API 主机的净化；保留已有 list/show 开屏 Map Local。新净化保留正常初始化信息，不改账号状态。
-• 知音漫客广告规则移到正确的 URL Rewrite 位置，MITM 主机改为追加；会员/章节修改逻辑保留。
-• YouTube 参数使用官方引号编码，修复异步失败和旧脚本缺 User-Agent 的异常路径；原字幕、短视频、上传及沉浸式参数保持原值。
-• 瓜子旧脚本修复顶层 return 语法；空响应或无法解析的漫画响应正常放行；Bili View 支持对象及数组格式的重复响应头。
-• 天气预警的 ids 参数在查询串首位也可命中，天气数据源、令牌参数和上游发布版本保留。
-• AdGuard 域名层保留例外及精确接口/地图兼容保护，不将例外转成全局 DIRECT。实际条目数量及来源、资源校验值见 AdBlock-AdGuard-Update.json。
+本轮调整
+• 移除活动总模块中的 AdGuard DNS 规则层及旧 LiveMerge/可莉合并逻辑。
+• 将秋风完整规则与奶思规则、URL Rewrite、Script 接入每日构建，不再用逐条白名单筛选奶思新增内容。
+• 合并重复规则和重写；同一请求命中的重复脚本保留先匹配的自维护规则，避免执行两次。
+• 保留已有的 Bilibili、腾讯视频、闲鱼、地图及其他自维护规则和脚本。
 
-安装模块的关系
-通常只需原去广告总模块。独立的 YouTube、优酷、贴吧、瓜子、腾讯等模块供单独使用；同类模块同时启用时，Surge 每次请求/响应只执行第一个匹配脚本，不会叠加执行。
-不要靠同时安装两份相同功能的模块加强清理；已安装用户只更新原来使用的模块即可。
+安装关系与性能
+通常只需使用原去广告总模块。独立 YouTube、优酷、贴吧、瓜子、腾讯等模块供单独使用；避免同时启用重复功能的模块。
+大型域名规则通过 Surge RULE-SET 缓存和索引，模块不再加载 AdGuard DNS 的十万级转换列表。奶思当前上游包含较多 URL Rewrite 和 Script 规则；具体合并条数见 AdBlock-Update.json。设备端的页面速度仍需在 Surge 更新后实测。
 
 维护仓库
-.adblock/baseline 是总模块和共享脚本的维护源；.adblock/modules 是其余模块的维护源。根目录模块是构建后发布给 Surge 的文件，不要只改生成文件后让下一轮构建覆盖。
-其余根目录 JS/TXT 脚本是维护源，工作流会将被模块引用的自有脚本生成内容哈希副本。所有模块模板都会进入同一构建及格式校验；脚本、模板和维护程序变更会触发后台检查。
-工作流先执行转换保障及运行回归，再准备快照和检查全部模块，最后一次提交发布；检查失败不会提交半成品，也不会强制覆盖 main。
-未知复杂 AdGuard 例外、有效 DNS 重写、错误网页/404、源码或哈希校验失败会停止更新。旧的已发布版本继续可用。
+.adblock/baseline 是总模块与共享脚本的维护源；.adblock/modules 是其他模块的维护源。根目录模块为生成后的 Surge 文件。
+每次构建都会获取上游完整指定区段并固定 commit；新出现的未知区段或格式会停止发布以待修正。旧 Resources/AdBlock 哈希文件保留，避免历史模块或回退版本失效。
+工作流先运行合并、脚本语法、运行回归、模块格式和资源完整性检查，全部通过后才提交生成文件。
 
-回退
-Rollback/6.4.0 保存本轮修改前的完整总模块及共享脚本，Rollback/6.3.1 保留更早版本；构建只核验它们，不改写历史文件。
-旧 Resources/AdBlock 哈希文件保留，不自动删除，否则旧版模块的引用可能失效。
+回退与核验
+Rollback/6.4.0 和 Rollback/6.3.1 是历史快照，构建只核对其完整性，不改写它们。新规则尚未在用户设备上验证；上游变化或应用原生界面变化仍可能需要专门修复。
+仓库不会上传 HAR、聊天截图、证书或私人令牌。
 
-能力与核验范围
-按 Surge 官方文档核对配置、匹配顺序、响应体和二进制/响应头接口，并做合成数据的成功、失败及更新回归。
-这是源码/离线检查及 GitHub 构建核验，不能代替你的手机测试。新广告接口、应用缓存或原生布局变化仍可能需要针对性修复。
-AdGuard 转换使用可表达的 DNS 主机子集，包含广告与追踪；条件规则、CSS/ExtendedCss、浏览器 scriptlet、DNS 应答重写及 CNAME 链过滤无法全部等价转换为 Surge 原生 App 容器处理。
-仓库不会上传 HAR、聊天截图、证书或私人令牌。原始 DNS 源、许可证、来源固定值及维护源码均保留。
-
-官方依据
-https://manual.nssurge.com/profile/module.html
-https://manual.nssurge.com/profile/format.html
-https://manual.nssurge.com/scripting/overview.html
+Surge 官方依据
+https://manual.nssurge.com/rules/overview.html
+https://manual.nssurge.com/rules/ruleset.html
+https://manual.nssurge.com/http/url-rewrite.html
 https://manual.nssurge.com/scripting/http-request.html
 https://manual.nssurge.com/scripting/http-response.html

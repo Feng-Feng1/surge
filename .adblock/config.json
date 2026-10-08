@@ -1,15 +1,23 @@
 {
-  "schema": 2,
+  "schema": 3,
   "repository": "Feng-Feng1/surge",
   "branch": "main",
-  "productVersion": "6.5.0",
-  "baselineVersion": "6.5.0",
-  "baselineModuleSHA256": "c4ead4df6fa8c9ea10c97af72a6be5b50b4bbae9e84baee2f33141999b0bd8b7",
+  "productVersion": "6.6.0",
+  "baselineVersion": "6.6.0",
+  "baselineModuleSHA256": "a737972373bf50f927a9ea4b1b930ccdcca162d05ec64fde84f6b75482084409",
   "baselineSharedSHA256": "56301a1c6ecb6546244dda50984e17d325d451aaa0172e67b6eee79b2f3da619",
-  "dnsSource": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
-  "dnsLicense": "https://github.com/AdguardTeam/AdGuardSDNSFilter/blob/master/LICENSE",
-  "minimumConvertedEntries": 100000,
-  "maximumConvertedEntries": 700000,
+  "sources": {
+    "awa": {
+      "url": "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/refs/heads/main/Filters/AWAvenue-Ads-Rule-Surge-module.sgmodule",
+      "allowedSections": ["Rule"]
+    },
+    "naisi": {
+      "module": "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Surge/module/blockAds.module",
+      "ruleList": "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Loon/rule/rejectAd.list",
+      "allowedSections": ["Rule", "URL Rewrite", "Body Rewrite", "Map Local", "Header Rewrite", "Script", "MITM"],
+      "minimumRows": {"Rule": 500, "URL Rewrite": 50, "Script": 50}
+    }
+  },
   "rollbackSnapshots": [
     {
       "version": "6.3.1",

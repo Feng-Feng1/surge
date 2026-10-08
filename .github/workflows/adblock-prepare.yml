@@ -24,7 +24,9 @@ on:
       - 'Tieba-AdFilter-V3.txt'
       - 'YouTube-AdFilter-V2.txt'
       - 'Youku-Video-AdFilter-Test.txt'
-      - 'AdBlock-LiveMerge.txt'
+      - 'AdBlock-AllInOne.sgmodule'
+      - 'AdBlock-AppClean-V5.txt'
+      - 'ADBLOCK-使用说明.txt'
 
 permissions:
   contents: write
@@ -48,7 +50,7 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Verify conversion safeguards
+      - name: Verify upstream merge safeguards
         run: node .adblock/tests.cjs
       - name: Verify runtime regressions
         run: |
@@ -66,7 +68,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add -- '*.sgmodule' zymkvip2.js AdBlock-AppClean-V5.txt AdBlock-AdGuard-Update.json Resources/AdBlock
+          git add -A
           if git diff --cached --quiet; then
             echo 'The verified update is already current.'
             exit 0
