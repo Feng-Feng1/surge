@@ -6,10 +6,10 @@
 
 [Script]
 # 解锁会员信息接口
-知音漫客-会员解锁 = type=http-response,pattern=^https?:\/\/apigate\.kaimanhua\.com\/zymk.+getuserinfo,requires-body=true, script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/zymk_surge.js, timeout=10
+知音漫客-会员解锁 = type=http-response,pattern=^https?:\/\/apigate\.kaimanhua\.com\/zymk.+getuserinfo,requires-body=true, script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/zymk_surge.js, timeout=10
 
 # 解锁付费章节接口
-知音漫客-章节解锁 = type=http-response,pattern=^https?:\/\/apigate\.kaimanhua\.com\/zymk.+paychapters,requires-body=true, script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/0dec6749e1083ed3220e090d5a982f544819afdf/zymk_surge.js, timeout=10
+知音漫客-章节解锁 = type=http-response,pattern=^https?:\/\/apigate\.kaimanhua\.com\/zymk.+paychapters,requires-body=true, script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/baf49aaee7fb2b47e0a8f060b043c4e6aa92fd5e/zymk_surge.js, timeout=10
 
 # 屏蔽广告接口
 [URL Rewrite]
