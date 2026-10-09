@@ -1,4 +1,4 @@
-#!version=6.6.0-manual.ab35a90458d2
+#!version=6.6.0-manual.49152b1be13d
 #!name=guazi去广告
 #!desc=详情页去广告、阅读页去广告、重复图片去重、页数修复、漫画图片无缝显示
 #!system=ios
@@ -18,7 +18,7 @@ DOMAIN,mt0simgbyte.lvautm.cn,REJECT
 ^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-bottom-ad\.js(?:\?.*)?$ _ reject
 
 [Script]
-guazi-clean = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/guazi-clean.js,requires-body=true,max-size=8388608,timeout=10,engine=webview
+guazi-clean = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/guazi-clean.js,requires-body=true,max-size=8388608,timeout=10,engine=webview
 
 [MITM]
 hostname = %APPEND% www.guazimanhua.com

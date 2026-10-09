@@ -3,7 +3,7 @@
 #!category=广告拦截测试
 #!author=Night（模块整理） & Maasea（核心脚本）
 #!date=2026-09-05
-#!version=6.6.0-manual.ab35a90458d2
+#!version=6.6.0-manual.49152b1be13d
 #!system=ios
 
 
@@ -19,7 +19,7 @@
 
 # 使用 Maasea 的 Apache-2.0 Protobuf 净化核心，由自己的仓库固定托管。
 # 显式关闭与去广告无关的按钮隐藏和字幕增强功能。
-YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/YouTube-AdFilter.js,argument="{\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false}",timeout=60
+YouTube-响应广告净化 = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|get_watch)(?:\?.*)?$,requires-body=true,max-size=8388608,binary-body-mode=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/YouTube-AdFilter.js,argument="{\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false}",timeout=60
 
 
 [MITM]

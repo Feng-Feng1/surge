@@ -3,7 +3,7 @@
 #!category=广告拦截
 #!author=Night & ChatGPT
 #!date=2026-09-23
-#!version=6.6.0-manual.ab35a90458d2
+#!version=6.6.0-manual.49152b1be13d
 #!system=ios
 
 # 腾讯/瓜子脚本正文、原四项绑定和版本参数不改。其余主功能由安装清单里的远程模块提供。
@@ -93,11 +93,11 @@ http-response-jq ^https?:\/\/(?:g-)?acs\.m\.(?:goofish|taobao)\.com\/gw\/mtop\.t
 
 [Script]
 # 腾讯三项绑定逐字保留；RC7 页面脚本和 V22 播放脚本不改。
-腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/TencentVideo-PageClean-V1.txt,timeout=10,script-update-interval=86400
-腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/TenVideo-MVL-AdFilter-Test.js,timeout=30,max-size=1048576
-腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/TenVideo-MVL-AdFilter-Test.js,timeout=30
+腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/TencentVideo-PageClean-V1.txt,timeout=10,script-update-interval=86400
+腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/TenVideo-MVL-AdFilter-Test.js,timeout=30,max-size=1048576
+腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/TenVideo-MVL-AdFilter-Test.js,timeout=30
 # 瓜子使用当前已修复嵌套 HTML 容器的 V5.1 RC1 脚本，逐字保留绑定。
-瓜子漫画-页面净化 = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/7cf0b54ec9374f28ba5fb250719536a4161e4cbe/Guazi-Clean-V5.txt,timeout=10,script-update-interval=86400,engine=webview
+瓜子漫画-页面净化 = type=http-response,pattern=^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/Guazi-Clean-V5.txt,timeout=10,script-update-interval=86400,engine=webview
 
 # 京东只引用原作者远程脚本；不带入其 mapi.m.jd.com 整域拒绝。
 fmz-京东原作者脚本 = type=http-response, pattern=^https:\/\/api\.m\.jd\.com\/client\.action\?functionId=(deliverLayer|getTabHomeInfo|myOrderInfo|orderTrackBusiness|personinfoBusiness|start|welcomeHome), script-path=https://raw.githubusercontent.com/fmz200/wool_scripts/5d5f63fcf98bc69d5f8f1b1bae6f86a01ee4bb97/Scripts/jingdong/jingdong.js, requires-body=true, timeout=60
