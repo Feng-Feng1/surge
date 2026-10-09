@@ -1,0 +1,34 @@
+#!name=腾讯视频去广告 RC7 独立版
+#!desc=从 AdBlock AllInOne V5.0.3 RC7 提取腾讯视频专用项；仅拆分配置并精简注释，不新增去广告逻辑。
+#!category=广告拦截
+#!author=Night & ChatGPT；规则参考 blackmatrix7 等
+#!date=2026-10-09
+#!version=5.0.3-rc7-standalone-20261009
+#!system=ios
+
+[Rule]
+
+DOMAIN,p.l.qq.com,REJECT,extended-matching
+DOMAIN,t.l.qq.com,REJECT,extended-matching
+DOMAIN,us.l.qq.com,REJECT,extended-matching
+DOMAIN,w.l.qq.com,REJECT,extended-matching
+DOMAIN,vd6.l.qq.com,REJECT,extended-matching
+DOMAIN,vi.l.qq.com,REJECT,extended-matching
+
+[Map Local]
+
+^http:\/\/pgdt\.gtimg\.cn\/141\/20204\/snscosdownload\/SZ\/reserved\/[0-9a-f]{48}(?:_dGltYWdl_[0-9]+)?(?:\?[^#]*)?$ data-type=text data="" status-code=204
+^http:\/\/[^\/]+\/(?:[^?]*\/)?gzc_1000127_[^?\/]+\.f10215\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+^http:\/\/[^\/]+\/(?:[^?]*\/)?gzc_1000173_[^?\/]+\.f(?:124105|206310[0-9]*)\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+^http:\/\/vgdt\.gtimg\.cn\/[0-9]+\/[^?\/]+\.mp4(?:\?.*)?$ data-type=text data="" status-code=204
+
+[Script]
+
+腾讯视频-首页悬浮与开屏清理 = type=http-response,pattern=^(?:https:\/\/i\.video\.qq\.com|https?:\/\/iacc\.qq\.com)\/$,requires-body=true,binary-body-mode=true,max-size=2097152,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TencentVideo-PageClean-V1.txt?v=1.2.1-rc1,timeout=10,script-update-interval=86400
+腾讯视频-播放广告请求净化 = type=http-request,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30,max-size=1048576
+腾讯视频-播放广告响应净化 = type=http-response,pattern=^https:\/\/(?:s)?vv\.video\.qq\.com\/getvinfo(?:\?|$),requires-body=true,max-size=8388608,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/refs/heads/main/TenVideo-MVL-AdFilter-Test.js?v=22,timeout=30
+
+[MITM]
+
+hostname = %APPEND% 112.60.20.144:443, 111.33.110.202:443, 111.33.110.163:443, 120.241.130.172:443, 112.60.23.213:443, 36.155.163.124:443, 36.155.228.69:443, 120.241.130.240:443, 120.232.131.191:443, 36.155.163.112:443, 36.155.205.219:443, i.video.qq.com, iacc.qq.com, svv.video.qq.com, vv.video.qq.com
+
