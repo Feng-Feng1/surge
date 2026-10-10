@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: MIT
  * Copyright (c) 2026 Feng-Feng1
- * Original local link helper. Conversion is performed by Script-Hub-Org.
- * This file contains no copied plugin-center pages or plugin contents.
+ * Only changes installation-button navigation in the user's browser.
+ * Plugin downloads and conversion are handled by official Script Hub scripts.
  */
 'use strict';
 
 function convertKeleeLink(input) {
   var source = String(input || '').trim();
-  if (!source) throw new Error('请先粘贴可莉的公开明文插件链接。');
+  if (!source) throw new Error('安装链接为空。');
   if (/[\u0000-\u001f\u007f]/.test(source)) throw new Error('链接包含无效字符。');
 
   // Recover the original resource from an existing Script Hub link, including
@@ -53,106 +53,65 @@ function convertKeleeLink(input) {
   return {
     sourceURL: url.href,
     moduleURL: moduleURL,
-    installURL: 'surge:///install-module?url=' + encodeURIComponent(moduleURL),
-    warning: /\.lpx$/i.test(filename) ? '此地址使用 .lpx 格式；安装时会检查是否能读取明文，真正加密的插件仍无法转换。' : ''
+    installURL: 'surge:///install-module?url=' + encodeURIComponent(moduleURL)
   };
 }
 
-function startKeleePage() {
-  var form = document.getElementById('converter');
-  var input = document.getElementById('source');
-  var message = document.getElementById('message');
-  var result = document.getElementById('result');
-  var output = document.getElementById('output');
-  var install = document.getElementById('install');
-  var copy = document.getElementById('copy');
-
-  function resetResult() {
-    result.hidden = true;
-    output.value = '';
-    install.removeAttribute('href');
-    message.textContent = '';
-    copy.textContent = '复制模块链接';
-  }
-  input.addEventListener('input', resetResult);
-  form.addEventListener('submit', function (event) {
+function installKeleeJump() {
+  if (window.__keleeSurgeJump) return;
+  window.__keleeSurgeJump = true;
+  // Delegation covers cards loaded later and cards rebuilt by search/filter.
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (target && target.nodeType !== 1) target = target.parentElement;
+    var button = target && target.closest ? target.closest('a.plugin-install') : null;
+    if (!button) return;
+    var source = button.getAttribute('href') || '';
+    if (!/^(?:loon:\/\/import\/?\?plugin=|https?:\/\/)/i.test(source)) return;
     event.preventDefault();
-    resetResult();
+    event.stopImmediatePropagation();
     try {
-      var links = convertKeleeLink(input.value);
-      output.value = links.moduleURL;
-      install.href = links.installURL;
-      result.hidden = false;
-      message.textContent = '链接已生成；安装时由 Script Hub 下载和转换原插件。' +
-        (links.warning ? '\n' + links.warning : '');
+      // Stay synchronous so Safari treats the Surge launch as a user action.
+      window.location.href = convertKeleeLink(source).installURL;
     } catch (error) {
-      message.textContent = error.message;
+      window.alert('无法生成 Script Hub 安装链接：' + error.message);
     }
-  });
-  copy.addEventListener('click', async function () {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(output.value);
-      } else {
-        // The helper is served over local HTTP; Safari's Clipboard API is
-        // unavailable here. Keep a user-gesture copy fallback and manual select.
-        output.focus();
-        output.select();
-        output.setSelectionRange(0, output.value.length);
-        if (!document.execCommand('copy')) throw new Error('manual-copy');
-      }
-      copy.textContent = '已复制';
-    } catch (_) {
-      output.focus();
-      output.select();
-      output.setSelectionRange(0, output.value.length);
-      message.textContent = '链接已选中，请长按复制。';
-    }
-  });
-  try {
-    var initial = new URL(window.location.href).searchParams.get('url');
-    if (initial) input.value = initial;
-  } catch (_) { /* The input remains usable without a query string. */ }
+  }, true);
 }
 
-function keleePageHTML() {
-  return '<!doctype html><html lang="zh-CN"><head>' +
-    '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<meta name="color-scheme" content="light dark"><title>可莉链接转换 · Surge</title>' +
-    '<style>body{font:16px/1.65 system-ui,-apple-system,sans-serif;margin:0;background:#f4f5f8;color:#202534}' +
-    'main{max-width:640px;margin:7vh auto;padding:28px;background:#fff;border-radius:20px}' +
-    'h1{font-size:26px;margin:0 0 8px}p{color:#606979}label{display:block;font-weight:600;margin:24px 0 8px}' +
-    'textarea{box-sizing:border-box;width:100%;min-height:112px;padding:14px;border:1px solid #b8c1d1;border-radius:12px;font:15px/1.5 system-ui;resize:vertical}' +
-    'button,.action{display:inline-block;padding:11px 18px;border:0;border-radius:10px;background:#2465df;color:#fff;font:600 16px/1.4 system-ui;cursor:pointer;text-decoration:none;margin:12px 8px 0 0}' +
-    '#copy{background:#e9eef9;color:#244980}#message{white-space:pre-wrap;overflow-wrap:anywhere}#output{min-height:140px;font-size:13px}' +
-    '.note{font-size:14px;border-top:1px solid #e5e8ef;padding-top:18px;margin-top:26px}[hidden]{display:none!important}' +
-    '@media(max-width:700px){main{margin:18px;padding:22px}}' +
-    '@media(prefers-color-scheme:dark){body{background:#11151d;color:#edf1fb}main{background:#1b2230}p{color:#b6c1d6}textarea{background:#111823;color:#edf1fb;border-color:#4b5870}.note{border-color:#3b465b}#copy{background:#313e56;color:#d9e4ff}}' +
-    '</style></head><body><main><h1>可莉链接转换</h1>' +
-    '<p>将可读取的 Loon 插件链接转为 Surge 模块安装链接。</p>' +
-    '<form id="converter"><label for="source">插件链接</label>' +
-    '<textarea id="source" placeholder="粘贴 .plugin、.lpx、Loon 安装链接或 Script Hub 链接" autocomplete="off" autocapitalize="off" spellcheck="false" required></textarea>' +
-    '<button type="submit">生成安装链接</button></form><p id="message" role="status" aria-live="polite"></p>' +
-    '<section id="result" hidden><label for="output">Surge 模块链接</label><textarea id="output" readonly spellcheck="false"></textarea>' +
-    '<a class="action" id="install">导入 Surge</a><button type="button" id="copy">复制模块链接</button></section>' +
-    '<p class="note">支持 .plugin 和可读取明文的 .lpx，真正加密的插件仍无法转换。原地址失效或含 Loon 专属功能时，转换可能失败。<br>' +
-    '安装后请保持本模块启用，并启用 Surge 的脚本和 MITM、安装并信任证书。<br>' +
-    '链接在本页生成，原插件在安装和更新时由 Surge 下载。转换引擎：' +
-    '<a href="https://github.com/Script-Hub-Org/Script-Hub">Script Hub Beta</a>。</p>' +
-    '</main><script>' + convertKeleeLink.toString() + '\n' + startKeleePage.toString() + '\nstartKeleePage();</script></body></html>';
+function rewriteKeleePage(body, headers) {
+  var contentType = '';
+  Object.keys(headers || {}).forEach(function (key) {
+    if (/^content-type$/i.test(key)) contentType = String(headers[key]);
+  });
+  if (contentType && !/^(?:text\/html|application\/xhtml\+xml)(?:\s*;|\s*$)/i.test(contentType)) return null;
+  if (typeof body !== 'string' || !/<html(?:\s|>)/i.test(body) || !/<\/body\s*>/i.test(body) ||
+      body.indexOf('id="kelee-surge-install"') !== -1) return null;
+  var injection = '<script id="kelee-surge-install">\n' +
+    convertKeleeLink.toString() + '\n' + installKeleeJump.toString() +
+    '\ninstallKeleeJump();\n</script>\n';
+  var changedHeaders = {};
+  Object.keys(headers || {}).forEach(function (key) {
+    if (!/^(?:content-length|content-encoding|etag|last-modified|cache-control|expires)$/i.test(key)) {
+      changedHeaders[key] = headers[key];
+    }
+  });
+  changedHeaders['Cache-Control'] = 'no-store';
+  return {
+    body: body.replace(/<\/body\s*>/i, function (closingTag) { return injection + closingTag; }),
+    headers: changedHeaders
+  };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { convertKeleeLink: convertKeleeLink, keleePageHTML: keleePageHTML };
+  module.exports = { convertKeleeLink: convertKeleeLink, installKeleeJump: installKeleeJump, rewriteKeleePage: rewriteKeleePage };
 }
-if (typeof $done === 'function' && typeof $request !== 'undefined') {
-  if (/^http:\/\/kelee\.surge(?:\/|\?|$)/i.test($request.url || '')) {
-    $done({ response: {
-      status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
-      body: keleePageHTML()
-    } });
-  } else {
-    $done({});
+if (typeof $done === 'function') {
+  var changed = null;
+  if (typeof $request !== 'undefined' && typeof $response !== 'undefined' &&
+      /^https:\/\/hub\.kelee\.one\/(?:index\.html)?(?:\?.*)?$/i.test($request.url) &&
+      Number($response.status) === 200) {
+    changed = rewriteKeleePage($response.body, $response.headers);
   }
+  $done(changed || {});
 }

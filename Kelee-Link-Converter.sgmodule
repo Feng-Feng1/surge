@@ -1,24 +1,23 @@
-#!name=可莉链接转换 · Surge
-#!desc=启用后用 Safari 打开 http://kelee.surge，粘贴 .plugin、可读明文的 .lpx、Loon 安装链接或 Script Hub 链接，生成 Surge 模块安装地址。已集成 Script Hub Beta；真正加密的插件无法转换。
+#!name=可莉插件中心 · Surge 安装按钮
+#!desc=用 Safari 打开 https://hub.kelee.one/?surge=2，点击原网页“安装”按钮，通过 Script Hub 官方 Beta 转换链接直接导入 Surge。
 #!author=Feng-Feng1；转换引擎：Script-Hub-Org（@小白脸 @xream @keywos @ckyb）
 #!category=工具
 #!date=2026-10-10
-#!version=1.1.0
+#!version=2.0.0
 
-# 本模块和原创页面：MIT，见 Licenses/Kelee-Link-Converter-MIT.txt。
-# 转换脚本从 Script-Hub 官方仓库加载，依其 GPL-3.0 许可使用。
+# 开启脚本、MITM，并安装和信任 MITM 证书。
+# 若已有 Script Hub 模块，将本模块放在前面以使用官方 Beta 引擎。
 # 官方项目：https://github.com/Script-Hub-Org/Script-Hub
-# 安装时请启用 Surge「脚本」和「MITM」，并安装、信任 MITM 证书。
-# 与已有 Script Hub 模块同时启用时，请将本模块排在前面以使用 Beta 引擎。
+# 首次仍跳 Loon 时刷新插件中心，再重新打开页面。
 
 [General]
-force-http-engine-hosts = %APPEND% kelee.surge, script.hub, *.script.hub
+force-http-engine-hosts = %APPEND% script.hub, *.script.hub
 
 [Script]
-Kelee Converter: 页面 = type=http-request, pattern=^http:\/\/kelee\.surge(?:\/|\?|$), script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Kelee-Link-Converter.js, timeout=5
-Kelee Converter: 插件转换 = type=http-request, pattern=^https?:\/\/script\.hub\/file\/_start_\/.+type=(?:qx-rewrite|surge-module|shadowrocket-module|loon-plugin|all-module), script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/Rewrite-Parser.beta.js, timeout=300
-Kelee Converter: 规则转换 = type=http-request, pattern=^https?:\/\/script\.hub\/file\/_start_\/.+type=rule-set, script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/rule-parser.beta.js, timeout=300
-Kelee Converter: 脚本转换 = type=http-request, pattern=^https?:\/\/script\.hub\/convert\/, script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/script-converter.beta.js, timeout=300
+Kelee: 安装按钮跳转 = type=http-response, pattern=^https:\/\/hub\.kelee\.one\/(?:index\.html)?(?:\?.*)?$, requires-body=true, max-size=1048576, script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/Kelee-Link-Converter.js?v=2.0.0, timeout=5
+Kelee: Script Hub 插件转换 = type=http-request, pattern=^https?:\/\/script\.hub\/file\/_start_\/.+type=(?:qx-rewrite|surge-module|shadowrocket-module|loon-plugin|all-module), script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/Rewrite-Parser.beta.js, timeout=300
+Kelee: Script Hub 规则转换 = type=http-request, pattern=^https?:\/\/script\.hub\/file\/_start_\/.+type=rule-set, script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/rule-parser.beta.js, timeout=300
+Kelee: Script Hub 脚本转换 = type=http-request, pattern=^https?:\/\/script\.hub\/convert\/, script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/script-converter.beta.js, timeout=300
 
 [MITM]
-hostname = %APPEND% script.hub, *.script.hub
+hostname = %APPEND% hub.kelee.one, script.hub, *.script.hub
