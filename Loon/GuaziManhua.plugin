@@ -1,0 +1,33 @@
+#!name=瓜子漫画去广告 · Loon
+#!desc=详情页与阅读页去广告、重复图片去重、页数修复、漫画图片无缝显示。沿用仓库 GuaziManhua 独立模块脚本。
+#!author=Feng-Feng1
+#!system=iOS,iPadOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-10
+#!tag=去广告,漫画
+#!version=1.0.0
+
+# 开启插件、脚本、Rewrite 与 MitM，安装并信任 Loon 的 MitM 证书。
+# 页面脚本兼容 Loon 的 $request/$response/$done API，直接加载原脚本。
+# 原模块：GuaziManhua.sgmodule @ 9dfe22c85592dd99d951a19d43e3b4a028a22cb0
+# 脚本固定为原模块绑定版本，不会随 Surge 主分支修改而自动改变。
+
+[Rule]
+DOMAIN,xhs794.xhsqd12.com,REJECT
+DOMAIN,xddxxy.dasdnajksn.com,REJECT
+DOMAIN,rk7p.avdog-t0199.vip,REJECT
+DOMAIN,oytsuig.kwvqaj.cn,REJECT
+DOMAIN,jsqp.rk00h.cn,REJECT
+DOMAIN,rc210fx9byte.9sawv.cn,REJECT
+DOMAIN,mt0simgbyte.lvautm.cn,REJECT
+
+[Rewrite]
+^https:\/\/www\.guazimanhua\.com\/assets\/ad\/ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-top-static-ad\.js(?:\?.*)?$ reject
+^https:\/\/www\.guazimanhua\.com\/assets\/reader\/mobile-bottom-ad\.js(?:\?.*)?$ reject
+
+[Script]
+response if ${url} ~= /^https:\/\/www\.guazimanhua\.com\/(?:comic|chapter)\.php(?:\?|$)/ then script("https://raw.githubusercontent.com/Feng-Feng1/surge/5fcbd533c94fc2632a11c46448859be16c91be61/guazi-clean.js") with requires_body=true, binary_body_mode=false, timeout=10, tag="瓜子漫画页面净化"
+
+[Mitm]
+hostname = www.guazimanhua.com
