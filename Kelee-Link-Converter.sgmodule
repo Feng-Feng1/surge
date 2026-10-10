@@ -1,9 +1,9 @@
 #!name=可莉链接转换 · Surge
-#!desc=启用后用 Safari 打开 http://kelee.surge，粘贴公开明文 .plugin 或 loon://import 链接，生成 Surge 模块安装地址。已集成 Script Hub Beta 转换路由。加密 .lpx 不支持。
+#!desc=启用后用 Safari 打开 http://kelee.surge，粘贴 .plugin、可读明文的 .lpx、Loon 安装链接或 Script Hub 链接，生成 Surge 模块安装地址。已集成 Script Hub Beta；真正加密的插件无法转换。
 #!author=Feng-Feng1；转换引擎：Script-Hub-Org（@小白脸 @xream @keywos @ckyb）
 #!category=工具
 #!date=2026-10-10
-#!version=1.0.0
+#!version=1.1.0
 
 # 本模块和原创页面：MIT，见 Licenses/Kelee-Link-Converter-MIT.txt。
 # 转换脚本从 Script-Hub 官方仓库加载，依其 GPL-3.0 许可使用。

@@ -10,11 +10,16 @@ function convertKeleeLink(input) {
   if (!source) throw new Error('请先粘贴可莉的公开明文插件链接。');
   if (/[\u0000-\u001f\u007f]/.test(source)) throw new Error('链接包含无效字符。');
 
+  // Recover the original resource from an existing Script Hub link, including
+  // links that mistakenly embed a whole Loon installation scheme as the source.
+  var wrapped = source.match(/^https?:\/\/script\.hub\/file\/_start_\/(.+?)\/_end_\/[^?]+(?:\?.*)?$/i);
+  if (wrapped) source = wrapped[1];
+
   if (/^loon:\/\//i.test(source)) {
     // Decode the outer scheme parameter once only. Do not decode the source
     // URL again: %26 and %2B may be part of a signed URL or query value.
     var match = source.match(/^loon:\/\/import\/?\?plugin=(.+)$/i);
-    if (!match) throw new Error('请使用 loon://import?plugin=… 链接，或直接粘贴 .plugin 地址。');
+    if (!match) throw new Error('请使用 loon://import?plugin=… 链接，或直接粘贴 .plugin / .lpx 地址。');
     source = match[1];
     if (/^https?%3a/i.test(source)) {
       try { source = decodeURIComponent(source); }
@@ -35,23 +40,21 @@ function convertKeleeLink(input) {
   var filename;
   try { filename = decodeURIComponent(url.pathname.split('/').pop()); }
   catch (_) { throw new Error('插件文件名的编码不完整。'); }
-  if (/\.lpx$/i.test(filename)) {
-    throw new Error('此助手不支持 .lpx。可莉当前插件中心使用此格式；加密插件无法转换，请提供作者公开的明文 .plugin 链接。');
-  }
-  if (!/\.plugin$/i.test(filename)) throw new Error('请提供以 .plugin 结尾的公开明文 Loon 插件地址。');
+  if (!/\.(?:plugin|lpx)$/i.test(filename)) throw new Error('请提供以 .plugin 或 .lpx 结尾的 Loon 插件地址。');
   if (/[\/\\]/.test(filename)) throw new Error('插件文件名不正确。');
   // These strings delimit Script Hub's embedded source-URL format.
   if (/\/_end_\/|\/_start_\/|%f0%9f%98%82/i.test(url.href)) {
     throw new Error('此源地址包含转换器保留分隔符，暂不支持。');
   }
 
-  var outputName = filename.replace(/\.plugin$/i, '.sgmodule');
+  var outputName = filename.replace(/\.(?:plugin|lpx)$/i, '.sgmodule');
   var moduleURL = 'http://script.hub/file/_start_/' + url.href + '/_end_/' +
-    encodeURIComponent(outputName) + '?type=loon-plugin&target=surge-module&jqEnabled=true';
+    encodeURIComponent(outputName) + '?type=loon-plugin&target=surge-module&del=true&jqEnabled=true';
   return {
     sourceURL: url.href,
     moduleURL: moduleURL,
-    installURL: 'surge:///install-module?url=' + encodeURIComponent(moduleURL)
+    installURL: 'surge:///install-module?url=' + encodeURIComponent(moduleURL),
+    warning: /\.lpx$/i.test(filename) ? '此地址使用 .lpx 格式；安装时会检查是否能读取明文，真正加密的插件仍无法转换。' : ''
   };
 }
 
@@ -80,7 +83,8 @@ function startKeleePage() {
       output.value = links.moduleURL;
       install.href = links.installURL;
       result.hidden = false;
-      message.textContent = '链接已生成；安装时由 Script Hub 下载和转换原插件。';
+      message.textContent = '链接已生成；安装时由 Script Hub 下载和转换原插件。' +
+        (links.warning ? '\n' + links.warning : '');
     } catch (error) {
       message.textContent = error.message;
     }
@@ -125,13 +129,13 @@ function keleePageHTML() {
     '@media(max-width:700px){main{margin:18px;padding:22px}}' +
     '@media(prefers-color-scheme:dark){body{background:#11151d;color:#edf1fb}main{background:#1b2230}p{color:#b6c1d6}textarea{background:#111823;color:#edf1fb;border-color:#4b5870}.note{border-color:#3b465b}#copy{background:#313e56;color:#d9e4ff}}' +
     '</style></head><body><main><h1>可莉链接转换</h1>' +
-    '<p>将公开明文 Loon 插件链接转为 Surge 模块安装链接。</p>' +
+    '<p>将可读取的 Loon 插件链接转为 Surge 模块安装链接。</p>' +
     '<form id="converter"><label for="source">插件链接</label>' +
-    '<textarea id="source" placeholder="https://…/Example.plugin 或 loon://import?plugin=…" autocomplete="off" autocapitalize="off" spellcheck="false" required></textarea>' +
+    '<textarea id="source" placeholder="粘贴 .plugin、.lpx、Loon 安装链接或 Script Hub 链接" autocomplete="off" autocapitalize="off" spellcheck="false" required></textarea>' +
     '<button type="submit">生成安装链接</button></form><p id="message" role="status" aria-live="polite"></p>' +
     '<section id="result" hidden><label for="output">Surge 模块链接</label><textarea id="output" readonly spellcheck="false"></textarea>' +
     '<a class="action" id="install">导入 Surge</a><button type="button" id="copy">复制模块链接</button></section>' +
-    '<p class="note">可莉当前插件中心使用 .lpx；此助手仅支持公开明文 .plugin，加密插件无法转换。原地址失效、返回 403 或含 Loon 专属功能时，转换可能失败。<br>' +
+    '<p class="note">支持 .plugin 和可读取明文的 .lpx，真正加密的插件仍无法转换。原地址失效或含 Loon 专属功能时，转换可能失败。<br>' +
     '安装后请保持本模块启用，并启用 Surge 的脚本和 MITM、安装并信任证书。<br>' +
     '链接在本页生成，原插件在安装和更新时由 Surge 下载。转换引擎：' +
     '<a href="https://github.com/Script-Hub-Org/Script-Hub">Script Hub Beta</a>。</p>' +
