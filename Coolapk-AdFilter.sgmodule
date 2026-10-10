@@ -1,0 +1,67 @@
+#!name=酷安去广告 RC7 独立版
+#!desc=从 AdBlock AllInOne V5.0.3 RC7 提取酷安卡片过滤与穿山甲/GDT 广告处理；精简注释，沿用原脚本地址。
+#!category=广告拦截
+#!author=Night & ChatGPT；规则参考 blackmatrix7、ddgksf2013 等
+#!date=2026-10-10
+#!version=5.0.3-rc7-coolapk-standalone-20261010
+#!system=ios
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Rule]
+
+DOMAIN,sdk.e.qq.com,DIRECT,extended-matching
+DOMAIN,sdkreport.e.qq.com,DIRECT,extended-matching
+DOMAIN,tangram.e.qq.com,DIRECT,extended-matching
+DOMAIN,masdkv6.3g.qq.com,DIRECT,extended-matching
+DOMAIN,v2mi.gdt.qq.com,DIRECT,extended-matching
+DOMAIN,mi.gdt.qq.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao-b.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao1.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao2.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao3.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao4.com,DIRECT,extended-matching
+DOMAIN,api-access.pangolin-sdk-toutiao5.com,DIRECT,extended-matching
+DOMAIN,gromore.pangolin-sdk-toutiao.com,DIRECT,extended-matching
+DOMAIN,log-api.pangolin-sdk-toutiao.com,DIRECT,extended-matching
+DOMAIN,log-api.pangolin-sdk-toutiao-b.com,DIRECT,extended-matching
+DOMAIN-SUFFIX,gdt.qq.com,REJECT,extended-matching
+DOMAIN-SUFFIX,gdtimg.com,REJECT,extended-matching
+DOMAIN-SUFFIX,ugdtimg.com,REJECT,extended-matching
+DOMAIN-KEYWORD,pglstatp,REJECT,extended-matching
+DOMAIN-KEYWORD,panplayable-toutiao,REJECT,extended-matching
+DOMAIN-SUFFIX,pangle.io,REJECT,extended-matching
+DOMAIN-SUFFIX,byteadverts.com,REJECT,extended-matching
+DOMAIN,lf-ad-ies.bytecdn.cn,REJECT,extended-matching
+DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT,extended-matching
+DOMAIN-KEYWORD,-ad.byteoversea.com,REJECT,extended-matching
+DOMAIN,ad.toutiao.com,REJECT,extended-matching
+DOMAIN,ad.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads3-normal.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads3-normal-hl.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads3-normal-lf.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads3-normal-lq.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads5-normal.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads5-normal-hl.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads5-normal-lf.zijieapi.com,REJECT,extended-matching
+DOMAIN,ads5-normal-lq.zijieapi.com,REJECT,extended-matching
+
+[URL Rewrite]
+
+^https:\/\/tr\.byteurl\.cn\/ad\/impression\/toutiao\/ _ reject
+^https:\/\/lf-cdn-tos\.bytescm\.com\/obj\/static\/ad\/ _ reject
+^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/mediation\/exchange\/ _ reject
+^https?:\/\/gromore\.pangolin-sdk-toutiao\.com\/api\/ad\/union\/mediation\/exchange\/ _ reject
+
+[Map Local]
+
+^https?:\/\/api-access\.pangolin-sdk-toutiao(?:-b|[1-5])?\.com\/api\/ad\/union\/sdk\/get_ads\/?(?:\?.*)?$ data-type=text data="{\"request_id\":\"00000000-0000-0000-0000-000000000000\",\"status_code\":20001,\"reason\":112,\"desc\":\"no ad fill\"}" status-code=200 header="Content-Type:application/json"
+^https?:\/\/(?:v2)?mi\.gdt\.qq\.com\/gdt_mview\.fcg(?:\?.*)?$ data-type=text data="{\"ret\":102006,\"msg\":\"\"}" status-code=200 header="Content-Type:application/json"
+
+[Script]
+
+V5-酷安广告卡片 = type=http-response,pattern=^https:\/\/api\.coolapk\.com\/v6\/(?:main\/(?:indexV8|dataList|init)|feed\/(?:replyList|detail)|page\/dataList)(?:\?|$),requires-body=true,max-size=4194304,script-path=https://raw.githubusercontent.com/Feng-Feng1/surge/main/AdBlock-AppClean-V5.txt?v=5.0.1-rc2,argument=coolapk,timeout=10,script-update-interval=86400
+
+[MITM]
+
+hostname = %APPEND% api.coolapk.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao1.com, api-access.pangolin-sdk-toutiao2.com, api-access.pangolin-sdk-toutiao3.com, api-access.pangolin-sdk-toutiao4.com, api-access.pangolin-sdk-toutiao5.com, gromore.pangolin-sdk-toutiao.com, mi.gdt.qq.com, v2mi.gdt.qq.com, tr.byteurl.cn, lf-cdn-tos.bytescm.com
